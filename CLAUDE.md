@@ -462,3 +462,46 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 - Divar / Sheypoor API integration
 - Map-based file browsing
 - WebSockets / real-time collaboration
+
+---
+
+## 20. Development Progress
+
+> Workflow rule: build one feature at a time, write tests before moving to the next feature.
+> Update this section after every feature + test cycle.
+
+### Feature Build Order & Status
+
+| # | Feature | Built | Tested | Notes |
+|---|---------|-------|--------|-------|
+| 1 | **Authentication** (register, login, session management, 2-session limit, middleware) | ✅ | ✅ | |
+| 2 | **Dashboard** (layout, shell, sidebar, topbar, KPI cards, sign-out action) | ✅ | ✅ | |
+| 3 | **File Management** (create, edit, list, status lifecycle, activity log) | ❌ | ❌ | Next to build |
+| 4 | **CRM** (customers, contact history) | ❌ | ❌ | |
+| 5 | **Agent Management** (manager-only) | ❌ | ❌ | |
+| 6 | **Contracts** (finalization, commission, archive) | ❌ | ❌ | |
+| 7 | **Share Links** (public view page, token, custom price) | ❌ | ❌ | |
+| 8 | **SMS** (KaveNegar integration, templates) | ❌ | ❌ | |
+| 9 | **Notifications** (PWA push + 30s polling) | ❌ | ❌ | |
+| 10 | **Reports** (financial, activity) | ❌ | ❌ | |
+| 11 | **Settings** (office profile, billing, Zarinpal) | ❌ | ❌ | |
+| 12 | **AI Description** (AvalAI + template fallback) | ❌ | ❌ | |
+| 13 | **Maps** (Neshan pin, POI, routing) | ❌ | ❌ | |
+| 14 | **Image Processing** (Sharp pipeline, watermark, storage) | ❌ | ❌ | |
+| 15 | **Offline Drafts** (Dexie.js IndexedDB) | ❌ | ❌ | |
+| 16 | **Subscription / Billing** (trial, grace, locked lifecycle) | ❌ | ❌ | |
+
+### Test Files Written
+
+| Test File | Feature | What It Covers |
+|-----------|---------|---------------|
+| `__tests__/validations/auth.test.ts` | Authentication | `registerSchema` (24 cases), `loginSchema` (5 cases), `forgotPasswordSchema` (2 cases) |
+| `__tests__/actions/register.test.ts` | Authentication | `registerAction` — validation, duplicate checks, DB failure, happy path (9 cases) |
+| `__tests__/lib/utils.test.ts` | Dashboard | `formatToman` (5 cases), `formatJalali` (3 cases) |
+| `__tests__/actions/signout.test.ts` | Dashboard | `signOutAction` — calls `signOut({ redirectTo: "/login" })`, error propagation (2 cases) |
+| `__tests__/dashboard/page.test.ts` | Dashboard | `trialDaysLeft` calculation (6 cases), `planLabels` (3 cases), `statusConfig` (4 cases) |
+
+### Current Status
+- **Last completed:** Feature 2 — Dashboard (built + tested)
+- **Up next:** Feature 3 — File Management
+- **Total tests:** 51 passing, 0 failing

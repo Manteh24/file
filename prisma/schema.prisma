@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  MID_ADMIN
+  MANAGER
+  AGENT
+}
+
+enum Plan {
+  TRIAL
+  SMALL
+  LARGE
+}
+
+enum SubStatus {
+  ACTIVE
+  GRACE
+  LOCKED
+  CANCELLED
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+// Office is the tenant root. Every other entity belongs to an office via officeId.
+model Office {
+  id           String        @id @default(cuid())
+  name         String
+  // Referral code entered at registration — identifies the referrer, not this office.
+  referralCode String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  users        User[]
+  subscription Subscription?
+
+  @@map("offices")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  // username is the primary login identifier. Unique globally across all offices.
+  username     String        @unique
+  // email is optional — agents may have no email. Nullable unique allows multiple NULLs in PostgreSQL.
+  email        String?       @unique
+  passwordHash String
+  displayName  String
+  role         Role
+  officeId     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  office       Office        @relation(fields: [officeId], references: [id])
+  sessions     UserSession[]
+
+  @@map("users")
+}
+
+// Tracks active sessions per user. Used to enforce the 2-session limit.
+// Does NOT replace the JWT — it is a secondary store for session counting and invalidation.
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  // expiresAt matches the JWT maxAge (30 days). Used for automatic cleanup.
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+// One subscription per office. Created automatically on registration (TRIAL plan).
+model Subscription {
+  id               String    @id @default(cuid())
+  officeId         String    @unique
+  plan             Plan      @default(TRIAL)
+  status           SubStatus @default(ACTIVE)
+  // trialEndsAt is set to now + 30 days at registration.
+  trialEndsAt      DateTime
+  // currentPeriodEnd is set when the office upgrades to a paid plan.
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  office           Office    @relation(fields: [officeId], references: [id])
+
+  @@map("subscriptions")
+}

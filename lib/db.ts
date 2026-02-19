@@ -1,0 +1,19 @@
+import { PrismaClient } from "@/app/generated/prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
+import { Pool } from "pg"
+
+// Prevent multiple PrismaClient instances during Next.js hot reload in development.
+// In production, each process creates exactly one instance.
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+
+function createClient() {
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+  const adapter = new PrismaPg(pool)
+  return new PrismaClient({ adapter })
+}
+
+export const db = globalForPrisma.prisma ?? createClient()
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = db
+}
