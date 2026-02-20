@@ -34,6 +34,7 @@ type BigIntToNumber<T> = T extends bigint
  */
 export function bigIntToNumber<T>(value: T): BigIntToNumber<T> {
   if (typeof value === "bigint") return Number(value) as BigIntToNumber<T>
+  if (value instanceof Date) return value as BigIntToNumber<T>
   if (Array.isArray(value)) return value.map(bigIntToNumber) as BigIntToNumber<T>
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(
