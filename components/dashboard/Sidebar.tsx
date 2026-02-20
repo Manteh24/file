@@ -28,7 +28,7 @@ const navItems: NavItem[] = [
   { href: "/files", label: "فایل‌ها", icon: FolderOpen },
   { href: "/crm", label: "مشتریان", icon: Users },
   { href: "/agents", label: "مشاوران", icon: UserCog, managerOnly: true },
-  { href: "/contracts", label: "قراردادها", icon: FileText },
+  { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
   { href: "/reports", label: "گزارش‌ها", icon: BarChart3 },
   { href: "/settings", label: "تنظیمات", icon: Settings },
 ]

@@ -83,6 +83,7 @@ model Office {
   subscription Subscription?
   files        PropertyFile[]
   customers    Customer[]
+  contracts    Contract[]
 
   @@map("offices")
 }
@@ -103,15 +104,16 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  office           Office           @relation(fields: [officeId], references: [id])
-  sessions         UserSession[]
-  createdFiles     PropertyFile[]   @relation("CreatedFiles")
-  fileAssignments  FileAssignment[]
-  activityLogs     ActivityLog[]
-  priceHistory     PriceHistory[]
-  shareLinks       ShareLink[]
-  createdCustomers Customer[]       @relation("CreatedCustomers")
-  customerNotes    CustomerNote[]   @relation("CustomerNotes")
+  office              Office           @relation(fields: [officeId], references: [id])
+  sessions            UserSession[]
+  createdFiles        PropertyFile[]   @relation("CreatedFiles")
+  fileAssignments     FileAssignment[]
+  activityLogs        ActivityLog[]
+  priceHistory        PriceHistory[]
+  shareLinks          ShareLink[]
+  createdCustomers    Customer[]       @relation("CreatedCustomers")
+  customerNotes       CustomerNote[]   @relation("CustomerNotes")
+  finalizedContracts  Contract[]       @relation("FinalizedContracts")
 
   @@map("users")
 }
@@ -200,6 +202,7 @@ model PropertyFile {
   activityLogs    ActivityLog[]
   priceHistory    PriceHistory[]
   shareLinks      ShareLink[]
+  contract        Contract?
 
   @@index([officeId])
   @@index([officeId, status])
@@ -319,6 +322,37 @@ model CustomerNote {
 
   @@index([customerId])
   @@map("customer_notes")
+}
+
+// A finalized deal. Created by the manager when a transaction closes.
+// Creating a contract atomically transitions the file to SOLD or RENTED and
+// deactivates all share links.
+model Contract {
+  id              String          @id @default(cuid())
+  officeId        String
+  // fileId is unique — one contract per file
+  fileId          String          @unique
+  finalizedById   String
+  // Copied from the file at finalization time for archival integrity
+  transactionType TransactionType
+  // Final agreed price used as the basis for commission calculation.
+  // BigInt — Iranian real estate prices exceed PostgreSQL INTEGER's ~2.1B Toman limit.
+  finalPrice       BigInt
+  // Commission breakdown — all amounts in Toman
+  commissionAmount BigInt
+  agentShare       BigInt
+  officeShare      BigInt
+  notes           String?
+  finalizedAt     DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  office       Office       @relation(fields: [officeId], references: [id])
+  file         PropertyFile @relation(fields: [fileId], references: [id])
+  finalizedBy  User         @relation("FinalizedContracts", fields: [finalizedById], references: [id])
+
+  @@index([officeId])
+  @@map("contracts")
 }
 
 // Each share action creates a new unique link with its own price and view counter.

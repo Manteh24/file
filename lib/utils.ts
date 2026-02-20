@@ -14,6 +14,35 @@ export function formatToman(amount: number): string {
   return `${amount.toLocaleString("fa-IR")} تومان`
 }
 
+// Recursive type that replaces bigint with number in deeply nested structures.
+// Used with bigIntToNumber() to satisfy TypeScript after Prisma BigInt columns are converted.
+type BigIntToNumber<T> = T extends bigint
+  ? number
+  : T extends Date
+    ? Date
+    : T extends Array<infer U>
+      ? Array<BigIntToNumber<U>>
+      : T extends object
+        ? { [K in keyof T]: BigIntToNumber<T[K]> }
+        : T
+
+/**
+ * Recursively converts BigInt values to Number so objects can be JSON-serialised.
+ * Prisma returns BigInt for columns declared as `BigInt` in the schema.
+ * JavaScript's Number safely represents integers up to 2^53, which covers all
+ * realistic Iranian real estate prices (max ~500 billion Toman ≪ 9 quadrillion).
+ */
+export function bigIntToNumber<T>(value: T): BigIntToNumber<T> {
+  if (typeof value === "bigint") return Number(value) as BigIntToNumber<T>
+  if (Array.isArray(value)) return value.map(bigIntToNumber) as BigIntToNumber<T>
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, bigIntToNumber(v)])
+    ) as BigIntToNumber<T>
+  }
+  return value as BigIntToNumber<T>
+}
+
 /**
  * Formats a Gregorian Date into a Jalali display string with Persian numerals.
  * Always use this for displaying dates to end users — never show Gregorian dates.

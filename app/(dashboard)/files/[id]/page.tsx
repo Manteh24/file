@@ -8,6 +8,7 @@ import {
   MapPin,
   Calendar,
   ChevronLeft,
+  FileCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -133,7 +134,15 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
 
         <div className="flex shrink-0 gap-2">
           {role === "MANAGER" && file.status === "ACTIVE" && (
-            <ArchiveFileButton fileId={file.id} />
+            <>
+              <ArchiveFileButton fileId={file.id} />
+              <Button asChild variant="outline">
+                <Link href={`/contracts/new?fileId=${file.id}`}>
+                  <FileCheck className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
+                  بستن قرارداد
+                </Link>
+              </Button>
+            </>
           )}
           {canEdit && (
             <Button asChild>

@@ -211,6 +211,48 @@ declare module "@auth/core/jwt" {
   }
 }
 
+// ─── Contract Domain Types ─────────────────────────────────────────────────────
+
+// Summary card used in the contract list
+export interface ContractSummary {
+  id: string
+  transactionType: TransactionType
+  finalPrice: number
+  commissionAmount: number
+  agentShare: number
+  officeShare: number
+  finalizedAt: Date
+  file: {
+    id: string
+    address: string | null
+    neighborhood: string | null
+    propertyType: PropertyType | null
+  }
+  finalizedBy: { displayName: string }
+}
+
+// Full contract detail returned by GET /api/contracts/[id]
+export interface ContractDetail extends ContractSummary {
+  officeId: string
+  fileId: string
+  finalizedById: string
+  notes: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Minimal file info used in the new contract form's file selector
+export interface ActiveFileSummary {
+  id: string
+  transactionType: TransactionType
+  propertyType: PropertyType | null
+  address: string | null
+  neighborhood: string | null
+  salePrice: number | null
+  depositAmount: number | null
+  rentAmount: number | null
+}
+
 // ─── API Response Shapes ──────────────────────────────────────────────────────
 // All API routes and server actions return one of these two shapes.
 
