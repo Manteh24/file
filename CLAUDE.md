@@ -490,7 +490,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 1 | **Authentication** (register, login, session management, 2-session limit, middleware) | ✅ | ✅ | |
 | 2 | **Dashboard** (layout, shell, sidebar, topbar, KPI cards, sign-out action) | ✅ | ✅ | |
 | 3 | **File Management** (create, edit, list, status lifecycle, activity log) | ✅ | ✅ | |
-| 4 | **CRM** (customers, contact history) | ❌ | ❌ | |
+| 4 | **CRM** (customers, contact history) | ✅ | ✅ | |
 | 5 | **Agent Management** (manager-only) | ❌ | ❌ | |
 | 6 | **Contracts** (finalization, commission, archive) | ❌ | ❌ | |
 | 7 | **Share Links** (public view page, token, custom price) | ❌ | ❌ | |
@@ -515,8 +515,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/dashboard/page.test.ts` | Dashboard | `trialDaysLeft` calculation (6 cases), `planLabels` (3 cases), `statusConfig` (4 cases) |
 | `__tests__/validations/file.test.ts` | File Management | `contactSchema` (6 cases), `createFileSchema` (16 cases), `updateFileSchema` (5 cases), `changeFileStatusSchema` (4 cases) |
 | `__tests__/api/files.test.ts` | File Management | `GET /api/files` (6 cases), `POST /api/files` (9 cases) |
+| `__tests__/validations/customer.test.ts` | CRM | `createCustomerSchema` (15 cases), `updateCustomerSchema` (4 cases), `customerNoteSchema` (5 cases) |
+| `__tests__/api/customers.test.ts` | CRM | `GET /api/crm` (5 cases), `POST /api/crm` (7 cases), `GET/PATCH/DELETE /api/crm/[id]` (9 cases), `GET/POST /api/crm/[id]/notes` (8 cases) |
 
 ### Current Status
-- **Last completed:** Feature 3 — File Management (built + tested)
-- **Up next:** Feature 4 — CRM
-- **Total tests:** 97 passing, 0 failing
+- **Last completed:** Feature 4 — CRM (built + tested)
+- **Up next:** Feature 5 — Agent Management
+- **Total tests:** 170 passing, 0 failing

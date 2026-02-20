@@ -61,6 +61,13 @@ enum ContactType {
   BUYER
 }
 
+enum CustomerType {
+  BUYER
+  RENTER
+  SELLER
+  LANDLORD
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 // Office is the tenant root. Every other entity belongs to an office via officeId.
@@ -75,6 +82,7 @@ model Office {
   users        User[]
   subscription Subscription?
   files        PropertyFile[]
+  customers    Customer[]
 
   @@map("offices")
 }
@@ -92,13 +100,15 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  office          Office           @relation(fields: [officeId], references: [id])
-  sessions        UserSession[]
-  createdFiles    PropertyFile[]   @relation("CreatedFiles")
-  fileAssignments FileAssignment[]
-  activityLogs    ActivityLog[]
-  priceHistory    PriceHistory[]
-  shareLinks      ShareLink[]
+  office           Office           @relation(fields: [officeId], references: [id])
+  sessions         UserSession[]
+  createdFiles     PropertyFile[]   @relation("CreatedFiles")
+  fileAssignments  FileAssignment[]
+  activityLogs     ActivityLog[]
+  priceHistory     PriceHistory[]
+  shareLinks       ShareLink[]
+  createdCustomers Customer[]       @relation("CreatedCustomers")
+  customerNotes    CustomerNote[]   @relation("CustomerNotes")
 
   @@map("users")
 }
@@ -269,6 +279,43 @@ model PriceHistory {
 
   @@index([fileId])
   @@map("price_history")
+}
+
+// CRM customer — a buyer, renter, seller, or landlord tracked by the office.
+model Customer {
+  id          String         @id @default(cuid())
+  officeId    String
+  createdById String
+  name        String
+  phone       String
+  email       String?
+  type        CustomerType
+  // Internal notes about this customer
+  notes       String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  office      Office         @relation(fields: [officeId], references: [id])
+  createdBy   User           @relation("CreatedCustomers", fields: [createdById], references: [id])
+  contactLogs CustomerNote[]
+
+  @@index([officeId])
+  @@map("customers")
+}
+
+// A timestamped interaction note logged against a customer.
+model CustomerNote {
+  id         String   @id @default(cuid())
+  customerId String
+  userId     String
+  content    String
+  createdAt  DateTime @default(now())
+
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user       User     @relation("CustomerNotes", fields: [userId], references: [id])
+
+  @@index([customerId])
+  @@map("customer_notes")
 }
 
 // Each share action creates a new unique link with its own price and view counter.

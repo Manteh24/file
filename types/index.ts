@@ -5,6 +5,7 @@ import type { DefaultSession } from "next-auth"
 // from the generated Prisma client.
 
 export type Role = "SUPER_ADMIN" | "MID_ADMIN" | "MANAGER" | "AGENT"
+export type CustomerType = "BUYER" | "RENTER" | "SELLER" | "LANDLORD"
 export type Plan = "TRIAL" | "SMALL" | "LARGE"
 export type SubStatus = "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED"
 
@@ -122,6 +123,41 @@ export interface PropertyFileSummary {
   contacts: Pick<FileContact, "id" | "name" | "phone" | "type">[]
   assignedAgents: { user: { displayName: string } }[]
   _count: { photos: number; shareLinks: number }
+}
+
+// ─── CRM Domain Types ──────────────────────────────────────────────────────────
+
+export interface CustomerNote {
+  id: string
+  customerId: string
+  content: string
+  createdAt: Date
+  user: { displayName: string }
+}
+
+// Summary card used in the customer list
+export interface CustomerSummary {
+  id: string
+  name: string
+  phone: string
+  type: CustomerType
+  createdAt: Date
+  _count: { contactLogs: number }
+}
+
+// Full customer detail returned by GET /api/crm/[id]
+export interface CustomerDetail {
+  id: string
+  officeId: string
+  name: string
+  phone: string
+  email: string | null
+  type: CustomerType
+  notes: string | null
+  createdAt: Date
+  updatedAt: Date
+  createdBy: { displayName: string }
+  contactLogs: CustomerNote[]
 }
 
 // ─── NextAuth Type Augmentation ───────────────────────────────────────────────
