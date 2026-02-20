@@ -1,25 +1,16 @@
 import Link from "next/link"
-import dynamic from "next/dynamic"
 import { notFound, redirect } from "next/navigation"
 import { Pencil, Mail, UserCircle, Briefcase, KeyRound } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { PageHeader } from "@/components/shared/PageHeader"
+// Client-only wrapper — ssr: false lives in a Client Component to satisfy Next.js rules
+import { DeactivateAgentButton, ResetPasswordForm } from "@/components/agents/AgentDetailActions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatJalali } from "@/lib/utils"
 import type { TransactionType, FileStatus } from "@/types"
-
-// Rendered client-side only to avoid Radix UI / React Hook Form useId() hydration mismatches
-const DeactivateAgentButton = dynamic(
-  () => import("@/components/agents/DeactivateAgentButton").then((m) => ({ default: m.DeactivateAgentButton })),
-  { ssr: false }
-)
-const ResetPasswordForm = dynamic(
-  () => import("@/components/agents/ResetPasswordForm").then((m) => ({ default: m.ResetPasswordForm })),
-  { ssr: false }
-)
 
 interface AgentPageProps {
   params: Promise<{ id: string }>
