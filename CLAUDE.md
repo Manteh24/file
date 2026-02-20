@@ -449,7 +449,20 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 
 ---
 
-## 19. Out of Scope (Do Not Build in v1)
+## 19. Neshan SDK Implementation Notes
+
+- **Package:** `@neshan-maps-platform/mapbox-gl-react` + `@neshan-maps-platform/mapbox-gl` + `@types/mapbox-gl`
+- **CSS:** import `@neshan-maps-platform/mapbox-gl/dist/NeshanMapboxGl.css`
+- **No SSR** — always use `dynamic(() => import(...), { ssr: false })` in Next.js
+- **Map key env var:** `NEXT_PUBLIC_NESHAN_MAP_KEY` (client-side); `NESHAN_API_KEY` (server-side REST)
+- **Pin drop:** use `mapSetter` prop to get Map instance → attach click listener → place `new nmp_mapboxgl.Marker()`
+- **Mobile:** set `isTouchPlatform: true` (agents use on mobile)
+- **Map types:** `neshanVector` (default), `neshanVectorNight`, `neshanRaster`, `neshanRasterNight`
+- **REST API key:** already in `.env` as `NESHAN_API_KEY`
+
+---
+
+## 20. Out of Scope (Do Not Build in v1)
 
 - Phone number / OTP login
 - Per-office custom subdomains on share pages
