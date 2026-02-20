@@ -96,6 +96,7 @@ model User {
   passwordHash String
   displayName  String
   role         Role
+  isActive     Boolean       @default(true)
   officeId     String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt

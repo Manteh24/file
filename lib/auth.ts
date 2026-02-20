@@ -34,14 +34,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user) return null
 
-        // 3. Verify password — compare against bcrypt hash
+        // 3. Block deactivated users from signing in
+        if (!user.isActive) return null
+
+        // 4. Verify password — compare against bcrypt hash
         const passwordValid = await bcrypt.compare(password, user.passwordHash)
         if (!passwordValid) return null
 
-        // 4. Enforce 2-session limit and create the new session record
+        // 5. Enforce 2-session limit and create the new session record
         const sessionId = await enforceSessionLimit(user.id)
 
-        // 5. Return user object — this is passed to the jwt callback
+        // 6. Return user object — this is passed to the jwt callback
         return {
           id: user.id,
           officeId: user.officeId,

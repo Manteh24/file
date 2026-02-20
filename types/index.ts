@@ -125,6 +125,26 @@ export interface PropertyFileSummary {
   _count: { photos: number; shareLinks: number }
 }
 
+// ─── Agent Domain Types ────────────────────────────────────────────────────────
+
+export interface AgentSummary {
+  id: string
+  username: string
+  displayName: string
+  email: string | null
+  isActive: boolean
+  createdAt: Date
+  _count: { fileAssignments: number }
+}
+
+export interface AgentDetail extends AgentSummary {
+  officeId: string
+  updatedAt: Date
+  fileAssignments: Array<{
+    file: { id: string; transactionType: string; status: string }
+  }>
+}
+
 // ─── CRM Domain Types ──────────────────────────────────────────────────────────
 
 export interface CustomerNote {
