@@ -78,7 +78,9 @@ export async function POST(request: Request) {
   }
 
   const { officeId, id: userId } = session.user
-  const { fileId, finalPrice, commissionAmount, agentShare, officeShare, notes } = parsed.data
+  const { fileId, finalPrice, commissionAmount, agentShare, notes } = parsed.data
+  // officeShare is not sent by the client — derived here to ensure integrity
+  const officeShare = commissionAmount - agentShare
 
   try {
     // Verify the file exists, is ACTIVE, belongs to this office, and has no contract yet
