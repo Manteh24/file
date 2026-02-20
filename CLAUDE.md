@@ -476,7 +476,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 |---|---------|-------|--------|-------|
 | 1 | **Authentication** (register, login, session management, 2-session limit, middleware) | ✅ | ✅ | |
 | 2 | **Dashboard** (layout, shell, sidebar, topbar, KPI cards, sign-out action) | ✅ | ✅ | |
-| 3 | **File Management** (create, edit, list, status lifecycle, activity log) | ❌ | ❌ | Next to build |
+| 3 | **File Management** (create, edit, list, status lifecycle, activity log) | ✅ | ✅ | |
 | 4 | **CRM** (customers, contact history) | ❌ | ❌ | |
 | 5 | **Agent Management** (manager-only) | ❌ | ❌ | |
 | 6 | **Contracts** (finalization, commission, archive) | ❌ | ❌ | |
@@ -500,8 +500,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/lib/utils.test.ts` | Dashboard | `formatToman` (5 cases), `formatJalali` (3 cases) |
 | `__tests__/actions/signout.test.ts` | Dashboard | `signOutAction` — calls `signOut({ redirectTo: "/login" })`, error propagation (2 cases) |
 | `__tests__/dashboard/page.test.ts` | Dashboard | `trialDaysLeft` calculation (6 cases), `planLabels` (3 cases), `statusConfig` (4 cases) |
+| `__tests__/validations/file.test.ts` | File Management | `contactSchema` (6 cases), `createFileSchema` (16 cases), `updateFileSchema` (5 cases), `changeFileStatusSchema` (4 cases) |
+| `__tests__/api/files.test.ts` | File Management | `GET /api/files` (6 cases), `POST /api/files` (9 cases) |
 
 ### Current Status
-- **Last completed:** Feature 2 — Dashboard (built + tested)
-- **Up next:** Feature 3 — File Management
-- **Total tests:** 51 passing, 0 failing
+- **Last completed:** Feature 3 — File Management (built + tested)
+- **Up next:** Feature 4 — CRM
+- **Total tests:** 97 passing, 0 failing
