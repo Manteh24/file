@@ -492,7 +492,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 3 | **File Management** (create, edit, list, status lifecycle, activity log) | ✅ | ✅ | |
 | 4 | **CRM** (customers, contact history) | ✅ | ✅ | |
 | 5 | **Agent Management** (manager-only) | ✅ | ✅ | |
-| 6 | **Contracts** (finalization, commission, archive) | ❌ | ❌ | |
+| 6 | **Contracts** (finalization, commission, archive) | ✅ | ❌ | |
 | 7 | **Share Links** (public view page, token, custom price) | ❌ | ❌ | |
 | 8 | **SMS** (KaveNegar integration, templates) | ❌ | ❌ | |
 | 9 | **Notifications** (PWA push + 30s polling) | ❌ | ❌ | |
@@ -521,6 +521,6 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/api/agents.test.ts` | Agent Management | `GET /api/agents` (5 cases), `POST /api/agents` (6 cases), `GET/PATCH/DELETE /api/agents/[id]` (9 cases), `POST /api/agents/[id]/reset-password` (5 cases) |
 
 ### Current Status
-- **Last completed:** Feature 5 — Agent Management (built + tested)
-- **Up next:** Feature 6 — Contracts
+- **Last completed:** Feature 6 — Contracts (built, pending manual test + automated tests)
+- **Up next:** Feature 6 automated tests, then Feature 7 — Share Links
 - **Total tests:** 225 passing, 0 failing
