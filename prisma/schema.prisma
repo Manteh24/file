@@ -29,6 +29,38 @@ enum SubStatus {
   CANCELLED
 }
 
+enum TransactionType {
+  SALE
+  LONG_TERM_RENT
+  SHORT_TERM_RENT
+  PRE_SALE
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  VILLA
+  LAND
+  COMMERCIAL
+  OFFICE
+  OTHER
+}
+
+enum FileStatus {
+  ACTIVE
+  ARCHIVED
+  SOLD
+  RENTED
+  EXPIRED
+}
+
+enum ContactType {
+  OWNER
+  TENANT
+  LANDLORD
+  BUYER
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 // Office is the tenant root. Every other entity belongs to an office via officeId.
@@ -42,6 +74,7 @@ model Office {
 
   users        User[]
   subscription Subscription?
+  files        PropertyFile[]
 
   @@map("offices")
 }
@@ -59,8 +92,13 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  office       Office        @relation(fields: [officeId], references: [id])
-  sessions     UserSession[]
+  office          Office           @relation(fields: [officeId], references: [id])
+  sessions        UserSession[]
+  createdFiles    PropertyFile[]   @relation("CreatedFiles")
+  fileAssignments FileAssignment[]
+  activityLogs    ActivityLog[]
+  priceHistory    PriceHistory[]
+  shareLinks      ShareLink[]
 
   @@map("users")
 }
@@ -95,4 +133,159 @@ model Subscription {
   office           Office    @relation(fields: [officeId], references: [id])
 
   @@map("subscriptions")
+}
+
+// A property listing (فایل). Minimum to create: transactionType + location + 1 contact.
+model PropertyFile {
+  id              String          @id @default(cuid())
+  officeId        String
+  createdById     String
+  transactionType TransactionType
+  status          FileStatus      @default(ACTIVE)
+  propertyType    PropertyType?
+
+  // Physical details
+  area            Int?            // square meters (متراژ)
+  floorNumber     Int?
+  totalFloors     Int?
+  buildingAge     Int?            // years (سن بنا)
+
+  // Price fields — which are used depends on transactionType
+  salePrice       Int?            // total price in Toman (for SALE, PRE_SALE)
+  depositAmount   Int?            // رهن in Toman (for LONG_TERM_RENT)
+  rentAmount      Int?            // monthly اجاره in Toman (for LONG_TERM_RENT, SHORT_TERM_RENT)
+
+  // Location — map pin stored as lat/lng. Address filled manually until map feature is built.
+  latitude        Float?
+  longitude       Float?
+  address         String?
+  neighborhood    String?
+  // Neshan POI analysis stored as JSON after location is pinned (Feature 13)
+  locationAnalysis Json?
+
+  // AI-generated or manually written description
+  description     String?
+
+  // Amenities
+  hasElevator     Boolean         @default(false)
+  hasParking      Boolean         @default(false)
+  hasStorage      Boolean         @default(false)
+  hasBalcony      Boolean         @default(false)
+  hasSecurity     Boolean         @default(false)
+
+  // Internal notes — not shown on public share page
+  notes           String?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  office          Office          @relation(fields: [officeId], references: [id])
+  createdBy       User            @relation("CreatedFiles", fields: [createdById], references: [id])
+  assignedAgents  FileAssignment[]
+  contacts        Contact[]
+  photos          FilePhoto[]
+  activityLogs    ActivityLog[]
+  priceHistory    PriceHistory[]
+  shareLinks      ShareLink[]
+
+  @@index([officeId])
+  @@index([officeId, status])
+  @@map("property_files")
+}
+
+// Tracks which agents are assigned to a file.
+model FileAssignment {
+  id         String       @id @default(cuid())
+  fileId     String
+  userId     String
+  assignedAt DateTime     @default(now())
+
+  file       PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id])
+
+  @@unique([fileId, userId])
+  @@map("file_assignments")
+}
+
+// Contacts linked to a file (owner, tenant, buyer, landlord).
+model Contact {
+  id        String       @id @default(cuid())
+  fileId    String
+  type      ContactType
+  name      String?
+  phone     String
+  notes     String?
+  createdAt DateTime     @default(now())
+
+  file      PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@map("contacts")
+}
+
+// Photo records for a file. URL points to IranServer object storage (Feature 14).
+model FilePhoto {
+  id        String       @id @default(cuid())
+  fileId    String
+  url       String
+  order     Int          @default(0)
+  createdAt DateTime     @default(now())
+
+  file      PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@map("file_photos")
+}
+
+// Immutable log of all file changes. Visible to managers only.
+model ActivityLog {
+  id        String       @id @default(cuid())
+  fileId    String
+  userId    String
+  // Human-readable action label: CREATE, EDIT, STATUS_CHANGE, ASSIGNMENT, SHARE_LINK
+  action    String
+  // Field-level diff stored as JSON: { field: [oldValue, newValue] }
+  diff      Json?
+  createdAt DateTime     @default(now())
+
+  file      PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id])
+
+  @@index([fileId])
+  @@map("activity_logs")
+}
+
+// Records every price change on a file with before/after values.
+model PriceHistory {
+  id          String       @id @default(cuid())
+  fileId      String
+  changedById String
+  // Which price field changed: salePrice | depositAmount | rentAmount
+  priceField  String
+  oldPrice    Int?
+  newPrice    Int?
+  changedAt   DateTime     @default(now())
+
+  file        PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  changedBy   User         @relation(fields: [changedById], references: [id])
+
+  @@index([fileId])
+  @@map("price_history")
+}
+
+// Each share action creates a new unique link with its own price and view counter.
+model ShareLink {
+  id          String       @id @default(cuid())
+  fileId      String
+  createdById String
+  token       String       @unique
+  // If null, shows the file's current price. If set, shows this custom price.
+  customPrice Int?
+  viewCount   Int          @default(0)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+
+  file        PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  createdBy   User         @relation(fields: [createdById], references: [id])
+
+  @@index([token])
+  @@map("share_links")
 }
