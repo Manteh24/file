@@ -50,9 +50,9 @@ interface SendResult {
  * Returns { success: false, error } on any failure — never throws.
  */
 export async function sendSms(phone: string, message: string): Promise<SendResult> {
-  const apiKey = process.env.KAVEHNEGAS_API_KEY
+  const apiKey = process.env.KAVENEGAR_API_KEY
   if (!apiKey) {
-    console.error("[sms] KAVEHNEGAS_API_KEY is not configured")
+    console.error("[sms] KAVENEGAR_API_KEY is not configured")
     return { success: false, error: "سرویس پیامک پیکربندی نشده است" }
   }
 
