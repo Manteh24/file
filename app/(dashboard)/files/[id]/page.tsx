@@ -81,6 +81,17 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
 
   if (!file) notFound()
 
+  // CRM customers (BUYER/RENTER) for the SMS combobox — only needed when the file is ACTIVE
+  // so the ShareLinksPanel is rendered. Filtered to the two types most likely to receive a share link.
+  const crmCustomers =
+    file.status === "ACTIVE"
+      ? await db.customer.findMany({
+          where: { officeId, type: { in: ["BUYER", "RENTER"] } },
+          select: { name: true, phone: true },
+          orderBy: { name: "asc" },
+        })
+      : []
+
   // Activity log is fetched separately — manager only. Conditional includes break Prisma's return types.
   const activityLogs =
     role === "MANAGER"
@@ -331,6 +342,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
           fileId={file.id}
           role={role === "AGENT" ? "AGENT" : "MANAGER"}
           contacts={file.contacts.map((c) => ({ name: c.name, phone: c.phone }))}
+          customers={crmCustomers}
           agentName={session.user.name ?? ""}
           officeName={file.office.name}
         />

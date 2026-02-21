@@ -1,8 +1,19 @@
 "use client"
 
 import { useState } from "react"
-import { Send, Loader2 } from "lucide-react"
+import { Send, Loader2, ChevronsUpDown, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 
 interface Contact {
   name: string | null
@@ -14,15 +25,36 @@ interface SmsPanelProps {
   defaultPhone?: string
   // Pre-filled message — e.g. from a template. User can edit before sending.
   defaultMessage: string
-  // If provided, renders a quick-select dropdown that fills the phone input.
+  // File contacts (owner, tenant, etc.) shown in the first group of the combobox.
   contacts?: Contact[]
+  // CRM customers (BUYER/RENTER) shown in the second group of the combobox.
+  customers?: Contact[]
 }
 
-export function SmsPanel({ defaultPhone = "", defaultMessage, contacts }: SmsPanelProps) {
+export function SmsPanel({
+  defaultPhone = "",
+  defaultMessage,
+  contacts,
+  customers,
+}: SmsPanelProps) {
   const [phone, setPhone] = useState(defaultPhone)
   const [message, setMessage] = useState(defaultMessage)
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  // Combobox state
+  const [open, setOpen] = useState(false)
+  const [selectedLabel, setSelectedLabel] = useState<string | null>(null)
+
+  const hasContacts = contacts && contacts.length > 0
+  const hasCustomers = customers && customers.length > 0
+  const showCombobox = hasContacts || hasCustomers
+
+  function handleSelect(contact: Contact) {
+    setPhone(contact.phone)
+    setSelectedLabel(contact.name ? `${contact.name} — ${contact.phone}` : contact.phone)
+    setOpen(false)
+  }
 
   async function handleSend() {
     setSending(true)
@@ -51,22 +83,91 @@ export function SmsPanel({ defaultPhone = "", defaultMessage, contacts }: SmsPan
 
   return (
     <div className="space-y-3">
-      {/* Contact quick-select — only shown when contacts are provided */}
-      {contacts && contacts.length > 0 && (
+      {/* Grouped combobox — shown when file contacts or CRM customers are available */}
+      {showCombobox && (
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">انتخاب سریع مخاطب</label>
-          <select
-            defaultValue=""
-            onChange={(e) => { if (e.target.value) setPhone(e.target.value) }}
-            className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">-- از مخاطبین فایل انتخاب کنید --</option>
-            {contacts.map((c) => (
-              <option key={c.phone} value={c.phone}>
-                {c.name ? `${c.name} (${c.phone})` : c.phone}
-              </option>
-            ))}
-          </select>
+          <label className="text-xs text-muted-foreground">انتخاب مخاطب</label>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between font-normal"
+              >
+                <span className={cn("truncate", !selectedLabel && "text-muted-foreground")}>
+                  {selectedLabel ?? "جستجو در مخاطبین و مشتریان..."}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50 rtl:mr-2 ltr:ml-2" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-0" align="start">
+              <Command>
+                <CommandInput placeholder="جستجوی نام یا شماره..." />
+                <CommandList>
+                  <CommandEmpty>نتیجه‌ای یافت نشد</CommandEmpty>
+
+                  {hasContacts && (
+                    <CommandGroup heading="مخاطبین فایل">
+                      {contacts!.map((c) => (
+                        <CommandItem
+                          key={c.phone}
+                          value={`${c.name ?? ""} ${c.phone}`}
+                          onSelect={() => handleSelect(c)}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            {c.name && (
+                              <p className="truncate text-sm font-medium">{c.name}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground" dir="ltr">
+                              {c.phone}
+                            </p>
+                          </div>
+                          <Check
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              phone === c.phone ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+
+                  {hasContacts && hasCustomers && <CommandSeparator />}
+
+                  {hasCustomers && (
+                    <CommandGroup heading="مشتریان">
+                      {customers!.map((c) => (
+                        <CommandItem
+                          key={c.phone}
+                          value={`${c.name ?? ""} ${c.phone}`}
+                          onSelect={() => handleSelect(c)}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0">
+                            {c.name && (
+                              <p className="truncate text-sm font-medium">{c.name}</p>
+                            )}
+                            <p className="text-xs text-muted-foreground" dir="ltr">
+                              {c.phone}
+                            </p>
+                          </div>
+                          <Check
+                            className={cn(
+                              "h-4 w-4 shrink-0",
+                              phone === c.phone ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       )}
 

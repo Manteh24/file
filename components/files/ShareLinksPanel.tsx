@@ -28,6 +28,7 @@ interface ShareLinksPanelProps {
   fileId: string
   role: "MANAGER" | "AGENT"
   contacts?: Contact[]
+  customers?: Contact[]
   agentName?: string
   officeName?: string
 }
@@ -48,6 +49,7 @@ export function ShareLinksPanel({
   fileId,
   role,
   contacts,
+  customers,
   agentName = "",
   officeName = "",
 }: ShareLinksPanelProps) {
@@ -316,6 +318,7 @@ export function ShareLinksPanel({
                       <SmsPanel
                         defaultMessage={buildSmsMessage(link)}
                         contacts={contacts}
+                        customers={customers}
                       />
                     </div>
                   )}
