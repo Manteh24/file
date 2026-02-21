@@ -16,6 +16,7 @@ import { FileStatusBadge } from "@/components/files/FileStatusBadge"
 import { ActivityLogList } from "@/components/files/ActivityLogList"
 import { PriceHistoryList } from "@/components/files/PriceHistoryList"
 import { ArchiveFileButton } from "@/components/files/ArchiveFileButton"
+import { AgentAssignmentPanel } from "@/components/files/AgentAssignmentPanel"
 import { formatToman, formatJalali } from "@/lib/utils"
 import type { TransactionType, PropertyType, Role } from "@/types"
 
@@ -302,23 +303,24 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
         </Card>
       )}
 
-      {/* Assigned agents */}
-      {file.assignedAgents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">مشاوران تخصیص‌داده‌شده</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0 flex flex-wrap gap-2">
-            {file.assignedAgents.map((a) => (
-              <span
-                key={a.id}
-                className="rounded-full bg-accent px-3 py-1 text-sm"
-              >
-                {a.user.displayName}
-              </span>
-            ))}
-          </CardContent>
-        </Card>
+      {/* Assigned agents — editable for manager, read-only for agents */}
+      {role === "MANAGER" ? (
+        <AgentAssignmentPanel fileId={file.id} currentAgents={file.assignedAgents} />
+      ) : (
+        file.assignedAgents.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">مشاوران تخصیص‌داده‌شده</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 flex flex-wrap gap-2">
+              {file.assignedAgents.map((a) => (
+                <span key={a.id} className="rounded-full bg-accent px-3 py-1 text-sm">
+                  {a.user.displayName}
+                </span>
+              ))}
+            </CardContent>
+          </Card>
+        )
       )}
 
       {/* Price history */}

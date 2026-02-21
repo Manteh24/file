@@ -82,6 +82,15 @@ export const changeFileStatusSchema = z.object({
 
 export type ChangeFileStatusInput = z.infer<typeof changeFileStatusSchema>
 
+// ─── Assign Agents Schema ──────────────────────────────────────────────────────
+// Used by PUT /api/files/[id]/agents — replaces the full assignment list atomically.
+
+export const assignAgentsSchema = z.object({
+  agentIds: z.array(z.string()).default([]),
+})
+
+export type AssignAgentsInput = z.infer<typeof assignAgentsSchema>
+
 // ─── File Filters Schema ───────────────────────────────────────────────────────
 
 export const fileFiltersSchema = z.object({

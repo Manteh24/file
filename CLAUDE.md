@@ -492,7 +492,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 3 | **File Management** (create, edit, list, status lifecycle, activity log) | ✅ | ✅ | |
 | 4 | **CRM** (customers, contact history) | ✅ | ✅ | |
 | 5 | **Agent Management** (manager-only) | ✅ | ✅ | |
-| 6 | **Contracts** (finalization, commission, archive) | ✅ | ❌ | |
+| 6 | **Contracts** (finalization, commission, archive) | ✅ | ✅ | |
 | 7 | **Share Links** (public view page, token, custom price) | ❌ | ❌ | |
 | 8 | **SMS** (KaveNegar integration, templates) | ❌ | ❌ | |
 | 9 | **Notifications** (PWA push + 30s polling) | ❌ | ❌ | |
@@ -519,8 +519,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/api/customers.test.ts` | CRM | `GET /api/crm` (5 cases), `POST /api/crm` (7 cases), `GET/PATCH/DELETE /api/crm/[id]` (9 cases), `GET/POST /api/crm/[id]/notes` (8 cases) |
 | `__tests__/validations/agent.test.ts` | Agent Management | `createAgentSchema` (16 cases), `updateAgentSchema` (6 cases), `resetPasswordSchema` (5 cases) |
 | `__tests__/api/agents.test.ts` | Agent Management | `GET /api/agents` (5 cases), `POST /api/agents` (6 cases), `GET/PATCH/DELETE /api/agents/[id]` (9 cases), `POST /api/agents/[id]/reset-password` (5 cases) |
+| `__tests__/validations/contract.test.ts` | Contracts | `createContractSchema` (16 cases) |
+| `__tests__/api/contracts.test.ts` | Contracts | `GET /api/contracts` (5 cases), `POST /api/contracts` (12 cases), `GET /api/contracts/[id]` (5 cases) |
 
 ### Current Status
-- **Last completed:** Feature 6 — Contracts (built, pending manual test + automated tests)
-- **Up next:** Feature 6 automated tests, then Feature 7 — Share Links
-- **Total tests:** 225 passing, 0 failing
+- **Last completed:** Feature 6 — Contracts (built + automated tests)
+- **Up next:** Feature 7 — Share Links
+- **Total tests:** 271 passing, 0 failing
