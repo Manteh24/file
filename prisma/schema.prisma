@@ -167,9 +167,9 @@ model PropertyFile {
   buildingAge     Int?            // years (سن بنا)
 
   // Price fields — which are used depends on transactionType
-  salePrice       Int?            // total price in Toman (for SALE, PRE_SALE)
-  depositAmount   Int?            // رهن in Toman (for LONG_TERM_RENT)
-  rentAmount      Int?            // monthly اجاره in Toman (for LONG_TERM_RENT, SHORT_TERM_RENT)
+  salePrice       BigInt?         // total price in Toman (for SALE, PRE_SALE)
+  depositAmount   BigInt?         // رهن in Toman (for LONG_TERM_RENT)
+  rentAmount      BigInt?         // monthly اجاره in Toman (for LONG_TERM_RENT, SHORT_TERM_RENT)
 
   // Location — map pin stored as lat/lng. Address filled manually until map feature is built.
   latitude        Float?
@@ -278,8 +278,8 @@ model PriceHistory {
   changedById String
   // Which price field changed: salePrice | depositAmount | rentAmount
   priceField  String
-  oldPrice    Int?
-  newPrice    Int?
+  oldPrice    BigInt?
+  newPrice    BigInt?
   changedAt   DateTime     @default(now())
 
   file        PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
@@ -364,7 +364,7 @@ model ShareLink {
   createdById String
   token       String       @unique
   // If null, shows the file's current price. If set, shows this custom price.
-  customPrice Int?
+  customPrice BigInt?
   viewCount   Int          @default(0)
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())

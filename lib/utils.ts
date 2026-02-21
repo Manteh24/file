@@ -10,8 +10,8 @@ export function cn(...inputs: ClassValue[]) {
  * Formats an integer Toman amount into a Persian-numeral display string.
  * Example: 5000000 → "۵,۰۰۰,۰۰۰ تومان"
  */
-export function formatToman(amount: number): string {
-  return `${amount.toLocaleString("fa-IR")} تومان`
+export function formatToman(amount: bigint | number): string {
+  return `${Number(amount).toLocaleString("fa-IR")} تومان`
 }
 
 // Recursive type that replaces bigint with number in deeply nested structures.

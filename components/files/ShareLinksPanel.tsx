@@ -6,6 +6,7 @@ import { Link2, Copy, Check, Loader2, Eye, Plus, MessageSquare } from "lucide-re
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SmsPanel } from "@/components/shared/SmsPanel"
+import { PriceInput } from "@/components/forms/PriceInput"
 import { buildFileShareMessage } from "@/lib/sms"
 
 interface ShareLink {
@@ -57,7 +58,7 @@ export function ShareLinksPanel({
 
   // Create form state
   const [creating, setCreating] = useState(false)
-  const [customPriceInput, setCustomPriceInput] = useState("")
+  const [customPriceInput, setCustomPriceInput] = useState<number | undefined>(undefined)
   const [saving, setSaving] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
@@ -106,17 +107,7 @@ export function ShareLinksPanel({
     setSaving(true)
     setCreateError(null)
 
-    // Parse custom price — empty string means no custom price
-    let customPrice: number | null = null
-    if (customPriceInput.trim() !== "") {
-      const parsed = parseInt(customPriceInput.replace(/[^0-9]/g, ""), 10)
-      if (isNaN(parsed) || parsed <= 0) {
-        setCreateError("قیمت باید عدد مثبت باشد")
-        setSaving(false)
-        return
-      }
-      customPrice = parsed
-    }
+    const customPrice = customPriceInput ?? null
 
     try {
       const res = await fetch(`/api/files/${fileId}/share-links`, {
@@ -132,7 +123,7 @@ export function ShareLinksPanel({
       // Prepend new link and close form
       setLinks((prev) => [body.data as ShareLink, ...prev])
       setCreating(false)
-      setCustomPriceInput("")
+      setCustomPriceInput(undefined)
       router.refresh()
     } catch {
       setCreateError("خطا در ارتباط با سرور")
@@ -193,13 +184,11 @@ export function ShareLinksPanel({
               <label className="text-xs text-muted-foreground">
                 قیمت سفارشی (تومان) — اختیاری
               </label>
-              <input
-                type="text"
-                inputMode="numeric"
+              <PriceInput
                 value={customPriceInput}
-                onChange={(e) => setCustomPriceInput(e.target.value)}
+                onChange={setCustomPriceInput}
                 placeholder="خالی = نمایش قیمت اصلی فایل"
-                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="py-1.5 text-sm"
               />
             </div>
             {createError && <p className="text-xs text-destructive">{createError}</p>}
@@ -213,7 +202,7 @@ export function ShareLinksPanel({
                 variant="outline"
                 onClick={() => {
                   setCreating(false)
-                  setCustomPriceInput("")
+                  setCustomPriceInput(undefined)
                   setCreateError(null)
                 }}
                 disabled={saving}

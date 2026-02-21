@@ -1,0 +1,11 @@
+-- AlterTable
+ALTER TABLE "price_history" ALTER COLUMN "oldPrice" SET DATA TYPE BIGINT,
+ALTER COLUMN "newPrice" SET DATA TYPE BIGINT;
+
+-- AlterTable
+ALTER TABLE "property_files" ALTER COLUMN "salePrice" SET DATA TYPE BIGINT,
+ALTER COLUMN "depositAmount" SET DATA TYPE BIGINT,
+ALTER COLUMN "rentAmount" SET DATA TYPE BIGINT;
+
+-- AlterTable
+ALTER TABLE "share_links" ALTER COLUMN "customPrice" SET DATA TYPE BIGINT;

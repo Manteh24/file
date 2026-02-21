@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { updateFileSchema } from "@/lib/validations/file"
 import { buildDiff, recordPriceChanges, type FieldDiff } from "@/lib/file-helpers"
 import { createManyNotifications } from "@/lib/notifications"
+import { bigIntToNumber } from "@/lib/utils"
 
 // ─── GET /api/files/[id] ───────────────────────────────────────────────────────
 // Returns the full detail of a single file.
@@ -57,7 +58,7 @@ export async function GET(
       return NextResponse.json({ success: false, error: "فایل یافت نشد" }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true, data: file })
+    return NextResponse.json({ success: true, data: bigIntToNumber(file) })
   } catch {
     return NextResponse.json(
       { success: false, error: "خطا در دریافت فایل" },
@@ -122,7 +123,7 @@ export async function PATCH(
       )
     }
 
-    const { contacts, ...scalarUpdates } = updates
+    const { contacts, salePrice, depositAmount, rentAmount, ...scalarUpdates } = updates
     const diff = buildDiff(existing, updates)
 
     await db.$transaction(async (tx) => {
@@ -130,6 +131,10 @@ export async function PATCH(
         where: { id },
         data: {
           ...scalarUpdates,
+          // Convert price fields to BigInt — PostgreSQL bigint requires it
+          ...(salePrice != null && { salePrice: BigInt(salePrice) }),
+          ...(depositAmount != null && { depositAmount: BigInt(depositAmount) }),
+          ...(rentAmount != null && { rentAmount: BigInt(rentAmount) }),
           // Replace contacts list if provided
           ...(contacts && {
             contacts: {

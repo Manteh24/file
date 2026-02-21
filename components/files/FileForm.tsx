@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { PriceInput } from "@/components/forms/PriceInput"
 import type { PropertyFileDetail } from "@/types"
 
 interface FileFormProps {
@@ -251,7 +252,11 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
                   <FormItem>
                     <FormLabel>قیمت فروش (تومان)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="مثال: ۵۰۰۰۰۰۰۰۰" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                      <PriceInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="مثال: ۵۰۰,۰۰۰,۰۰۰"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -268,7 +273,11 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
                       <FormItem>
                         <FormLabel>رهن (تومان)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="مثال: ۱۰۰۰۰۰۰۰۰" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                          <PriceInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="مثال: ۱۰۰,۰۰۰,۰۰۰"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -282,7 +291,11 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
                     <FormItem>
                       <FormLabel>اجاره ماهانه (تومان)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="مثال: ۵۰۰۰۰۰۰" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                        <PriceInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="مثال: ۵,۰۰۰,۰۰۰"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

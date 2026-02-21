@@ -44,15 +44,17 @@ export async function recordPriceChanges(
     if (newValue === undefined) continue
 
     const oldValue = oldFile[field]
-    if (oldValue === newValue) continue
+    // Normalize BigInt from DB to number for comparison
+    const oldNum = oldValue != null ? Number(oldValue) : null
+    if (oldNum === newValue) continue
 
     await db.priceHistory.create({
       data: {
         fileId,
         changedById,
         priceField: field,
-        oldPrice: oldValue ?? null,
-        newPrice: newValue,
+        oldPrice: oldValue,
+        newPrice: BigInt(newValue),
       },
     })
   }
@@ -74,7 +76,9 @@ export function buildDiff(
     if (key === "contacts") continue
     const field = key as string
     const newVal = (updates as Record<string, unknown>)[field]
-    const oldVal = (oldFile as Record<string, unknown>)[field]
+    // Normalize BigInt (price fields from DB) to number for comparison and JSON storage
+    const rawOld = (oldFile as Record<string, unknown>)[field]
+    const oldVal = typeof rawOld === "bigint" ? Number(rawOld) : rawOld
     if (newVal !== undefined && newVal !== oldVal) {
       diff[field] = [
         oldVal as string | number | boolean | null,

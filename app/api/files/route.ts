@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createFileSchema, fileFiltersSchema } from "@/lib/validations/file"
 import { logActivity } from "@/lib/file-helpers"
+import { bigIntToNumber } from "@/lib/utils"
 
 // ─── GET /api/files ────────────────────────────────────────────────────────────
 // Returns files for the authenticated user's office.
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
       orderBy: { updatedAt: "desc" },
     })
 
-    return NextResponse.json({ success: true, data: files })
+    return NextResponse.json({ success: true, data: bigIntToNumber(files) })
   } catch {
     return NextResponse.json(
       { success: false, error: "خطا در دریافت فایل‌ها" },
@@ -92,14 +93,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: firstError }, { status: 400 })
   }
 
-  const { contacts, ...fileData } = parsed.data
+  const { contacts, salePrice, depositAmount, rentAmount, ...restFileData } = parsed.data
   const { officeId, id: userId } = session.user
 
   try {
     const file = await db.$transaction(async (tx) => {
       const newFile = await tx.propertyFile.create({
         data: {
-          ...fileData,
+          ...restFileData,
+          // Convert price fields to BigInt — PostgreSQL bigint requires it
+          ...(salePrice != null && { salePrice: BigInt(salePrice) }),
+          ...(depositAmount != null && { depositAmount: BigInt(depositAmount) }),
+          ...(rentAmount != null && { rentAmount: BigInt(rentAmount) }),
           officeId,
           createdById: userId,
           contacts: {

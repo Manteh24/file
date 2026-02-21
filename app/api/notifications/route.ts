@@ -19,7 +19,8 @@ export async function GET() {
     })
 
     return NextResponse.json({ success: true, data: notifications })
-  } catch {
+  } catch (err) {
+    console.error("[notifications GET]", err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت اعلان‌ها" },
       { status: 500 }

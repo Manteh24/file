@@ -346,7 +346,8 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
             <PriceHistoryList
               entries={file.priceHistory.map((p) => ({
                 ...p,
-                changedAt: p.changedAt,
+                oldPrice: p.oldPrice != null ? Number(p.oldPrice) : null,
+                newPrice: p.newPrice != null ? Number(p.newPrice) : null,
               }))}
             />
           </CardContent>

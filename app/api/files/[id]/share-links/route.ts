@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createShareLinkSchema } from "@/lib/validations/shareLink"
+import { bigIntToNumber } from "@/lib/utils"
 
 // ─── GET /api/files/[id]/share-links ────────────────────────────────────────
 // Returns all share links for a file. Accessible to manager or assigned agent.
@@ -41,7 +42,7 @@ export async function GET(
     orderBy: { createdAt: "desc" },
   })
 
-  return NextResponse.json({ success: true, data: shareLinks })
+  return NextResponse.json({ success: true, data: bigIntToNumber(shareLinks) })
 }
 
 // ─── POST /api/files/[id]/share-links ───────────────────────────────────────
@@ -105,7 +106,7 @@ export async function POST(
           fileId,
           createdById: userId,
           token,
-          customPrice: customPrice ?? null,
+          customPrice: customPrice != null ? BigInt(customPrice) : null,
           viewCount: 0,
           isActive: true,
         },
@@ -117,14 +118,14 @@ export async function POST(
           fileId,
           userId,
           action: "SHARE_LINK",
-          diff: customPrice != null ? { customPrice } : null,
+          diff: customPrice != null ? { customPrice } : undefined,
         },
       })
 
       return link
     })
 
-    return NextResponse.json({ success: true, data: shareLink }, { status: 201 })
+    return NextResponse.json({ success: true, data: bigIntToNumber(shareLink) }, { status: 201 })
   } catch (err) {
     console.error("[POST /api/files/[id]/share-links] error:", err)
     return NextResponse.json(
