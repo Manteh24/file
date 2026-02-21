@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { assignAgentsSchema } from "@/lib/validations/file"
+import { createManyNotifications } from "@/lib/notifications"
 
 // ─── PUT /api/files/[id]/agents ─────────────────────────────────────────────────
 // Atomically replaces all agent assignments for a file. Manager-only.
@@ -42,7 +43,7 @@ export async function PUT(
       select: {
         id: true,
         assignedAgents: {
-          select: { user: { select: { displayName: true } } },
+          select: { userId: true, user: { select: { displayName: true } } },
         },
       },
     })
@@ -94,6 +95,21 @@ export async function PUT(
         },
       })
     })
+
+    // Fire-and-forget: notify agents who were newly added (not previously assigned)
+    const oldAgentIds = new Set(file.assignedAgents.map((a) => a.userId))
+    const newlyAddedIds = agentIds.filter((id) => !oldAgentIds.has(id))
+    if (newlyAddedIds.length > 0) {
+      await createManyNotifications(
+        newlyAddedIds.map((agentId) => ({
+          userId: agentId,
+          type: "FILE_ASSIGNED",
+          title: "فایل جدید به شما تخصیص داده شد",
+          message: "مدیر دفتر یک فایل ملک را به شما اختصاص داده است.",
+          fileId,
+        }))
+      )
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {

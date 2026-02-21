@@ -495,7 +495,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 6 | **Contracts** (finalization, commission, archive) | ✅ | ✅ | |
 | 7 | **Share Links** (public view page, token, custom price) | ✅ | ✅ | |
 | 8 | **SMS** (KaveNegar integration, templates) | ✅ | ✅ | |
-| 9 | **Notifications** (PWA push + 30s polling) | ❌ | ❌ | |
+| 9 | **Notifications** (PWA push + 30s polling) | ✅ | ✅ | PWA background push deferred (needs VAPID + HTTPS deploy) |
 | 10 | **Reports** (financial, activity) | ❌ | ❌ | |
 | 11 | **Settings** (office profile, billing, Zarinpal) | ❌ | ❌ | |
 | 12 | **AI Description** (AvalAI + template fallback) | ❌ | ❌ | |
@@ -525,8 +525,9 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/api/share-links.test.ts` | Share Links | `GET /api/files/[id]/share-links` (5 cases), `POST /api/files/[id]/share-links` (8 cases), `PATCH /api/share-links/[id]` (5 cases) |
 | `__tests__/validations/sms.test.ts` | SMS | `sendSmsSchema` — valid phone formats, invalid phones, message length (14 cases) |
 | `__tests__/api/sms.test.ts` | SMS | `POST /api/sms/send` — auth, validation, KaveNegar error, happy path (8 cases) |
+| `__tests__/api/notifications.test.ts` | Notifications | `GET /api/notifications` (4 cases), `PATCH /api/notifications/[id]` (3 cases), `PATCH /api/notifications/read-all` (2 cases) |
 
 ### Current Status
-- **Last completed:** Feature 8 — SMS (built + automated tests)
-- **Up next:** Feature 9 — Notifications
-- **Total tests:** 319 passing, 0 failing
+- **Last completed:** Feature 9 — Notifications (built + automated tests)
+- **Up next:** Feature 10 — Reports
+- **Total tests:** 328 passing, 0 failing

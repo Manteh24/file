@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { updateFileSchema } from "@/lib/validations/file"
 import { buildDiff, recordPriceChanges, type FieldDiff } from "@/lib/file-helpers"
+import { createManyNotifications } from "@/lib/notifications"
 
 // ─── GET /api/files/[id] ───────────────────────────────────────────────────────
 // Returns the full detail of a single file.
@@ -154,6 +155,43 @@ export async function PATCH(
         })
       }
     })
+
+    // Fire-and-forget: notify "the other party" about the edit (only when diff is non-empty)
+    if (Object.keys(diff).length > 0) {
+      if (role === "AGENT") {
+        // Agent edited → notify the office manager
+        const manager = await db.user.findFirst({
+          where: { officeId, role: "MANAGER", isActive: true },
+          select: { id: true },
+        })
+        if (manager) {
+          await createManyNotifications([{
+            userId: manager.id,
+            type: "FILE_EDITED",
+            title: "فایل ویرایش شد",
+            message: "یک مشاور فایل ملک را ویرایش کرد.",
+            fileId: id,
+          }])
+        }
+      } else {
+        // Manager edited → notify all assigned agents
+        const assignments = await db.fileAssignment.findMany({
+          where: { fileId: id },
+          select: { userId: true },
+        })
+        if (assignments.length > 0) {
+          await createManyNotifications(
+            assignments.map((a) => ({
+              userId: a.userId,
+              type: "FILE_EDITED",
+              title: "فایل ویرایش شد",
+              message: "مدیر دفتر اطلاعات فایل ملک را به‌روز کرد.",
+              fileId: id,
+            }))
+          )
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, data: { id } })
   } catch {

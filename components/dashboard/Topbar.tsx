@@ -1,7 +1,8 @@
 "use client"
 
-import { Bell, Menu } from "lucide-react"
+import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { NotificationBell } from "@/components/dashboard/NotificationBell"
 import { signOutAction } from "@/app/(dashboard)/actions"
 
 interface TopbarProps {
@@ -26,13 +27,7 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
 
       {/* Actions — pinned to the end (left side in RTL) */}
       <div className="flex items-center gap-2 ms-auto">
-        {/* Notification bell — static placeholder until notifications feature */}
-        <button
-          className="rounded-md p-2 text-muted-foreground hover:text-foreground"
-          aria-label="اعلان‌ها"
-        >
-          <Bell className="h-5 w-5" />
-        </button>
+        <NotificationBell />
 
         {/* User avatar */}
         <div

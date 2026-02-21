@@ -111,6 +111,7 @@ model User {
   activityLogs        ActivityLog[]
   priceHistory        PriceHistory[]
   shareLinks          ShareLink[]
+  notifications       Notification[]
   createdCustomers    Customer[]       @relation("CreatedCustomers")
   customerNotes       CustomerNote[]   @relation("CustomerNotes")
   finalizedContracts  Contract[]       @relation("FinalizedContracts")
@@ -203,6 +204,7 @@ model PropertyFile {
   priceHistory    PriceHistory[]
   shareLinks      ShareLink[]
   contract        Contract?
+  notifications   Notification[]
 
   @@index([officeId])
   @@index([officeId, status])
@@ -372,4 +374,25 @@ model ShareLink {
 
   @@index([token])
   @@map("share_links")
+}
+
+// Per-user notification record. Created server-side on key events.
+model Notification {
+  id        String        @id @default(cuid())
+  userId    String
+  // FILE_ASSIGNED | FILE_EDITED
+  type      String
+  title     String
+  message   String
+  read      Boolean       @default(false)
+  // Optional deep-link to the relevant file
+  fileId    String?
+  createdAt DateTime      @default(now())
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  file      PropertyFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([userId, read])
+  @@map("notifications")
 }
