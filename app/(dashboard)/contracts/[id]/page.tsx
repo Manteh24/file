@@ -4,6 +4,7 @@ import { MapPin, User, Calendar, Banknote } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { PageHeader } from "@/components/shared/PageHeader"
+import { ContractSmsActions } from "@/components/contracts/ContractSmsActions"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
@@ -50,6 +51,7 @@ export default async function ContractPage({ params }: ContractPageProps) {
       officeShare: true,
       notes: true,
       finalizedAt: true,
+      office: { select: { name: true } },
       file: {
         select: {
           id: true,
@@ -61,6 +63,7 @@ export default async function ContractPage({ params }: ContractPageProps) {
           assignedAgents: {
             select: { user: { select: { displayName: true } } },
           },
+          contacts: { select: { name: true, phone: true } },
         },
       },
       finalizedBy: { select: { displayName: true } },
@@ -179,6 +182,16 @@ export default async function ContractPage({ params }: ContractPageProps) {
           {formatJalali(new Date(contract.finalizedAt))}
         </span>
       </div>
+
+      <Separator />
+
+      {/* SMS actions — rating request and rent follow-up */}
+      <ContractSmsActions
+        contacts={contract.file.contacts}
+        agentName={contract.finalizedBy.displayName}
+        officeName={contract.office.name}
+        transactionType={contract.transactionType}
+      />
     </div>
   )
 }

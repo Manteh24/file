@@ -494,7 +494,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 5 | **Agent Management** (manager-only) | ✅ | ✅ | |
 | 6 | **Contracts** (finalization, commission, archive) | ✅ | ✅ | |
 | 7 | **Share Links** (public view page, token, custom price) | ✅ | ✅ | |
-| 8 | **SMS** (KaveNegar integration, templates) | ❌ | ❌ | |
+| 8 | **SMS** (KaveNegar integration, templates) | ✅ | ✅ | |
 | 9 | **Notifications** (PWA push + 30s polling) | ❌ | ❌ | |
 | 10 | **Reports** (financial, activity) | ❌ | ❌ | |
 | 11 | **Settings** (office profile, billing, Zarinpal) | ❌ | ❌ | |
@@ -523,8 +523,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/api/contracts.test.ts` | Contracts | `GET /api/contracts` (5 cases), `POST /api/contracts` (12 cases), `GET /api/contracts/[id]` (5 cases) |
 | `__tests__/validations/shareLink.test.ts` | Share Links | `createShareLinkSchema` (7 cases) |
 | `__tests__/api/share-links.test.ts` | Share Links | `GET /api/files/[id]/share-links` (5 cases), `POST /api/files/[id]/share-links` (8 cases), `PATCH /api/share-links/[id]` (5 cases) |
+| `__tests__/validations/sms.test.ts` | SMS | `sendSmsSchema` — valid phone formats, invalid phones, message length (14 cases) |
+| `__tests__/api/sms.test.ts` | SMS | `POST /api/sms/send` — auth, validation, KaveNegar error, happy path (8 cases) |
 
 ### Current Status
-- **Last completed:** Feature 7 — Share Links (built + automated tests)
-- **Up next:** Feature 8 — SMS
-- **Total tests:** 297 passing, 0 failing
+- **Last completed:** Feature 8 — SMS (built + automated tests)
+- **Up next:** Feature 9 — Notifications
+- **Total tests:** 319 passing, 0 failing

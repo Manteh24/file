@@ -7,9 +7,11 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { CustomerNoteForm } from "@/components/crm/CustomerNoteForm"
 import { CustomerNoteList } from "@/components/crm/CustomerNoteList"
 import { DeleteCustomerButton } from "@/components/crm/DeleteCustomerButton"
+import { SmsPanel } from "@/components/shared/SmsPanel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatJalali } from "@/lib/utils"
 import type { CustomerType, CustomerNote } from "@/types"
 
@@ -110,6 +112,18 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
         <CustomerNoteForm customerId={id} />
         <CustomerNoteList notes={customer.contactLogs as CustomerNote[]} />
       </div>
+
+      <Separator />
+
+      {/* Custom outreach SMS */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium">ارسال پیامک</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          <SmsPanel defaultPhone={customer.phone} defaultMessage="" />
+        </CardContent>
+      </Card>
     </div>
   )
 }

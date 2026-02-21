@@ -68,6 +68,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
       createdBy: { select: { displayName: true } },
       contacts: true,
       photos: { orderBy: { order: "asc" } },
+      office: { select: { name: true } },
       assignedAgents: {
         include: { user: { select: { id: true, displayName: true } } },
       },
@@ -326,7 +327,13 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
 
       {/* Share links — available for ACTIVE files to all roles */}
       {file.status === "ACTIVE" && (
-        <ShareLinksPanel fileId={file.id} role={role} />
+        <ShareLinksPanel
+          fileId={file.id}
+          role={role === "AGENT" ? "AGENT" : "MANAGER"}
+          contacts={file.contacts.map((c) => ({ name: c.name, phone: c.phone }))}
+          agentName={session.user.name ?? ""}
+          officeName={file.office.name}
+        />
       )}
 
       {/* Price history */}
