@@ -17,6 +17,7 @@ import { ActivityLogList } from "@/components/files/ActivityLogList"
 import { PriceHistoryList } from "@/components/files/PriceHistoryList"
 import { ArchiveFileButton } from "@/components/files/ArchiveFileButton"
 import { AgentAssignmentPanel } from "@/components/files/AgentAssignmentPanel"
+import { ShareLinksPanel } from "@/components/files/ShareLinksPanel"
 import { formatToman, formatJalali } from "@/lib/utils"
 import type { TransactionType, PropertyType, Role } from "@/types"
 
@@ -321,6 +322,11 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
             </CardContent>
           </Card>
         )
+      )}
+
+      {/* Share links — available for ACTIVE files to all roles */}
+      {file.status === "ACTIVE" && (
+        <ShareLinksPanel fileId={file.id} role={role} />
       )}
 
       {/* Price history */}
