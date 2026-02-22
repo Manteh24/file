@@ -536,3 +536,14 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 - **Last completed:** Feature 11 — Settings (built + automated tests)
 - **Up next:** Feature 12 — AI Description
 - **Total tests:** 398 passing, 1 failing (pre-existing BigInt mismatch in share-links test)
+
+### Manual Test Checklist — Feature 11 (Settings) ⏳
+Before starting Feature 12, manually verify these flows:
+
+1. **Access control** — Log in as an agent → navigate to `/settings` → should redirect to `/dashboard`
+2. **Office profile form** — Log in as manager → `/settings` → edit name/city/phone/email/address → save → refresh → confirm values persisted
+3. **Empty string normalization** — Clear phone/email/address/city → save → check DB or reload to confirm fields are null (not empty string)
+4. **Subscription card** — Confirm current plan (TRIAL) and trial end date display correctly in Jalali format
+5. **Zarinpal payment flow** — Click "ارتقا به پلن پایه" → confirm redirect to Zarinpal sandbox → complete test payment → confirm redirect back to `/settings?payment=success` → confirm subscription updated in DB (plan=SMALL, status=ACTIVE, currentPeriodEnd set)
+6. **Cancelled payment** — Start payment → cancel on Zarinpal page → confirm redirect to `/settings?payment=cancelled` banner
+7. **Renewal stacking** — Pay again while subscription is active → confirm `currentPeriodEnd` moves forward 30 days (not reset to today+30)
