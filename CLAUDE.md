@@ -498,7 +498,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 9 | **Notifications** (PWA push + 30s polling) | ✅ | ✅ | PWA background push deferred (needs VAPID + HTTPS deploy) |
 | 10 | **Reports** (financial, activity) | ✅ | ✅ | Manager-only server component; period filter tabs; KPI cards; type breakdown; agent performance; recent contracts + activity log |
 | 11 | **Settings** (office profile, billing, Zarinpal) | ✅ | ✅ | Manager-only. Office profile PATCH (name, phone, email, address, city). Zarinpal full flow: POST /api/payments/request → redirect → GET /api/payments/verify callback → subscription update. PaymentRecord model for idempotency. |
-| 12 | **AI Description** (AvalAI + template fallback) | ✅ | ✅ | `lib/ai.ts`: `generateDescription()` (AvalAI OpenAI-compatible API, 15s timeout, always falls back to template). `lib/validations/ai.ts`: Zod schema. `POST /api/ai/description`. FileForm: tone selector (صادقانه/خنثی/خوش‌بینانه) + "تولید توضیحات" button with loading state. |
+| 12 | **AI Description** (AvalAI + template fallback) | ❌ | ❌ | |
 | 13 | **Maps** (Neshan pin, POI, routing) | ❌ | ❌ | |
 | 14 | **Image Processing** (Sharp pipeline, watermark, storage) | ❌ | ❌ | |
 | 15 | **Offline Drafts** (Dexie.js IndexedDB) | ❌ | ❌ | |
@@ -531,33 +531,8 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/api/settings.test.ts` | Settings | `GET /api/settings` (5 cases), `PATCH /api/settings` (7 cases) |
 | `__tests__/api/payments.test.ts` | Settings | `POST /api/payments/request` (6 cases), `GET /api/payments/verify` (7 cases) |
 | `__tests__/lib/payment.test.ts` | Settings | `calculateNewPeriodEnd` (4 cases) |
-| `__tests__/lib/ai.test.ts` | AI Description | `buildDescriptionTemplate` — transaction types, property types, location, physical details, amenities, all 3 tones, edge cases (22 cases) |
-| `__tests__/api/ai-description.test.ts` | AI Description | `POST /api/ai/description` — auth, validation, tone/transactionType errors, happy path, fallback transparency (14 cases) |
 
 ### Current Status
-- **Last completed:** Feature 12 — AI Description (built + automated tests)
-- **Up next:** Feature 13 — Maps (Neshan pin, POI, routing)
-- **Total tests:** 434 passing, 1 failing (pre-existing BigInt mismatch in share-links test)
-
-### Manual Test Checklist — Feature 11 (Settings) ⏳
-Before starting Feature 12, manually verify these flows:
-
-1. **Access control** — Log in as an agent → navigate to `/settings` → should redirect to `/dashboard`
-2. **Office profile form** — Log in as manager → `/settings` → edit name/city/phone/email/address → save → refresh → confirm values persisted
-3. **Empty string normalization** — Clear phone/email/address/city → save → check DB or reload to confirm fields are null (not empty string)
-4. **Subscription card** — Confirm current plan (TRIAL) and trial end date display correctly in Jalali format
-5. **Zarinpal payment flow** — Click "ارتقا به پلن پایه" → confirm redirect to Zarinpal sandbox → complete test payment → confirm redirect back to `/settings?payment=success` → confirm subscription updated in DB (plan=SMALL, status=ACTIVE, currentPeriodEnd set)
-6. **Cancelled payment** — Start payment → cancel on Zarinpal page → confirm redirect to `/settings?payment=cancelled` banner
-7. **Renewal stacking** — Pay again while subscription is active → confirm `currentPeriodEnd` moves forward 30 days (not reset to today+30)
-
-### Manual Test Checklist — Feature 12 (AI Description) ⏳
-Before starting Feature 13, manually verify these flows:
-
-1. **Generate button visible** — Open file create (`/files/new`) or edit page → confirm "تولید توضیحات" section with 3 tone buttons and the generate button appear above the description textarea
-2. **Tone selection** — Click each tone button (صادقانه / خنثی / خوش‌بینانه) → confirm the selected one highlights
-3. **Generate with minimal data** — Fill only the required fields (transaction type + address + contact) → click "تولید توضیحات" → confirm description textarea is populated
-4. **Generate with full data** — Fill all optional fields (property type, area, floor, age, amenities, neighborhood) → generate → confirm description reflects the data
-5. **AvalAI unavailable (no API key)** — Remove AVALAI_API_KEY from `.env.local` temporarily → generate → confirm a fallback template description is returned (no error shown to user)
-6. **Loading state** — Click generate → confirm button shows "در حال تولید..." and is disabled while request is in flight
-7. **Editable result** — After generation, confirm the description textarea is editable (user can modify the AI output before saving)
-8. **Save flow** — Generate a description → edit it → save the file → reload → confirm the edited description persisted correctly
+- **Last completed:** Feature 11 — Settings (built + automated tests)
+- **Up next:** Feature 12 — AI Description
+- **Total tests:** 398 passing, 1 failing (pre-existing BigInt mismatch in share-links test)
