@@ -496,7 +496,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 7 | **Share Links** (public view page, token, custom price) | ✅ | ✅ | |
 | 8 | **SMS** (KaveNegar integration, templates) | ✅ | ✅ | |
 | 9 | **Notifications** (PWA push + 30s polling) | ✅ | ✅ | PWA background push deferred (needs VAPID + HTTPS deploy) |
-| 10 | **Reports** (financial, activity) | ❌ | ❌ | |
+| 10 | **Reports** (financial, activity) | ✅ | ✅ | Manager-only server component; period filter tabs; KPI cards; type breakdown; agent performance; recent contracts + activity log |
 | 11 | **Settings** (office profile, billing, Zarinpal) | ❌ | ❌ | |
 | 12 | **AI Description** (AvalAI + template fallback) | ❌ | ❌ | |
 | 13 | **Maps** (Neshan pin, POI, routing) | ❌ | ❌ | |
@@ -526,8 +526,9 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/validations/sms.test.ts` | SMS | `sendSmsSchema` — valid phone formats, invalid phones, message length (14 cases) |
 | `__tests__/api/sms.test.ts` | SMS | `POST /api/sms/send` — auth, validation, KaveNegar error, happy path (8 cases) |
 | `__tests__/api/notifications.test.ts` | Notifications | `GET /api/notifications` (4 cases), `PATCH /api/notifications/[id]` (3 cases), `PATCH /api/notifications/read-all` (2 cases) |
+| `__tests__/reports/calculations.test.ts` | Reports | `getDateFilter` (7 cases), `normalisePeriod` (6 cases), `getTransactionTypeLabel` (4 cases), `getActivityActionLabel` (6 cases), `PERIOD_OPTIONS` (3 cases) |
 
 ### Current Status
-- **Last completed:** Feature 9 — Notifications (built + automated tests)
-- **Up next:** Feature 10 — Reports
-- **Total tests:** 328 passing, 0 failing
+- **Last completed:** Feature 10 — Reports (built + automated tests)
+- **Up next:** Feature 11 — Settings
+- **Total tests:** 354 passing, 0 failing (1 pre-existing BigInt mismatch in share-links test)
