@@ -497,7 +497,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 8 | **SMS** (KaveNegar integration, templates) | ✅ | ✅ | |
 | 9 | **Notifications** (PWA push + 30s polling) | ✅ | ✅ | PWA background push deferred (needs VAPID + HTTPS deploy) |
 | 10 | **Reports** (financial, activity) | ✅ | ✅ | Manager-only server component; period filter tabs; KPI cards; type breakdown; agent performance; recent contracts + activity log |
-| 11 | **Settings** (office profile, billing, Zarinpal) | ❌ | ❌ | |
+| 11 | **Settings** (office profile, billing, Zarinpal) | ✅ | ✅ | Manager-only. Office profile PATCH (name, phone, email, address, city). Zarinpal full flow: POST /api/payments/request → redirect → GET /api/payments/verify callback → subscription update. PaymentRecord model for idempotency. |
 | 12 | **AI Description** (AvalAI + template fallback) | ❌ | ❌ | |
 | 13 | **Maps** (Neshan pin, POI, routing) | ❌ | ❌ | |
 | 14 | **Image Processing** (Sharp pipeline, watermark, storage) | ❌ | ❌ | |
@@ -527,8 +527,12 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/api/sms.test.ts` | SMS | `POST /api/sms/send` — auth, validation, KaveNegar error, happy path (8 cases) |
 | `__tests__/api/notifications.test.ts` | Notifications | `GET /api/notifications` (4 cases), `PATCH /api/notifications/[id]` (3 cases), `PATCH /api/notifications/read-all` (2 cases) |
 | `__tests__/reports/calculations.test.ts` | Reports | `getDateFilter` (7 cases), `normalisePeriod` (6 cases), `getTransactionTypeLabel` (4 cases), `getActivityActionLabel` (6 cases), `PERIOD_OPTIONS` (3 cases) |
+| `__tests__/validations/settings.test.ts` | Settings | `updateOfficeProfileSchema` (12 cases), `requestPaymentSchema` (4 cases) |
+| `__tests__/api/settings.test.ts` | Settings | `GET /api/settings` (5 cases), `PATCH /api/settings` (7 cases) |
+| `__tests__/api/payments.test.ts` | Settings | `POST /api/payments/request` (6 cases), `GET /api/payments/verify` (7 cases) |
+| `__tests__/lib/payment.test.ts` | Settings | `calculateNewPeriodEnd` (4 cases) |
 
 ### Current Status
-- **Last completed:** Feature 10 — Reports (built + automated tests)
-- **Up next:** Feature 11 — Settings
-- **Total tests:** 354 passing, 0 failing (1 pre-existing BigInt mismatch in share-links test)
+- **Last completed:** Feature 11 — Settings (built + automated tests)
+- **Up next:** Feature 12 — AI Description
+- **Total tests:** 398 passing, 1 failing (pre-existing BigInt mismatch in share-links test)

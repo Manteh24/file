@@ -253,6 +253,36 @@ export interface ActiveFileSummary {
   rentAmount: number | null
 }
 
+// ─── Settings Domain Types ─────────────────────────────────────────────────────
+
+export interface OfficeProfile {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  address: string | null
+  city: string | null
+}
+
+export interface SubscriptionInfo {
+  plan: Plan
+  status: SubStatus
+  trialEndsAt: Date
+  currentPeriodEnd: Date | null
+}
+
+// Combined shape returned by GET /api/settings
+export interface SettingsData {
+  office: OfficeProfile
+  subscription: SubscriptionInfo | null
+}
+
+// Shape returned by POST /api/payments/request
+export interface PaymentInitiated {
+  payUrl: string
+  authority: string
+}
+
 // ─── API Response Shapes ──────────────────────────────────────────────────────
 // All API routes and server actions return one of these two shapes.
 

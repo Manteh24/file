@@ -74,16 +74,21 @@ enum CustomerType {
 model Office {
   id           String        @id @default(cuid())
   name         String
+  phone        String?
+  email        String?
+  address      String?
+  city         String?
   // Referral code entered at registration — identifies the referrer, not this office.
   referralCode String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  users        User[]
-  subscription Subscription?
-  files        PropertyFile[]
-  customers    Customer[]
-  contracts    Contract[]
+  users          User[]
+  subscription   Subscription?
+  files          PropertyFile[]
+  customers      Customer[]
+  contracts      Contract[]
+  paymentRecords PaymentRecord[]
 
   @@map("offices")
 }
@@ -395,4 +400,27 @@ model Notification {
   @@index([userId])
   @@index([userId, read])
   @@map("notifications")
+}
+
+// Tracks Zarinpal payment attempts. Created when a payment is initiated so the
+// verify callback can look up the office without a user session.
+model PaymentRecord {
+  id        String   @id @default(cuid())
+  officeId  String
+  plan      Plan
+  // Amount stored in Rials (Zarinpal unit = Toman × 10)
+  amount    Int
+  // Zarinpal's unique payment identifier — used as the lookup key in the callback
+  authority String   @unique
+  // PENDING → VERIFIED on success, FAILED on verification failure
+  status    String   @default("PENDING")
+  // Zarinpal ref_id returned on successful verification
+  refId     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  office    Office   @relation(fields: [officeId], references: [id])
+
+  @@index([officeId])
+  @@map("payment_records")
 }
