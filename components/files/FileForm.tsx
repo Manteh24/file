@@ -1,9 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useFieldArray, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Sparkles } from "lucide-react"
 import { createFileSchema, type CreateFileInput } from "@/lib/validations/file"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/form"
 import { PriceInput } from "@/components/forms/PriceInput"
 import type { PropertyFileDetail } from "@/types"
+import type { DescriptionTone } from "@/lib/ai"
 
 interface FileFormProps {
   // When provided, the form is in edit mode
@@ -48,9 +50,19 @@ const CONTACT_TYPE_OPTIONS = [
   { value: "BUYER", label: "خریدار" },
 ] as const
 
+const TONE_OPTIONS: { value: DescriptionTone; label: string }[] = [
+  { value: "honest", label: "صادقانه" },
+  { value: "neutral", label: "خنثی" },
+  { value: "optimistic", label: "خوش‌بینانه" },
+]
+
 export function FileForm({ initialData, fileId }: FileFormProps) {
   const router = useRouter()
   const isEdit = !!fileId
+
+  const [aiTone, setAiTone] = useState<DescriptionTone>("neutral")
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const form = useForm<CreateFileInput>({
     // Cast needed: standardSchemaResolver's return type has a different third generic
@@ -115,6 +127,56 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
     const targetId = isEdit ? fileId : result.data?.id
     router.push(`/files/${targetId}`)
     router.refresh()
+  }
+
+  async function handleGenerateDescription() {
+    setAiError(null)
+    setAiLoading(true)
+
+    const values = form.getValues()
+    const payload = {
+      transactionType: values.transactionType,
+      propertyType: values.propertyType ?? null,
+      area: values.area ?? null,
+      floorNumber: values.floorNumber ?? null,
+      totalFloors: values.totalFloors ?? null,
+      buildingAge: values.buildingAge ?? null,
+      salePrice: values.salePrice ?? null,
+      depositAmount: values.depositAmount ?? null,
+      rentAmount: values.rentAmount ?? null,
+      address: values.address ?? null,
+      neighborhood: values.neighborhood ?? null,
+      hasElevator: values.hasElevator,
+      hasParking: values.hasParking,
+      hasStorage: values.hasStorage,
+      hasBalcony: values.hasBalcony,
+      hasSecurity: values.hasSecurity,
+      tone: aiTone,
+    }
+
+    try {
+      const response = await fetch("/api/ai/description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      const result = (await response.json()) as {
+        success: boolean
+        data?: { description: string }
+        error?: string
+      }
+
+      if (!result.success || !result.data?.description) {
+        setAiError(result.error ?? "خطا در تولید توضیحات")
+      } else {
+        form.setValue("description", result.data.description, { shouldDirty: true })
+      }
+    } catch {
+      setAiError("خطا در اتصال به سرویس هوش مصنوعی")
+    } finally {
+      setAiLoading(false)
+    }
   }
 
   return (
@@ -472,6 +534,41 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
         {/* Description */}
         <section className="space-y-4">
           <h2 className="text-base font-semibold">توضیحات</h2>
+
+          {/* AI description generator */}
+          <div className="rounded-lg border border-dashed p-4 space-y-3">
+            <p className="text-sm text-muted-foreground">تولید خودکار توضیحات با هوش مصنوعی</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex gap-2">
+                {TONE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setAiTone(opt.value)}
+                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                      aiTone === opt.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateDescription}
+                disabled={aiLoading}
+              >
+                <Sparkles className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
+                {aiLoading ? "در حال تولید..." : "تولید توضیحات"}
+              </Button>
+            </div>
+            {aiError && <p className="text-sm text-destructive">{aiError}</p>}
+          </div>
+
           <FormField
             control={form.control}
             name="description"
@@ -481,7 +578,7 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
                 <FormControl>
                   <textarea
                     rows={4}
-                    placeholder="توضیحات ملک را وارد کنید..."
+                    placeholder="توضیحات ملک را وارد کنید یا از دکمه بالا برای تولید خودکار استفاده کنید..."
                     className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
                     {...field}
                   />
