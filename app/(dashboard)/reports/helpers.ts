@@ -71,6 +71,7 @@ export const ACTIVITY_ACTION_LABELS: Record<string, string> = {
   STATUS_CHANGE: "تغییر وضعیت",
   ASSIGNMENT: "تخصیص مشاور",
   SHARE_LINK: "ارسال لینک",
+  CONTRACT_FINALIZED: "ثبت قرارداد",
 }
 
 /** Falls back to the raw action string for unknown future action types. */

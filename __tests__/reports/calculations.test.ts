@@ -134,6 +134,7 @@ describe("getActivityActionLabel", () => {
     ["STATUS_CHANGE", "تغییر وضعیت"],
     ["ASSIGNMENT", "تخصیص مشاور"],
     ["SHARE_LINK", "ارسال لینک"],
+    ["CONTRACT_FINALIZED", "ثبت قرارداد"],
   ])("maps %s to the correct Persian label", (action, expected) => {
     expect(getActivityActionLabel(action)).toBe(expected)
   })

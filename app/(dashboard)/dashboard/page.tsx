@@ -28,11 +28,20 @@ export default async function DashboardPage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
 
-  const { officeId } = session.user
+  const { officeId, role, id: userId } = session.user
 
-  const [subscription, teamCount] = await Promise.all([
+  const [subscription, teamCount, activeFilesCount] = await Promise.all([
     db.subscription.findFirst({ where: { officeId } }),
     db.user.count({ where: { officeId } }),
+    db.propertyFile.count({
+      where: {
+        officeId,
+        status: "ACTIVE",
+        ...(role === "AGENT" && {
+          assignedAgents: { some: { userId } },
+        }),
+      },
+    }),
   ])
 
   const trialDaysLeft =
@@ -59,14 +68,17 @@ export default async function DashboardPage() {
 
       {/* KPI grid: 2 cols on mobile, 4 on desktop */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {/* Active files — placeholder until Files feature */}
         <Card>
           <CardHeader>
             <CardDescription>فایل‌های فعال</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">۰</CardTitle>
+            <CardTitle className="text-3xl tabular-nums">
+              {activeFilesCount.toLocaleString("fa-IR")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">هنوز فایلی ثبت نشده</p>
+            <p className="text-xs text-muted-foreground">
+              {role === "AGENT" ? "فایل‌های تخصیص‌یافته به شما" : "فایل‌های دفتر"}
+            </p>
           </CardContent>
         </Card>
 

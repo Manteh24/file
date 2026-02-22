@@ -498,7 +498,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 9 | **Notifications** (PWA push + 30s polling) | ✅ | ✅ | PWA background push deferred (needs VAPID + HTTPS deploy) |
 | 10 | **Reports** (financial, activity) | ✅ | ✅ | Manager-only server component; period filter tabs; KPI cards; type breakdown; agent performance; recent contracts + activity log |
 | 11 | **Settings** (office profile, billing, Zarinpal) | ✅ | ✅ | Manager-only. Office profile PATCH (name, phone, email, address, city). Zarinpal full flow: POST /api/payments/request → redirect → GET /api/payments/verify callback → subscription update. PaymentRecord model for idempotency. |
-| 12 | **AI Description** (AvalAI + template fallback) | ❌ | ❌ | |
+| 12 | **AI Description** (AvalAI + template fallback) | ✅ | ✅ | `POST /api/ai/description` (auth required). `lib/ai.ts`: `generateDescription()` calls AvalAI (15s timeout), always falls back to `buildDescriptionTemplate()`. Tone selector in FileForm (صادقانه/خنثی/خوش‌بینانه). |
 | 13 | **Maps** (Neshan pin, POI, routing) | ❌ | ❌ | |
 | 14 | **Image Processing** (Sharp pipeline, watermark, storage) | ❌ | ❌ | |
 | 15 | **Offline Drafts** (Dexie.js IndexedDB) | ❌ | ❌ | |
@@ -526,13 +526,15 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/validations/sms.test.ts` | SMS | `sendSmsSchema` — valid phone formats, invalid phones, message length (14 cases) |
 | `__tests__/api/sms.test.ts` | SMS | `POST /api/sms/send` — auth, validation, KaveNegar error, happy path (8 cases) |
 | `__tests__/api/notifications.test.ts` | Notifications | `GET /api/notifications` (4 cases), `PATCH /api/notifications/[id]` (3 cases), `PATCH /api/notifications/read-all` (2 cases) |
-| `__tests__/reports/calculations.test.ts` | Reports | `getDateFilter` (7 cases), `normalisePeriod` (6 cases), `getTransactionTypeLabel` (4 cases), `getActivityActionLabel` (6 cases), `PERIOD_OPTIONS` (3 cases) |
+| `__tests__/reports/calculations.test.ts` | Reports | `getDateFilter` (7 cases), `normalisePeriod` (6 cases), `getTransactionTypeLabel` (4 cases), `getActivityActionLabel` (7 cases), `PERIOD_OPTIONS` (3 cases) |
 | `__tests__/validations/settings.test.ts` | Settings | `updateOfficeProfileSchema` (12 cases), `requestPaymentSchema` (4 cases) |
 | `__tests__/api/settings.test.ts` | Settings | `GET /api/settings` (5 cases), `PATCH /api/settings` (7 cases) |
 | `__tests__/api/payments.test.ts` | Settings | `POST /api/payments/request` (6 cases), `GET /api/payments/verify` (7 cases) |
 | `__tests__/lib/payment.test.ts` | Settings | `calculateNewPeriodEnd` (4 cases) |
+| `__tests__/lib/ai.test.ts` | AI Description | `buildDescriptionTemplate` — transaction types, property types, location, physical details, amenities, tone differences, edge cases (24 cases) |
+| `__tests__/api/ai-description.test.ts` | AI Description | `POST /api/ai/description` — auth, validation, happy path, AvalAI failure, fallback, all tone values (12 cases) |
 
 ### Current Status
-- **Last completed:** Feature 11 — Settings (built + automated tests)
-- **Up next:** Feature 12 — AI Description
-- **Total tests:** 398 passing, 1 failing (pre-existing BigInt mismatch in share-links test)
+- **Last completed:** Feature 12 — AI Description (built + automated tests)
+- **Up next:** Feature 13 — Maps (Neshan pin, POI, routing)
+- **Total tests:** 435 passing, 1 failing (pre-existing BigInt mismatch in share-links test)

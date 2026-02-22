@@ -11,6 +11,7 @@ const ACTION_LABELS: Record<string, string> = {
   STATUS_CHANGE: "تغییر وضعیت",
   ASSIGNMENT: "تخصیص مشاور",
   SHARE_LINK: "ایجاد لینک اشتراک‌گذاری",
+  CONTRACT_FINALIZED: "ثبت قرارداد",
 }
 
 export function ActivityLogList({ entries }: ActivityLogListProps) {
