@@ -368,8 +368,11 @@ model ShareLink {
   fileId      String
   createdById String
   token       String       @unique
-  // If null, shows the file's current price. If set, shows this custom price.
-  customPrice BigInt?
+  // Custom price overrides. For SALE/PRE_SALE: customPrice = sale price.
+  // For SHORT_TERM_RENT: customPrice = rent amount.
+  // For LONG_TERM_RENT: customPrice = اجاره (rent), customDepositAmount = رهن (deposit).
+  customPrice         BigInt?
+  customDepositAmount BigInt?
   viewCount   Int          @default(0)
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())

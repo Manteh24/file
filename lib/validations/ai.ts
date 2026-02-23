@@ -20,7 +20,7 @@ export const generateDescriptionSchema = z.object({
   hasStorage: z.boolean().optional(),
   hasBalcony: z.boolean().optional(),
   hasSecurity: z.boolean().optional(),
-  tone: z.enum(["honest", "neutral", "optimistic"]),
+  tone: z.enum(["formal", "standard", "compelling"]),
 })
 
 export type GenerateDescriptionInput = z.infer<typeof generateDescriptionSchema>

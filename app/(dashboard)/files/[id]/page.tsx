@@ -359,6 +359,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
       {file.status === "ACTIVE" && (
         <ShareLinksPanel
           fileId={file.id}
+          transactionType={file.transactionType}
           role={role === "AGENT" ? "AGENT" : "MANAGER"}
           contacts={file.contacts.map((c) => ({ name: c.name, phone: c.phone }))}
           customers={crmCustomers}

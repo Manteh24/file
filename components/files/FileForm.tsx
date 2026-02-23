@@ -53,16 +53,16 @@ const CONTACT_TYPE_OPTIONS = [
 ] as const
 
 const TONE_OPTIONS: { value: DescriptionTone; label: string }[] = [
-  { value: "honest", label: "صادقانه" },
-  { value: "neutral", label: "خنثی" },
-  { value: "optimistic", label: "خوش‌بینانه" },
+  { value: "formal", label: "رسمی" },
+  { value: "standard", label: "معمولی" },
+  { value: "compelling", label: "جذاب" },
 ]
 
 export function FileForm({ initialData, fileId }: FileFormProps) {
   const router = useRouter()
   const isEdit = !!fileId
 
-  const [aiTone, setAiTone] = useState<DescriptionTone>("neutral")
+  const [aiTone, setAiTone] = useState<DescriptionTone>("standard")
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
   const [locationAnalysis, setLocationAnalysis] = useState<LocationAnalysis | null>(null)

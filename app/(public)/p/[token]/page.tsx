@@ -77,8 +77,9 @@ export default async function SharePage({ params }: SharePageProps) {
     file.transactionType === "LONG_TERM_RENT" ||
     file.transactionType === "SHORT_TERM_RENT"
 
-  // customPrice overrides the file's price when set
-  const displayCustomPrice = link.customPrice != null
+  // Show custom prices when at least one override is set
+  const hasCustomPrice = link.customPrice != null || link.customDepositAmount != null
+  const isLongTermRent = file.transactionType === "LONG_TERM_RENT"
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8 space-y-6">
@@ -104,13 +105,36 @@ export default async function SharePage({ params }: SharePageProps) {
       {/* Price */}
       <Card>
         <CardContent className="p-4">
-          {displayCustomPrice ? (
-            // Custom price set by the sharer
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">قیمت</p>
-              <p className="text-xl font-bold text-primary">
-                {formatToman(link.customPrice!)}
-              </p>
+          {hasCustomPrice ? (
+            // Custom price(s) set by the sharer — show overrides only
+            <div className="space-y-2">
+              {isLongTermRent ? (
+                <>
+                  {link.customDepositAmount != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">رهن</p>
+                      <p className="text-lg font-semibold text-primary">
+                        {formatToman(link.customDepositAmount)}
+                      </p>
+                    </div>
+                  )}
+                  {link.customPrice != null && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">اجاره ماهانه</p>
+                      <p className="text-lg font-semibold text-primary">
+                        {formatToman(link.customPrice)}
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">قیمت</p>
+                  <p className="text-xl font-bold text-primary">
+                    {formatToman(link.customPrice!)}
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-2">

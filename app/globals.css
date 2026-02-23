@@ -4,6 +4,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Prevent browser :visited blue from showing on styled links/buttons.
+   Must be in @layer base so Tailwind utility classes (text-*) still win. */
+@layer base {
+  a:visited {
+    color: inherit;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -47,7 +55,9 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-:root {
+/* html:root (specificity 0-1-1) beats Neshan SDK's :root { --primary: #03a9f4 } (0-1-0)
+   so our design-system variables are never overridden by the dynamically-injected map CSS. */
+html:root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.141 0.005 285.823);
@@ -82,7 +92,7 @@
   --sidebar-ring: oklch(0.705 0.015 286.067);
 }
 
-.dark {
+html.dark {
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.21 0.006 285.885);

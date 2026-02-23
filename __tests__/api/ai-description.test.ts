@@ -29,7 +29,7 @@ const session = { user: { id: "user-1", officeId: "office-1", role: "MANAGER" } 
 
 const minimalPayload = {
   transactionType: "SALE",
-  tone: "neutral",
+  tone: "standard",
 }
 
 const fullPayload = {
@@ -47,7 +47,7 @@ const fullPayload = {
   hasStorage: false,
   hasBalcony: true,
   hasSecurity: false,
-  tone: "optimistic",
+  tone: "compelling",
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ describe("POST /api/ai/description", () => {
   })
 
   it("returns 400 when transactionType is missing", async () => {
-    const req = makePostRequest({ tone: "neutral" })
+    const req = makePostRequest({ tone: "standard" })
     const res = await descriptionRoute(req)
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -109,7 +109,7 @@ describe("POST /api/ai/description", () => {
   })
 
   it("returns 400 for invalid transactionType", async () => {
-    const req = makePostRequest({ transactionType: "BARTER", tone: "neutral" })
+    const req = makePostRequest({ transactionType: "BARTER", tone: "standard" })
     const res = await descriptionRoute(req)
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -139,7 +139,7 @@ describe("POST /api/ai/description", () => {
     await descriptionRoute(req)
     expect(mockGenerate).toHaveBeenCalledOnce()
     const [inputArg, toneArg] = mockGenerate.mock.calls[0]
-    expect(toneArg).toBe("neutral")
+    expect(toneArg).toBe("standard")
     expect(inputArg).toMatchObject({ transactionType: "SALE" })
     // tone must not appear in the file data spread
     expect(inputArg).not.toHaveProperty("tone")
@@ -170,7 +170,7 @@ describe("POST /api/ai/description", () => {
   })
 
   it("accepts all valid tone values", async () => {
-    const tones = ["honest", "neutral", "optimistic"] as const
+    const tones = ["formal", "standard", "compelling"] as const
     for (const tone of tones) {
       const req = makePostRequest({ ...minimalPayload, tone })
       const res = await descriptionRoute(req)

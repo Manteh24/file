@@ -72,7 +72,7 @@ export async function POST(
 
   const { id: fileId } = await params
   const { officeId, role, id: userId } = session.user
-  const { customPrice } = parsed.data
+  const { customPrice, customDepositAmount } = parsed.data
 
   // Verify file belongs to office; agents must be assigned
   const file = await db.propertyFile.findFirst({
@@ -107,18 +107,24 @@ export async function POST(
           createdById: userId,
           token,
           customPrice: customPrice != null ? BigInt(customPrice) : null,
+          customDepositAmount: customDepositAmount != null ? BigInt(customDepositAmount) : null,
           viewCount: 0,
           isActive: true,
         },
         include: { createdBy: { select: { displayName: true } } },
       })
 
+      // Build diff for activity log — only include fields that were overridden
+      const diff: Record<string, number> = {}
+      if (customPrice != null) diff.customPrice = customPrice
+      if (customDepositAmount != null) diff.customDepositAmount = customDepositAmount
+
       await tx.activityLog.create({
         data: {
           fileId,
           userId,
           action: "SHARE_LINK",
-          diff: customPrice != null ? { customPrice } : undefined,
+          diff: Object.keys(diff).length > 0 ? diff : undefined,
         },
       })
 

@@ -100,8 +100,8 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
               href={href}
               className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  ? "bg-primary text-primary-foreground visited:text-primary-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground visited:text-muted-foreground"
               }`}
             >
               {opt.label}

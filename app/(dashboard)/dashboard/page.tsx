@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
+import Link from "next/link"
 import {
   Card,
   CardContent,
@@ -8,6 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { formatJalali } from "@/lib/utils"
 import type { Plan, SubStatus } from "@/types"
 
@@ -30,7 +32,7 @@ export default async function DashboardPage() {
 
   const { officeId, role, id: userId } = session.user
 
-  const [subscription, teamCount, activeFilesCount] = await Promise.all([
+  const [subscription, teamCount, activeFilesCount, customerCount] = await Promise.all([
     db.subscription.findFirst({ where: { officeId } }),
     db.user.count({ where: { officeId } }),
     db.propertyFile.count({
@@ -42,6 +44,7 @@ export default async function DashboardPage() {
         }),
       },
     }),
+    db.customer.count({ where: { officeId } }),
   ])
 
   const trialDaysLeft =
@@ -66,6 +69,21 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-3">
+        <Button asChild>
+          <Link href="/files/new">ثبت فایل جدید</Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link href="/crm/new">افزودن مشتری</Link>
+        </Button>
+        {role === "MANAGER" && (
+          <Button variant="outline" asChild>
+            <Link href="/agents/new">دعوت مشاور</Link>
+          </Button>
+        )}
+      </div>
+
       {/* KPI grid: 2 cols on mobile, 4 on desktop */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card>
@@ -82,14 +100,15 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Customers — placeholder until CRM feature */}
         <Card>
           <CardHeader>
             <CardDescription>مشتریان</CardDescription>
-            <CardTitle className="text-3xl tabular-nums">۰</CardTitle>
+            <CardTitle className="text-3xl tabular-nums">
+              {customerCount.toLocaleString("fa-IR")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">هنوز مشتری‌ای ندارید</p>
+            <p className="text-xs text-muted-foreground">مشتریان ثبت‌شده دفتر</p>
           </CardContent>
         </Card>
 
@@ -129,20 +148,6 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Empty state CTA */}
-      <Card className="border-dashed">
-        <CardContent className="flex flex-col items-center py-12 text-center">
-          <p className="text-muted-foreground mb-4 text-sm">
-            برای شروع، اولین فایل ملکی خود را ثبت کنید
-          </p>
-          <a
-            href="/files/new"
-            className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            ثبت اولین فایل
-          </a>
-        </CardContent>
-      </Card>
     </div>
   )
 }

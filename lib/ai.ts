@@ -2,7 +2,7 @@ import type { TransactionType, PropertyType } from "@/types"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-export type DescriptionTone = "honest" | "neutral" | "optimistic"
+export type DescriptionTone = "formal" | "standard" | "compelling"
 
 export interface DescriptionInput {
   transactionType: TransactionType
@@ -50,11 +50,11 @@ const PROPERTY_LABELS: Record<PropertyType, string> = {
   OTHER: "ملک",
 }
 
-// Tone modifier injected into the LLM prompt
+// Tone label shown to the model as a style directive
 const TONE_INSTRUCTIONS: Record<DescriptionTone, string> = {
-  honest: "صادقانه و بی‌پرده، بدون اغراق",
-  neutral: "خنثی و متوازن، حرفه‌ای",
-  optimistic: "مثبت و جذاب، با تاکید بر مزایا",
+  formal: "رسمی و واقع‌بینانه، بدون اغراق",
+  standard: "متعادل و حرفه‌ای",
+  compelling: "جذاب و ترغیب‌کننده، با تأکید بر مزایا",
 }
 
 // ─── Template Fallback ─────────────────────────────────────────────────────────
@@ -108,7 +108,7 @@ export function buildDescriptionTemplate(
   if (input.hasBalcony) amenities.push("بالکن")
   if (input.hasSecurity) amenities.push("نگهبانی")
   if (amenities.length > 0) {
-    if (tone === "optimistic") {
+    if (tone === "compelling") {
       parts.push(`این ملک دارای ${amenities.join("، ")} می‌باشد.`)
     } else {
       parts.push(`امکانات: ${amenities.join("، ")}.`)
@@ -116,7 +116,7 @@ export function buildDescriptionTemplate(
   }
 
   // Tone-based closing
-  if (tone === "optimistic") {
+  if (tone === "compelling") {
     parts.push("برای کسب اطلاعات بیشتر و هماهنگی بازدید با مشاور تماس بگیرید.")
   } else {
     parts.push("برای بازدید و اطلاعات بیشتر با مشاور در تماس باشید.")
@@ -127,20 +127,29 @@ export function buildDescriptionTemplate(
 
 // ─── AvalAI Prompt Builder ─────────────────────────────────────────────────────
 
-function buildPrompt(input: DescriptionInput, tone: DescriptionTone): string {
+// Sent once as the system role — sets persona and hard output constraints.
+const SYSTEM_MESSAGE =
+  "تو یک کپی‌رایتر تخصصی آگهی‌های ملکی ایران هستی.\n" +
+  "خروجی: فقط فارسی | ۲ تا ۳ جمله | بدون عنوان، بولت، ایموجی، یا توضیح اضافه."
+
+function buildUserMessage(input: DescriptionInput, tone: DescriptionTone): string {
   const propertyLabel = input.propertyType ? PROPERTY_LABELS[input.propertyType] : "ملک"
   const transactionLabel = TRANSACTION_LABELS[input.transactionType]
-  const toneInstruction = TONE_INSTRUCTIONS[tone]
+  const toneLabel = TONE_INSTRUCTIONS[tone]
 
-  const details: string[] = []
-  if (input.area) details.push(`- متراژ: ${input.area} متر`)
-  if (input.floorNumber != null) details.push(`- طبقه: ${input.floorNumber}`)
-  if (input.totalFloors != null) details.push(`- کل طبقات: ${input.totalFloors}`)
-  if (input.buildingAge != null) {
-    details.push(`- سن بنا: ${input.buildingAge === 0 ? "نوساز" : `${input.buildingAge} سال`}`)
+  // Compact numeric spec line — keeps token count low
+  const specs: string[] = []
+  if (input.area) specs.push(`${input.area}م‌م`)
+  if (input.floorNumber != null && input.totalFloors != null) {
+    specs.push(`طبقه ${input.floorNumber}/${input.totalFloors}`)
+  } else if (input.floorNumber != null) {
+    specs.push(`طبقه ${input.floorNumber}`)
   }
-  if (input.neighborhood) details.push(`- محله: ${input.neighborhood}`)
-  if (input.address) details.push(`- آدرس: ${input.address}`)
+  if (input.buildingAge != null) {
+    specs.push(input.buildingAge === 0 ? "نوساز" : `${input.buildingAge}ساله`)
+  }
+  if (input.neighborhood) specs.push(input.neighborhood)
+  else if (input.address) specs.push(input.address)
 
   const amenities: string[] = []
   if (input.hasParking) amenities.push("پارکینگ")
@@ -148,15 +157,12 @@ function buildPrompt(input: DescriptionInput, tone: DescriptionTone): string {
   if (input.hasElevator) amenities.push("آسانسور")
   if (input.hasBalcony) amenities.push("بالکن")
   if (input.hasSecurity) amenities.push("نگهبانی")
-  if (amenities.length > 0) details.push(`- امکانات: ${amenities.join("، ")}`)
 
-  const detailBlock = details.length > 0 ? `\n\nمشخصات ملک:\n${details.join("\n")}` : ""
+  const lines = [`لحن: ${toneLabel}`, `${transactionLabel} ${propertyLabel}`]
+  if (specs.length > 0) lines.push(specs.join(" | "))
+  if (amenities.length > 0) lines.push(amenities.join("، "))
 
-  return (
-    `یک توضیحات کوتاه (۲ تا ۴ جمله) برای آگهی ${transactionLabel} ${propertyLabel} به فارسی بنویس. ` +
-    `لحن ${toneInstruction}. فقط متن توضیحات را بنویس، بدون عنوان یا توضیح اضافه.` +
-    detailBlock
-  )
+  return lines.join("\n")
 }
 
 // ─── AvalAI API Call ───────────────────────────────────────────────────────────
@@ -185,8 +191,6 @@ export async function generateDescription(
     }
   }
 
-  const prompt = buildPrompt(input, tone)
-
   try {
     const response = await fetch("https://api.avalai.ir/v1/chat/completions", {
       method: "POST",
@@ -196,10 +200,13 @@ export async function generateDescription(
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 500,
-        // Vary temperature by tone: honest = precise, optimistic = creative
-        temperature: tone === "optimistic" ? 0.8 : tone === "honest" ? 0.3 : 0.5,
+        messages: [
+          { role: "system", content: SYSTEM_MESSAGE },
+          { role: "user", content: buildUserMessage(input, tone) },
+        ],
+        max_tokens: 200,
+        // formal = precise/factual, compelling = more creative, standard = balanced
+        temperature: tone === "compelling" ? 0.7 : tone === "formal" ? 0.3 : 0.5,
       }),
       signal: AbortSignal.timeout(15000),
     })

@@ -13,6 +13,7 @@ interface ShareLink {
   id: string
   token: string
   customPrice: number | null
+  customDepositAmount: number | null
   viewCount: number
   isActive: boolean
   createdAt: string
@@ -26,6 +27,7 @@ interface Contact {
 
 interface ShareLinksPanelProps {
   fileId: string
+  transactionType: string
   role: "MANAGER" | "AGENT"
   contacts?: Contact[]
   customers?: Contact[]
@@ -47,6 +49,7 @@ function formatPrice(price: number): string {
 
 export function ShareLinksPanel({
   fileId,
+  transactionType,
   role,
   contacts,
   customers,
@@ -58,9 +61,12 @@ export function ShareLinksPanel({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const isLongTermRent = transactionType === "LONG_TERM_RENT"
+
   // Create form state
   const [creating, setCreating] = useState(false)
   const [customPriceInput, setCustomPriceInput] = useState<number | undefined>(undefined)
+  const [customDepositInput, setCustomDepositInput] = useState<number | undefined>(undefined)
   const [saving, setSaving] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
@@ -109,13 +115,14 @@ export function ShareLinksPanel({
     setSaving(true)
     setCreateError(null)
 
-    const customPrice = customPriceInput ?? null
-
     try {
       const res = await fetch(`/api/files/${fileId}/share-links`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customPrice }),
+        body: JSON.stringify({
+          customPrice: customPriceInput ?? null,
+          customDepositAmount: isLongTermRent ? (customDepositInput ?? null) : null,
+        }),
       })
       const body = await res.json()
       if (!body.success) {
@@ -126,6 +133,7 @@ export function ShareLinksPanel({
       setLinks((prev) => [body.data as ShareLink, ...prev])
       setCreating(false)
       setCustomPriceInput(undefined)
+      setCustomDepositInput(undefined)
       router.refresh()
     } catch {
       setCreateError("خطا در ارتباط با سرور")
@@ -182,17 +190,41 @@ export function ShareLinksPanel({
         {creating && (
           <div className="rounded-lg border bg-accent/30 p-3 space-y-3">
             <p className="text-xs font-medium text-muted-foreground">ایجاد لینک اشتراک جدید</p>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">
-                قیمت سفارشی (تومان) — اختیاری
-              </label>
-              <PriceInput
-                value={customPriceInput}
-                onChange={setCustomPriceInput}
-                placeholder="خالی = نمایش قیمت اصلی فایل"
-                className="py-1.5 text-sm"
-              />
-            </div>
+            {isLongTermRent ? (
+              // LONG_TERM_RENT needs two separate price overrides
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">رهن سفارشی (تومان) — اختیاری</label>
+                  <PriceInput
+                    value={customDepositInput}
+                    onChange={setCustomDepositInput}
+                    placeholder="خالی = رهن اصلی فایل"
+                    className="py-1.5 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">اجاره سفارشی (تومان) — اختیاری</label>
+                  <PriceInput
+                    value={customPriceInput}
+                    onChange={setCustomPriceInput}
+                    placeholder="خالی = اجاره اصلی فایل"
+                    className="py-1.5 text-sm"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  قیمت سفارشی (تومان) — اختیاری
+                </label>
+                <PriceInput
+                  value={customPriceInput}
+                  onChange={setCustomPriceInput}
+                  placeholder="خالی = نمایش قیمت اصلی فایل"
+                  className="py-1.5 text-sm"
+                />
+              </div>
+            )}
             {createError && <p className="text-xs text-destructive">{createError}</p>}
             <div className="flex gap-2">
               <Button size="sm" onClick={createLink} disabled={saving}>
@@ -205,6 +237,7 @@ export function ShareLinksPanel({
                 onClick={() => {
                   setCreating(false)
                   setCustomPriceInput(undefined)
+                  setCustomDepositInput(undefined)
                   setCreateError(null)
                 }}
                 disabled={saving}
@@ -235,15 +268,35 @@ export function ShareLinksPanel({
               >
                 <div className="p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 space-y-0.5">
+                    <div className="min-w-0 space-y-1">
                       {/* Token preview — truncated */}
                       <p className="text-xs font-mono text-muted-foreground truncate">
                         {link.token.slice(0, 8)}…
                       </p>
-                      {link.customPrice != null && (
-                        <p className="text-xs text-primary font-medium">
-                          قیمت: {formatPrice(link.customPrice)}
-                        </p>
+                      {/* Custom price badges — shown only when at least one override is set */}
+                      {(link.customPrice != null || link.customDepositAmount != null) && (
+                        <div className="flex flex-wrap gap-1">
+                          {isLongTermRent ? (
+                            <>
+                              {link.customDepositAmount != null && (
+                                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                  رهن: {formatPrice(link.customDepositAmount)}
+                                </span>
+                              )}
+                              {link.customPrice != null && (
+                                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                  اجاره: {formatPrice(link.customPrice)}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            link.customPrice != null && (
+                              <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                                قیمت: {formatPrice(link.customPrice)}
+                              </span>
+                            )
+                          )}
+                        </div>
                       )}
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-0.5">
