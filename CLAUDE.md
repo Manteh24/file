@@ -239,10 +239,10 @@ Register → 1-month full trial (no card required)
 
 ### AI Description
 1. User taps "تولید توضیحات"
-2. User selects tone: صادقانه / خنثی / خوش‌بینانه
-3. POST to `/api/ai/description` with file data + location analysis + tone
-4. Backend calls AvalAI — if success, return generated text
-5. If AvalAI fails/times out → fall back to pre-built Persian template filled with file data
+2. User selects tone: رسمی (`formal`) / معمولی (`standard`) / جذاب (`compelling`)
+3. POST to `/api/ai/description` with file data + tone
+4. Backend calls AvalAI (`gpt-4o-mini`, 15s timeout) with a system-role persona message + compact user message; temperature varies by tone (formal=0.3, standard=0.5, compelling=0.7)
+5. If AvalAI fails/times out/returns empty → fall back to `buildDescriptionTemplate()` (pure Persian template, never throws)
 6. Result is editable in the form
 
 ### Location Analysis (Neshan)
@@ -455,10 +455,12 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 - **CSS:** import `@neshan-maps-platform/mapbox-gl/dist/NeshanMapboxGl.css`
 - **No SSR** — always use `dynamic(() => import(...), { ssr: false })` in Next.js
 - **Map key env var:** `NEXT_PUBLIC_NESHAN_MAP_KEY` (client-side); `NESHAN_API_KEY` (server-side REST)
-- **Pin drop:** use `mapSetter` prop to get Map instance → attach click listener → place `new nmp_mapboxgl.Marker()`
+- **Pin drop:** use `mapSetter` prop to get Map instance → attach click listener → place `new Marker()` from `@neshan-maps-platform/mapbox-gl`
 - **Mobile:** set `isTouchPlatform: true` (agents use on mobile)
 - **Map types:** `neshanVector` (default), `neshanVectorNight`, `neshanRaster`, `neshanRasterNight`
 - **REST API key:** already in `.env` as `NESHAN_API_KEY`
+- **Type workaround:** import `type SDKMap from "@neshan-maps-platform/mapbox-gl/dist/src/core/Map"` for `mapSetter` param; use `map as any` for `Marker.addTo(map)` to avoid `@types/mapbox-gl` version conflicts
+- **Components:** `NeshanMapPicker` (interactive, pin drop) and `NeshanMapView` (read-only display) are both `"use client"` — wrapped by `LocationPicker` and `MapView` respectively using `dynamic(..., { ssr: false })`
 
 ---
 
@@ -498,8 +500,8 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 9 | **Notifications** (PWA push + 30s polling) | ✅ | ✅ | PWA background push deferred (needs VAPID + HTTPS deploy) |
 | 10 | **Reports** (financial, activity) | ✅ | ✅ | Manager-only server component; period filter tabs; KPI cards; type breakdown; agent performance; recent contracts + activity log |
 | 11 | **Settings** (office profile, billing, Zarinpal) | ✅ | ✅ | Manager-only. Office profile PATCH (name, phone, email, address, city). Zarinpal full flow: POST /api/payments/request → redirect → GET /api/payments/verify callback → subscription update. PaymentRecord model for idempotency. |
-| 12 | **AI Description** (AvalAI + template fallback) | ✅ | ✅ | `POST /api/ai/description` (auth required). `lib/ai.ts`: `generateDescription()` calls AvalAI (15s timeout), always falls back to `buildDescriptionTemplate()`. Tone selector in FileForm (صادقانه/خنثی/خوش‌بینانه). |
-| 13 | **Maps** (Neshan pin, POI, routing) | ❌ | ❌ | |
+| 12 | **AI Description** (AvalAI + template fallback) | ✅ | ✅ | `POST /api/ai/description` (auth required). `lib/ai.ts`: `generateDescription()` calls AvalAI (`gpt-4o-mini`, 15s timeout, system+user roles, temperature per tone), always falls back to `buildDescriptionTemplate()`. Tone values: `formal`/`standard`/`compelling` (رسمی/معمولی/جذاب). |
+| 13 | **Maps** (Neshan pin, POI, routing) | ✅ | ✅ | `lib/maps.ts`: `reverseGeocode`, `analyzeLocation`, `parseLocationAnalysis`. `GET /api/maps/reverse-geocode`. `POST /api/files/[id]/analyze-location`. `NeshanMapPicker` + `LocationPicker` (SSR-safe). `NeshanMapView` + `MapView` (SSR-safe). `LocationAnalysisDisplay`. FileForm: pin drop → reverse-geocode auto-fill → analyze-location after save. Detail page + public share page show map + analysis. |
 | 14 | **Image Processing** (Sharp pipeline, watermark, storage) | ❌ | ❌ | |
 | 15 | **Offline Drafts** (Dexie.js IndexedDB) | ❌ | ❌ | |
 | 16 | **Subscription / Billing** (trial, grace, locked lifecycle) | ❌ | ❌ | |
@@ -533,8 +535,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/lib/payment.test.ts` | Settings | `calculateNewPeriodEnd` (4 cases) |
 | `__tests__/lib/ai.test.ts` | AI Description | `buildDescriptionTemplate` — transaction types, property types, location, physical details, amenities, tone differences, edge cases (24 cases) |
 | `__tests__/api/ai-description.test.ts` | AI Description | `POST /api/ai/description` — auth, validation, happy path, AvalAI failure, fallback, all tone values (12 cases) |
+| `__tests__/lib/maps.test.ts` | Maps | `parseLocationAnalysis` — null/undefined/non-object/array inputs, missing fields, valid POIs, invalid POI shape, invalid category, extra fields (13 cases) |
+| `__tests__/api/maps.test.ts` | Maps | `GET /api/maps/reverse-geocode` — auth, missing params, NaN, out-of-range, happy path, null address (8 cases); `POST /api/files/[id]/analyze-location` — auth, 404, no lat, no lng, happy path, DB update, officeId filter (8 cases) |
 
 ### Current Status
-- **Last completed:** Feature 12 — AI Description (built + automated tests)
-- **Up next:** Feature 13 — Maps (Neshan pin, POI, routing)
-- **Total tests:** 435 passing, 1 failing (pre-existing BigInt mismatch in share-links test)
+- **Last completed:** Feature 13 — Maps (built + automated tests)
+- **Up next:** Feature 14 — Image Processing (Sharp pipeline, watermark, storage)
+- **Total tests:** 465 passing, 1 failing (pre-existing BigInt mismatch in share-links test)
