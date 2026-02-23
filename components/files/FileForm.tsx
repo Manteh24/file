@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useFieldArray, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
-import { Plus, Trash2, Sparkles } from "lucide-react"
+import { Plus, Trash2, Sparkles, MapPin } from "lucide-react"
 import { createFileSchema, type CreateFileInput } from "@/lib/validations/file"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,7 +17,9 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { PriceInput } from "@/components/forms/PriceInput"
-import type { PropertyFileDetail } from "@/types"
+import { LocationPicker } from "@/components/files/LocationPicker"
+import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
+import type { PropertyFileDetail, LocationAnalysis } from "@/types"
 import type { DescriptionTone } from "@/lib/ai"
 
 interface FileFormProps {
@@ -63,6 +65,8 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
   const [aiTone, setAiTone] = useState<DescriptionTone>("neutral")
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [locationAnalysis, setLocationAnalysis] = useState<LocationAnalysis | null>(null)
+  const [savedFileId, setSavedFileId] = useState<string | null>(fileId ?? null)
 
   const form = useForm<CreateFileInput>({
     // Cast needed: standardSchemaResolver's return type has a different third generic
@@ -78,6 +82,8 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
       salePrice: initialData?.salePrice ?? undefined,
       depositAmount: initialData?.depositAmount ?? undefined,
       rentAmount: initialData?.rentAmount ?? undefined,
+      latitude: initialData?.latitude ?? undefined,
+      longitude: initialData?.longitude ?? undefined,
       address: initialData?.address ?? "",
       neighborhood: initialData?.neighborhood ?? "",
       description: initialData?.description ?? "",
@@ -124,9 +130,48 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
       return
     }
 
-    const targetId = isEdit ? fileId : result.data?.id
+    const targetId = isEdit ? fileId! : result.data?.id
+    if (targetId) setSavedFileId(targetId)
+
+    // Trigger location analysis if we have lat/lng
+    const formValues = form.getValues()
+    if (targetId && formValues.latitude !== undefined && formValues.longitude !== undefined) {
+      try {
+        const analysisRes = await fetch(`/api/files/${targetId}/analyze-location`, {
+          method: "POST",
+        })
+        const analysisResult = (await analysisRes.json()) as {
+          success: boolean
+          data?: LocationAnalysis
+        }
+        if (analysisResult.success && analysisResult.data) {
+          setLocationAnalysis(analysisResult.data)
+        }
+      } catch {
+        // Non-critical — location analysis failure doesn't block navigation
+      }
+    }
+
     router.push(`/files/${targetId}`)
     router.refresh()
+  }
+
+  async function handlePinDrop(lat: number, lng: number) {
+    form.setValue("latitude", lat, { shouldDirty: true })
+    form.setValue("longitude", lng, { shouldDirty: true })
+
+    try {
+      const res = await fetch(`/api/maps/reverse-geocode?lat=${lat}&lng=${lng}`)
+      const result = (await res.json()) as {
+        success: boolean
+        data?: { address: string | null }
+      }
+      if (result.success && result.data?.address) {
+        form.setValue("address", result.data.address, { shouldDirty: true })
+      }
+    } catch {
+      // Non-critical — reverse geocode failure is silent
+    }
   }
 
   async function handleGenerateDescription() {
@@ -371,6 +416,22 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
         {/* Location */}
         <section className="space-y-4">
           <h2 className="text-base font-semibold">موقعیت</h2>
+
+          {/* Map pin drop */}
+          <LocationPicker
+            lat={form.watch("latitude")}
+            lng={form.watch("longitude")}
+            onPinDrop={handlePinDrop}
+          />
+
+          {/* Pin confirmation badge */}
+          {form.watch("latitude") !== undefined && form.watch("longitude") !== undefined && (
+            <div className="flex items-center gap-1.5 text-sm text-primary">
+              <MapPin className="h-4 w-4" />
+              <span>موقعیت روی نقشه انتخاب شد</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField
               control={form.control}
@@ -399,6 +460,14 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
               )}
             />
           </div>
+
+          {/* Location analysis shown after save */}
+          {locationAnalysis && (
+            <div className="rounded-lg border p-3">
+              <p className="mb-1 text-xs font-medium text-muted-foreground">تحلیل موقعیت</p>
+              <LocationAnalysisDisplay analysis={locationAnalysis} />
+            </div>
+          )}
         </section>
 
         {/* Amenities */}

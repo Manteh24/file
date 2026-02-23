@@ -18,7 +18,10 @@ import { PriceHistoryList } from "@/components/files/PriceHistoryList"
 import { ArchiveFileButton } from "@/components/files/ArchiveFileButton"
 import { AgentAssignmentPanel } from "@/components/files/AgentAssignmentPanel"
 import { ShareLinksPanel } from "@/components/files/ShareLinksPanel"
+import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
+import { MapView } from "@/components/shared/MapView"
 import { formatToman, formatJalali } from "@/lib/utils"
+import { parseLocationAnalysis } from "@/lib/maps"
 import type { TransactionType, PropertyType, Role } from "@/types"
 
 interface FileDetailPageProps {
@@ -248,7 +251,23 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
       </Card>
 
       {/* Location */}
-      {file.address && (
+      {file.latitude !== null && file.longitude !== null ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">موقعیت</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-3">
+            <MapView lat={file.latitude} lng={file.longitude} height="h-56" />
+            {file.address && (
+              <p className="flex items-start gap-2 text-sm">
+                <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
+                {file.address}
+              </p>
+            )}
+            <LocationAnalysisDisplay analysis={parseLocationAnalysis(file.locationAnalysis)} />
+          </CardContent>
+        </Card>
+      ) : file.address ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">موقعیت</CardTitle>
@@ -260,7 +279,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
             </p>
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       {/* Contacts */}
       <Card>

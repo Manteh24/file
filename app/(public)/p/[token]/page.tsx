@@ -2,7 +2,10 @@ import { notFound } from "next/navigation"
 import { MapPin, Home, Building2, AlertTriangle } from "lucide-react"
 import { db } from "@/lib/db"
 import { formatToman } from "@/lib/utils"
+import { parseLocationAnalysis } from "@/lib/maps"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { MapView } from "@/components/shared/MapView"
+import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
 
 interface SharePageProps {
   params: Promise<{ token: string }>
@@ -187,6 +190,22 @@ export default async function SharePage({ params }: SharePageProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Location map — shown only when coordinates are available. Neighborhood only, no exact address. */}
+      {file.latitude !== null && file.longitude !== null && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              موقعیت
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-2">
+            <MapView lat={file.latitude} lng={file.longitude} height="h-48" />
+            <LocationAnalysisDisplay analysis={parseLocationAnalysis(file.locationAnalysis)} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Description */}
       {file.description && (

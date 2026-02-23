@@ -13,9 +13,12 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@neshan-maps-platform/mapbox-gl": "^1.1.5",
+    "@neshan-maps-platform/mapbox-gl-react": "^1.0.6",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.0",
     "@radix-ui/react-select": "^2.2.6",
+    "@types/mapbox-gl": "^3.4.1",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

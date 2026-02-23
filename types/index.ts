@@ -283,6 +283,21 @@ export interface PaymentInitiated {
   authority: string
 }
 
+// ─── Maps / Location Types ────────────────────────────────────────────────────
+
+export interface POIItem {
+  title: string
+  category: 'transit' | 'school' | 'park' | 'hospital' | 'shop' | 'other'
+  distance: number  // meters
+}
+
+export interface LocationAnalysis {
+  nearbyPOIs: POIItem[]
+  transitWalkingMinutes?: number
+  airportDrivingMinutes?: number
+  analyzedAt: string  // ISO timestamp
+}
+
 // ─── API Response Shapes ──────────────────────────────────────────────────────
 // All API routes and server actions return one of these two shapes.
 
