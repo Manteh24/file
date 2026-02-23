@@ -36,6 +36,7 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
   const propertyTypeFilter = params.propertyType as PropertyType | undefined
 
   const { officeId, role, id: userId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const files = await db.propertyFile.findMany({
     where: {

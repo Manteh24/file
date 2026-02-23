@@ -23,6 +23,7 @@ export async function GET(request: Request) {
 
   const filters = filtersResult.data
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const customers = await db.customer.findMany({
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
   }
 
   const { officeId, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const customer = await db.customer.create({

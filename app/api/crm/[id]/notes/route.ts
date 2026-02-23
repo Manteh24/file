@@ -23,6 +23,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   const customer = await verifyCustomerOwnership(id, officeId)
   if (!customer) {
@@ -62,6 +63,7 @@ export async function POST(request: Request, { params }: RouteContext) {
 
   const { id } = await params
   const { officeId, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   const customer = await verifyCustomerOwnership(id, officeId)
   if (!customer) {

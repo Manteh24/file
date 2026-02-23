@@ -31,6 +31,7 @@ export default async function DashboardPage() {
   if (!session?.user) redirect("/login")
 
   const { officeId, role, id: userId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const [subscription, teamCount, activeFilesCount, customerCount] = await Promise.all([
     db.subscription.findFirst({ where: { officeId } }),

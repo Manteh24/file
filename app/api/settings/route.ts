@@ -19,6 +19,7 @@ export async function GET() {
   }
 
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const [office, subscription] = await Promise.all([
@@ -64,6 +65,7 @@ export async function PATCH(request: Request) {
   }
 
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   let body: unknown
   try {

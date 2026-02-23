@@ -27,6 +27,7 @@ export async function PATCH(
 
   const { id } = await params
   const { officeId, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   let body: unknown
   try {

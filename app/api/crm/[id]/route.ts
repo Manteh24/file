@@ -18,6 +18,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const customer = await db.customer.findFirst({
@@ -70,6 +71,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   // Verify the customer belongs to this office before updating
   const existing = await db.customer.findFirst({ where: { id, officeId }, select: { id: true } })
@@ -121,6 +123,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   const existing = await db.customer.findFirst({ where: { id, officeId }, select: { id: true } })
   if (!existing) {

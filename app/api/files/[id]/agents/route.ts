@@ -34,6 +34,7 @@ export async function PUT(
 
   const { id: fileId } = await params
   const { officeId, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   const { agentIds } = parsed.data
 
   try {

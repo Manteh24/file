@@ -39,6 +39,7 @@ export default async function ContractPage({ params }: ContractPageProps) {
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const contract = await db.contract.findFirst({
     where: { id, officeId },

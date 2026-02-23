@@ -39,6 +39,7 @@ export async function POST(request: Request) {
 
   const { plan } = parsed.data
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   // Build the callback URL that Zarinpal will redirect to after payment
   const nextAuthUrl = process.env.NEXTAUTH_URL ?? ""

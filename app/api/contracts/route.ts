@@ -17,6 +17,7 @@ export async function GET() {
   }
 
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const contracts = await db.contract.findMany({
@@ -78,6 +79,7 @@ export async function POST(request: Request) {
   }
 
   const { officeId, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   const { fileId, finalPrice, commissionAmount, agentShare, notes } = parsed.data
   // officeShare is not sent by the client — derived here to ensure integrity
   const officeShare = commissionAmount - agentShare

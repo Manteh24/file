@@ -14,6 +14,7 @@ const PROTECTED_PREFIXES = [
   "/crm",
   "/settings",
   "/reports",
+  "/admin",
 ]
 
 // Routes that should redirect to /dashboard if the user is already authenticated
@@ -38,8 +39,19 @@ export default auth((req: NextRequest & { auth: { user?: unknown } | null }) => 
   }
 
   // Redirect already-authenticated users away from auth pages
+  // Admin users (officeId = null) go to /admin/dashboard, not the tenant dashboard
   if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL("/dashboard", req.url))
+    const user = req.auth?.user as { officeId?: string | null } | undefined
+    const dest = user?.officeId === null ? "/admin/dashboard" : "/dashboard"
+    return NextResponse.redirect(new URL(dest, req.url))
+  }
+
+  // Redirect authenticated admin users away from the tenant /dashboard to /admin
+  if (isAuthenticated && pathname.startsWith("/dashboard")) {
+    const user = req.auth?.user as { officeId?: string | null } | undefined
+    if (user?.officeId === null) {
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url))
+    }
   }
 
   return NextResponse.next()

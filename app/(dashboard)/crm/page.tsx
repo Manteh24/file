@@ -28,6 +28,7 @@ export default async function CRMPage({ searchParams }: CRMPageProps) {
   const params = await searchParams
   const typeFilter = params.type as CustomerType | undefined
   const { officeId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const customers = await db.customer.findMany({
     where: {

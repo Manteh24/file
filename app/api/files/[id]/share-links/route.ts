@@ -19,6 +19,7 @@ export async function GET(
 
   const { id: fileId } = await params
   const { officeId, role, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   // Verify the file belongs to this office, and agents must be assigned
   const file = await db.propertyFile.findFirst({
@@ -72,6 +73,7 @@ export async function POST(
 
   const { id: fileId } = await params
   const { officeId, role, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   const { customPrice, customDepositAmount } = parsed.data
 
   // Verify file belongs to office; agents must be assigned

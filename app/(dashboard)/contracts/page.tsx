@@ -17,6 +17,7 @@ export default async function ContractsPage() {
   if (session.user.role !== "MANAGER") redirect("/dashboard")
 
   const { officeId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const contracts = await db.contract.findMany({
     where: { officeId },

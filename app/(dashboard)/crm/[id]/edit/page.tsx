@@ -15,6 +15,7 @@ export default async function EditCustomerPage({ params }: EditCustomerPageProps
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const customer = await db.customer.findFirst({
     where: { id, officeId },

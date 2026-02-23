@@ -12,12 +12,14 @@ export default async function DashboardLayout({
 }) {
   const session = await auth()
 
-  if (!session?.user) {
-    redirect("/login")
-  }
+  if (!session?.user) redirect("/login")
+
+  // Admin users belong in /admin, not the tenant dashboard
+  if (!session.user.officeId) redirect("/admin/dashboard")
+  const officeId = session.user.officeId // narrowed: string
 
   const office = await db.office.findUnique({
-    where: { id: session.user.officeId },
+    where: { id: officeId },
     select: { name: true },
   })
 

@@ -20,6 +20,7 @@ export async function GET(
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const contract = await db.contract.findFirst({

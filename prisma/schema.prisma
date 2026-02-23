@@ -83,12 +83,13 @@ model Office {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  users          User[]
-  subscription   Subscription?
-  files          PropertyFile[]
-  customers      Customer[]
-  contracts      Contract[]
-  paymentRecords PaymentRecord[]
+  users           User[]
+  subscription    Subscription?
+  files           PropertyFile[]
+  customers       Customer[]
+  contracts       Contract[]
+  paymentRecords  PaymentRecord[]
+  adminAssignments AdminOfficeAssignment[]
 
   @@map("offices")
 }
@@ -105,11 +106,13 @@ model User {
   isActive     Boolean       @default(true)
   // avatarUrl will be populated by the image processing pipeline (Feature 14)
   avatarUrl    String?
-  officeId     String
+  // Nullable: SUPER_ADMIN and MID_ADMIN users have no tenant office (officeId = null)
+  officeId     String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  office              Office           @relation(fields: [officeId], references: [id])
+  office              Office?          @relation(fields: [officeId], references: [id])
+  adminAssignments    AdminOfficeAssignment[]
   sessions            UserSession[]
   createdFiles        PropertyFile[]   @relation("CreatedFiles")
   fileAssignments     FileAssignment[]
@@ -426,4 +429,20 @@ model PaymentRecord {
 
   @@index([officeId])
   @@map("payment_records")
+}
+
+// Links a MID_ADMIN user to specific offices they are allowed to support.
+// SUPER_ADMIN has unrestricted access and does not use this table.
+model AdminOfficeAssignment {
+  id          String   @id @default(cuid())
+  adminUserId String
+  officeId    String
+  assignedAt  DateTime @default(now())
+
+  admin       User   @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  office      Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+
+  @@unique([adminUserId, officeId])
+  @@index([adminUserId])
+  @@map("admin_office_assignments")
 }

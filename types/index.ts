@@ -188,7 +188,8 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string
-      officeId: string
+      // null for SUPER_ADMIN and MID_ADMIN users who have no tenant office
+      officeId: string | null
       role: Role
       sessionId: string
     } & DefaultSession["user"]
@@ -196,7 +197,7 @@ declare module "next-auth" {
 
   interface User {
     id: string
-    officeId: string
+    officeId: string | null
     role: Role
     sessionId: string
   }
@@ -205,7 +206,7 @@ declare module "next-auth" {
 declare module "@auth/core/jwt" {
   interface JWT {
     userId: string
-    officeId: string
+    officeId: string | null
     role: Role
     sessionId: string
   }
@@ -304,3 +305,104 @@ export interface LocationAnalysis {
 export type ApiSuccess<T> = { success: true; data: T }
 export type ApiError = { success: false; error: string }
 export type ApiResponse<T> = ApiSuccess<T> | ApiError
+
+// ─── Admin Domain Types ───────────────────────────────────────────────────────
+// Used by the /admin panel — SUPER_ADMIN and MID_ADMIN only.
+
+export interface AdminStats {
+  // Offices & growth
+  totalOffices: number
+  newOfficesThisMonth: number
+  byPlan: { TRIAL: number; SMALL: number; LARGE: number }
+  // Active vs locked
+  byStatus: { ACTIVE: number; GRACE: number; LOCKED: number; CANCELLED: number }
+  // Revenue (last 30 days), in Toman
+  revenueThirtyDays: number
+  // Platform users
+  totalManagers: number
+  totalAgents: number
+  inactiveUsers: number
+}
+
+export interface AdminOfficeSummary {
+  id: string
+  name: string
+  city: string | null
+  createdAt: Date
+  subscription: {
+    plan: Plan
+    status: SubStatus
+    trialEndsAt: Date
+    currentPeriodEnd: Date | null
+  } | null
+  _count: {
+    users: number
+    files: number
+  }
+}
+
+export interface AdminOfficeDetail {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+  address: string | null
+  city: string | null
+  createdAt: Date
+  subscription: {
+    id: string
+    plan: Plan
+    status: SubStatus
+    trialEndsAt: Date
+    currentPeriodEnd: Date | null
+  } | null
+  agents: Array<{
+    id: string
+    displayName: string
+    username: string
+    email: string | null
+    isActive: boolean
+    role: Role
+  }>
+  _count: {
+    files: number
+    contracts: number
+    customers: number
+  }
+  paymentRecords: Array<{
+    id: string
+    plan: Plan
+    amount: number
+    status: string
+    refId: string | null
+    createdAt: Date
+  }>
+}
+
+export interface AdminUserSummary {
+  id: string
+  username: string
+  displayName: string
+  email: string | null
+  role: Role
+  isActive: boolean
+  createdAt: Date
+  office: { id: string; name: string } | null
+}
+
+export interface MidAdminSummary {
+  id: string
+  username: string
+  displayName: string
+  email: string | null
+  isActive: boolean
+  createdAt: Date
+  _count: { adminAssignments: number }
+}
+
+export interface MidAdminAssignment {
+  id: string
+  officeId: string
+  assignedAt: Date
+  office: { id: string; name: string; city: string | null }
+}

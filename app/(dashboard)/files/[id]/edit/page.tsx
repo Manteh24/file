@@ -16,6 +16,7 @@ export default async function EditFilePage({ params }: EditFilePageProps) {
 
   const { id } = await params
   const { officeId, role, id: userId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const file = await db.propertyFile.findFirst({
     where: {

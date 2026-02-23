@@ -19,6 +19,7 @@ export async function PATCH(
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   // Verify the share link belongs to a file in this office
   const link = await db.shareLink.findFirst({

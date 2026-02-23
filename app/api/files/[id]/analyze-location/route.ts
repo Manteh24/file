@@ -15,6 +15,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
   const { id } = await params
   const { officeId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   // Verify the file belongs to this user's office
   const file = await db.propertyFile.findFirst({

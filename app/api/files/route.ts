@@ -28,6 +28,7 @@ export async function GET(request: Request) {
 
   const filters = filtersResult.data
   const { officeId, role, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const files = await db.propertyFile.findMany({
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
 
   const { contacts, salePrice, depositAmount, rentAmount, ...restFileData } = parsed.data
   const { officeId, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const file = await db.$transaction(async (tx) => {

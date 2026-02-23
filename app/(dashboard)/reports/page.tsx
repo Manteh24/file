@@ -41,6 +41,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   if (session.user.role !== "MANAGER") redirect("/dashboard")
 
   const { officeId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const params = await searchParams
   const activePeriod = normalisePeriod(params.period)

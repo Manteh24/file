@@ -21,6 +21,7 @@ export async function GET(
 
   const { id } = await params
   const { officeId, role, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     const file = await db.propertyFile.findFirst({
@@ -83,6 +84,7 @@ export async function PATCH(
 
   const { id } = await params
   const { officeId, role, id: userId } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   let body: unknown
   try {

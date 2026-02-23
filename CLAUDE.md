@@ -316,6 +316,7 @@ Notification triggers:
 - shadcn/ui components are RTL-compatible when `dir="rtl"` is set on root
 - Vazirmatn font loaded globally via `next/font/local` in root layout
 - Icons: use symmetric icons where possible. Directional icons (arrows, chevrons) must be flipped for RTL using `rtl:scale-x-[-1]`
+- **Table headers:** always use `text-start` (not `text-end`) on `<th>`. In RTL, CSS logical `end` = left and `start` = right. Using `text-end` misaligns headers against left-defaulting cells.
 
 ---
 
@@ -426,6 +427,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | Display numbers without Toman formatting | Always use `formatToman()` utility |
 | Forget to filter by `officeId` in DB queries | Multi-tenancy is enforced at query level |
 | Process images client-side | All image processing is server-side (Sharp) |
+| Use `text-end` on `<th>` in RTL tables | Use `text-start` — in RTL `end`=left, `start`=right |
 
 ---
 
@@ -538,7 +540,12 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/lib/maps.test.ts` | Maps | `parseLocationAnalysis` — null/undefined/non-object/array inputs, missing fields, valid POIs, invalid POI shape, invalid category, extra fields (13 cases) |
 | `__tests__/api/maps.test.ts` | Maps | `GET /api/maps/reverse-geocode` — auth, missing params, NaN, out-of-range, happy path, null address (8 cases); `POST /api/files/[id]/analyze-location` — auth, 404, no lat, no lng, happy path, DB update, officeId filter (8 cases) |
 
+### Admin Panel & UI Fixes (post-feature work)
+- **Middleware redirect:** Admin users (SUPER_ADMIN / MID_ADMIN — `officeId = null`) are now redirected at middleware level to `/admin/dashboard` instead of going through `/dashboard` first. Two checks added: auth-page redirect and `/dashboard` prefix guard.
+- **RTL table header alignment:** All `<th>` elements in admin tables changed from `text-end` to `text-start`. In RTL, `text-end` = left; `text-start` = right (correct for RTL).
+- **MID_ADMIN label:** Renamed from `پشتیبان / پشتیبانان` to `تیم / عضو تیم` across AdminTopbar, AdminSidebar, mid-admins page, and MidAdminForm — kept generic as the role scope may expand.
+
 ### Current Status
-- **Last completed:** Feature 13 — Maps (built + automated tests)
+- **Last completed:** Feature 13 — Maps (built + automated tests) + Admin Panel UI fixes
 - **Up next:** Feature 14 — Image Processing (Sharp pipeline, watermark, storage)
 - **Total tests:** 465 passing, 1 failing (pre-existing BigInt mismatch in share-links test)

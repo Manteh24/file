@@ -32,6 +32,7 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
 
   const { id } = await params
   const { officeId, role } = session.user
+  if (!officeId) redirect("/admin/dashboard")
 
   const customer = await db.customer.findFirst({
     where: { id, officeId },

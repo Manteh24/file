@@ -64,6 +64,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   if (session.user.role !== "MANAGER") redirect("/dashboard")
 
   const { officeId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
   const params = await searchParams
 
   const [office, subscription] = await Promise.all([

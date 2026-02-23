@@ -17,6 +17,7 @@ export default async function NewContractPage({ searchParams }: NewContractPageP
   if (session.user.role !== "MANAGER") redirect("/dashboard")
 
   const { officeId } = session.user
+  if (!officeId) redirect("/admin/dashboard")
   const { fileId: initialFileId } = await searchParams
 
   // Only fetch ACTIVE files that don't have a contract yet
