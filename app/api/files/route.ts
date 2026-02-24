@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createFileSchema, fileFiltersSchema } from "@/lib/validations/file"
-import { logActivity } from "@/lib/file-helpers"
+import { logActivity, buildFileWhere, buildOrderBy } from "@/lib/file-helpers"
 import { bigIntToNumber } from "@/lib/utils"
 
 // ─── GET /api/files ────────────────────────────────────────────────────────────
@@ -20,6 +20,17 @@ export async function GET(request: Request) {
     status: searchParams.get("status") ?? undefined,
     transactionType: searchParams.get("transactionType") ?? undefined,
     propertyType: searchParams.get("propertyType") ?? undefined,
+    search: searchParams.get("search") ?? undefined,
+    priceMin: searchParams.get("priceMin") ?? undefined,
+    priceMax: searchParams.get("priceMax") ?? undefined,
+    areaMin: searchParams.get("areaMin") ?? undefined,
+    areaMax: searchParams.get("areaMax") ?? undefined,
+    hasElevator: searchParams.get("hasElevator") ?? undefined,
+    hasParking: searchParams.get("hasParking") ?? undefined,
+    hasStorage: searchParams.get("hasStorage") ?? undefined,
+    hasBalcony: searchParams.get("hasBalcony") ?? undefined,
+    hasSecurity: searchParams.get("hasSecurity") ?? undefined,
+    sort: searchParams.get("sort") ?? undefined,
   })
 
   if (!filtersResult.success) {
@@ -32,16 +43,7 @@ export async function GET(request: Request) {
 
   try {
     const files = await db.propertyFile.findMany({
-      where: {
-        officeId,
-        // Agents only see files assigned to them
-        ...(role === "AGENT" && {
-          assignedAgents: { some: { userId } },
-        }),
-        ...(filters.status && { status: filters.status }),
-        ...(filters.transactionType && { transactionType: filters.transactionType }),
-        ...(filters.propertyType && { propertyType: filters.propertyType }),
-      },
+      where: buildFileWhere(officeId, role, userId, filters),
       select: {
         id: true,
         transactionType: true,
@@ -60,7 +62,7 @@ export async function GET(request: Request) {
         assignedAgents: { select: { user: { select: { displayName: true } } } },
         _count: { select: { photos: true, shareLinks: true } },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: buildOrderBy(filters.sort),
     })
 
     return NextResponse.json({ success: true, data: bigIntToNumber(files) })

@@ -93,6 +93,17 @@ export type AssignAgentsInput = z.infer<typeof assignAgentsSchema>
 
 // ─── File Filters Schema ───────────────────────────────────────────────────────
 
+export const SORT_OPTIONS = [
+  "newest",
+  "oldest",
+  "price_asc",
+  "price_desc",
+  "area_asc",
+  "area_desc",
+] as const
+
+export type SortOption = (typeof SORT_OPTIONS)[number]
+
 export const fileFiltersSchema = z.object({
   status: z.enum(["ACTIVE", "ARCHIVED", "SOLD", "RENTED", "EXPIRED"]).optional(),
   transactionType: z
@@ -101,6 +112,42 @@ export const fileFiltersSchema = z.object({
   propertyType: z
     .enum(["APARTMENT", "HOUSE", "VILLA", "LAND", "COMMERCIAL", "OFFICE", "OTHER"])
     .optional(),
+
+  // Text search across address and neighborhood
+  search: z.string().max(200).optional(),
+
+  // Price range — stored as Toman integers, coerced from URL strings
+  priceMin: z.coerce.number().int().nonnegative().optional(),
+  priceMax: z.coerce.number().int().nonnegative().optional(),
+
+  // Area range in square metres
+  areaMin: z.coerce.number().int().nonnegative().optional(),
+  areaMax: z.coerce.number().int().nonnegative().optional(),
+
+  // Amenity filters — only filter when the param equals "true"; absent = don't filter
+  hasElevator: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasParking: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasStorage: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasBalcony: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasSecurity: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+
+  // Sort order
+  sort: z.enum(SORT_OPTIONS).optional(),
 })
 
 export type FileFilters = z.infer<typeof fileFiltersSchema>

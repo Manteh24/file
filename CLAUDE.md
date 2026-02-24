@@ -441,6 +441,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `lib/ai.ts` | AvalAI description generation + template fallback |
 | `lib/sms.ts` | KaveNegar SMS sending functions |
 | `lib/maps.ts` | Neshan API calls (geocoding, routing, POI) |
+| `lib/file-helpers.ts` | `logActivity`, `recordPriceChanges`, `buildDiff`, `deactivateShareLinks`, `buildFileWhere`, `buildOrderBy` — shared file query builders used by both the server page and the API route |
 | `lib/image.ts` | Sharp processing pipeline (compress, watermark, resize) |
 | `lib/storage.ts` | IranServer object storage upload/download/delete |
 | `hooks/useDraft.ts` | Dexie.js IndexedDB draft management for file creation |
@@ -545,7 +546,15 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 - **RTL table header alignment:** All `<th>` elements in admin tables changed from `text-end` to `text-start`. In RTL, `text-end` = left; `text-start` = right (correct for RTL).
 - **MID_ADMIN label:** Renamed from `پشتیبان / پشتیبانان` to `تیم / عضو تیم` across AdminTopbar, AdminSidebar, mid-admins page, and MidAdminForm — kept generic as the role scope may expand.
 
+### File List Filtering Enhancement (post-feature work)
+- **Scope:** Enhancement to Feature 3 (File Management) — no schema changes, all model fields already existed.
+- **New filters exposed:** text search (`address`/`neighborhood` ILIKE), transaction type (pills), property type (pills), price range (min/max, context-aware column), area range (min/max), amenities (all 5 boolean fields as AND checkboxes), sort order (6 options).
+- **`lib/validations/file.ts`:** `fileFiltersSchema` extended with 11 new fields. Amenity params use `z.enum(["true"]).transform(() => true)` — absent = don't filter. `SORT_OPTIONS` exported as const tuple.
+- **`lib/file-helpers.ts`:** `buildFileWhere(officeId, role, userId, filters)` and `buildOrderBy(sort)` added — shared between the server page (direct DB) and `GET /api/files` to keep filter logic in one place. Price range targets `salePrice`/`depositAmount`/`rentAmount` based on `transactionType`; when no type is set, ORs across `salePrice` and `rentAmount` (safe in Tehran market — values differ by orders of magnitude). All OR arrays guarded with `.length > 0` before pushing into `AND` to avoid `{ OR: [] }` Prisma edge case.
+- **`components/files/FileFilterPanel.tsx`:** New `"use client"` collapsible panel. State initialized via `useState(() => initState(initialParams))` (lazy initializer — no `useEffect` prop sync). Accumulates changes locally; navigates on "اعمال فیلترها" (not live per-keystroke). Active-filter count badge on toggle button. "پاک کردن" shortcut visible when filters are active and panel is closed.
+- **`app/(dashboard)/files/page.tsx`:** Status tab hrefs rebuilt via `buildStatusHref()` so switching tabs preserves all active secondary filters. `hasActiveFilters` flag drives contextual empty-state message.
+
 ### Current Status
-- **Last completed:** Feature 13 — Maps (built + automated tests) + Admin Panel UI fixes
+- **Last completed:** File List Filtering Enhancement (search, price/area range, amenities, sort, transaction/property type pills)
 - **Up next:** Feature 14 — Image Processing (Sharp pipeline, watermark, storage)
 - **Total tests:** 465 passing, 1 failing (pre-existing BigInt mismatch in share-links test)

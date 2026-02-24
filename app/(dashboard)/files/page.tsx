@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { FileCard } from "@/components/files/FileCard"
-import type { FileStatus, TransactionType, PropertyType, PropertyFileSummary } from "@/types"
+import { FileFilterPanel } from "@/components/files/FileFilterPanel"
+import { fileFiltersSchema } from "@/lib/validations/file"
+import { buildFileWhere, buildOrderBy } from "@/lib/file-helpers"
+import type { FileStatus, PropertyFileSummary } from "@/types"
+import type { RawFilterParams } from "@/components/files/FileFilterPanel"
 
 interface FilesPageProps {
-  searchParams: Promise<{
-    status?: string
-    transactionType?: string
-    propertyType?: string
-  }>
+  searchParams: Promise<RawFilterParams>
 }
 
 const STATUS_FILTER_OPTIONS: { value: FileStatus | "ALL"; label: string }[] = [
@@ -26,28 +26,47 @@ const STATUS_FILTER_OPTIONS: { value: FileStatus | "ALL"; label: string }[] = [
   { value: "EXPIRED", label: "منقضی" },
 ]
 
+// Builds a status tab href that preserves all non-status params
+function buildStatusHref(status: string, params: RawFilterParams): string {
+  const p = new URLSearchParams()
+  for (const [key, val] of Object.entries(params)) {
+    if (key !== "status" && val) p.set(key, val)
+  }
+  if (status !== "ALL") p.set("status", status)
+  return p.size ? `/files?${p}` : "/files"
+}
+
 export default async function FilesPage({ searchParams }: FilesPageProps) {
   const session = await auth()
   if (!session) redirect("/login")
 
   const params = await searchParams
-  const statusFilter = params.status as FileStatus | undefined
-  const transactionTypeFilter = params.transactionType as TransactionType | undefined
-  const propertyTypeFilter = params.propertyType as PropertyType | undefined
-
   const { officeId, role, id: userId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 
+  // Validate and parse all filter params (coerces strings to numbers, etc.)
+  const filtersResult = fileFiltersSchema.safeParse({
+    status: params.status ?? undefined,
+    transactionType: params.transactionType ?? undefined,
+    propertyType: params.propertyType ?? undefined,
+    search: params.search ?? undefined,
+    priceMin: params.priceMin ?? undefined,
+    priceMax: params.priceMax ?? undefined,
+    areaMin: params.areaMin ?? undefined,
+    areaMax: params.areaMax ?? undefined,
+    hasElevator: params.hasElevator ?? undefined,
+    hasParking: params.hasParking ?? undefined,
+    hasStorage: params.hasStorage ?? undefined,
+    hasBalcony: params.hasBalcony ?? undefined,
+    hasSecurity: params.hasSecurity ?? undefined,
+    sort: params.sort ?? undefined,
+  })
+
+  // Fall back to no filters if params are invalid (e.g. manually crafted bad URL)
+  const filters = filtersResult.success ? filtersResult.data : {}
+
   const files = await db.propertyFile.findMany({
-    where: {
-      officeId,
-      ...(role === "AGENT" && {
-        assignedAgents: { some: { userId } },
-      }),
-      ...(statusFilter && { status: statusFilter }),
-      ...(transactionTypeFilter && { transactionType: transactionTypeFilter }),
-      ...(propertyTypeFilter && { propertyType: propertyTypeFilter }),
-    },
+    where: buildFileWhere(officeId, role, userId, filters),
     select: {
       id: true,
       transactionType: true,
@@ -66,10 +85,27 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
       assignedAgents: { select: { user: { select: { displayName: true } } } },
       _count: { select: { photos: true, shareLinks: true } },
     },
-    orderBy: { updatedAt: "desc" },
+    orderBy: buildOrderBy(filters.sort),
   })
 
-  const activeFilter = statusFilter ?? "ALL"
+  const activeFilter = (params.status as FileStatus | undefined) ?? "ALL"
+
+  // True when any secondary filter (non-status) is active
+  const hasActiveFilters = Boolean(
+    params.search ||
+      params.transactionType ||
+      params.propertyType ||
+      params.priceMin ||
+      params.priceMax ||
+      params.areaMin ||
+      params.areaMax ||
+      params.hasElevator ||
+      params.hasParking ||
+      params.hasStorage ||
+      params.hasBalcony ||
+      params.hasSecurity ||
+      params.sort
+  )
 
   return (
     <div className="space-y-6">
@@ -86,13 +122,10 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
         }
       />
 
-      {/* Status filter tabs */}
+      {/* Status filter tabs — hrefs preserve all active secondary filters */}
       <div className="flex gap-1 overflow-x-auto pb-1">
         {STATUS_FILTER_OPTIONS.map((opt) => {
-          const href =
-            opt.value === "ALL"
-              ? "/files"
-              : `/files?status=${opt.value}`
+          const href = buildStatusHref(opt.value, params)
           const isActive = activeFilter === opt.value
 
           return (
@@ -111,18 +144,23 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
         })}
       </div>
 
+      {/* Secondary filter panel */}
+      <FileFilterPanel initialParams={params} />
+
       {/* File list */}
       {files.length === 0 ? (
         <EmptyState
           icon={<FolderOpen className="h-12 w-12" />}
           message="فایلی یافت نشد"
           description={
-            activeFilter === "ALL"
-              ? "برای شروع، اولین فایل ملکی خود را ثبت کنید"
-              : "فایلی با این فیلتر وجود ندارد"
+            hasActiveFilters
+              ? "هیچ فایلی با فیلترهای انتخاب‌شده پیدا نشد"
+              : activeFilter === "ALL"
+                ? "برای شروع، اولین فایل ملکی خود را ثبت کنید"
+                : "فایلی با این فیلتر وجود ندارد"
           }
-          actionLabel={activeFilter === "ALL" ? "ثبت فایل جدید" : undefined}
-          actionHref={activeFilter === "ALL" ? "/files/new" : undefined}
+          actionLabel={!hasActiveFilters && activeFilter === "ALL" ? "ثبت فایل جدید" : undefined}
+          actionHref={!hasActiveFilters && activeFilter === "ALL" ? "/files/new" : undefined}
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
