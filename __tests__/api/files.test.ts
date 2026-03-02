@@ -17,6 +17,10 @@ vi.mock("@/lib/db", () => ({
     activityLog: {
       create: vi.fn(),
     },
+    subscription: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }))
@@ -35,7 +39,16 @@ const mockDb = db as unknown as {
     create: MockFn
   }
   activityLog: { create: MockFn }
+  subscription: { findUnique: MockFn; update: MockFn }
   $transaction: MockFn
+}
+
+const activeSubscription = {
+  id: "sub-1",
+  plan: "TRIAL",
+  status: "ACTIVE",
+  trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  currentPeriodEnd: null,
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -144,6 +157,7 @@ describe("GET /api/files", () => {
 describe("POST /api/files", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
   })
 
   const validBody = {

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createShareLinkSchema } from "@/lib/validations/shareLink"
 import { bigIntToNumber } from "@/lib/utils"
+import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 // ─── GET /api/files/[id]/share-links ────────────────────────────────────────
 // Returns all share links for a file. Accessible to manager or assigned agent.
@@ -74,6 +75,16 @@ export async function POST(
   const { id: fileId } = await params
   const { officeId, role, id: userId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+
+  try {
+    await requireWriteAccess(officeId)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
+
   const { customPrice, customDepositAmount } = parsed.data
 
   // Verify file belongs to office; agents must be assigned

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createContractSchema } from "@/lib/validations/contract"
 import { bigIntToNumber } from "@/lib/utils"
+import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 // ─── GET /api/contracts ─────────────────────────────────────────────────────────
 // Returns all contracts in the manager's office. Manager-only.
@@ -80,6 +81,16 @@ export async function POST(request: Request) {
 
   const { officeId, id: userId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+
+  try {
+    await requireWriteAccess(officeId)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
+
   const { fileId, finalPrice, commissionAmount, agentShare, notes } = parsed.data
   // officeShare is not sent by the client — derived here to ensure integrity
   const officeShare = commissionAmount - agentShare

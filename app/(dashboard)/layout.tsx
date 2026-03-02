@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { DashboardShell } from "@/components/dashboard/DashboardShell"
+import { getEffectiveSubscription } from "@/lib/subscription"
 
 // Defense-in-depth: middleware already protects dashboard routes,
 // but we verify auth here so the layout can never render unauthenticated.
@@ -18,16 +19,20 @@ export default async function DashboardLayout({
   if (!session.user.officeId) redirect("/admin/dashboard")
   const officeId = session.user.officeId // narrowed: string
 
-  const office = await db.office.findUnique({
-    where: { id: officeId },
-    select: { name: true },
-  })
+  const [office, subscription] = await Promise.all([
+    db.office.findUnique({
+      where: { id: officeId },
+      select: { name: true },
+    }),
+    getEffectiveSubscription(officeId),
+  ])
 
   return (
     <DashboardShell
       role={session.user.role}
       officeName={office?.name ?? "دفتر شما"}
       userName={session.user.name ?? "کاربر"}
+      subscription={subscription}
     >
       {children}
     </DashboardShell>

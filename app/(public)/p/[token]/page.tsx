@@ -6,6 +6,7 @@ import { parseLocationAnalysis } from "@/lib/maps"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MapView } from "@/components/shared/MapView"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
+import { PhotoGallery } from "@/components/files/PhotoGallery"
 
 interface SharePageProps {
   params: Promise<{ token: string }>
@@ -37,6 +38,7 @@ export default async function SharePage({ params }: SharePageProps) {
       file: {
         include: {
           office: { select: { name: true } },
+          photos: { orderBy: { order: "asc" as const } },
         },
       },
     },
@@ -101,6 +103,18 @@ export default async function SharePage({ params }: SharePageProps) {
           </p>
         )}
       </div>
+
+      {/* Photos */}
+      {file.photos.length > 0 && (
+        <PhotoGallery
+          initialPhotos={file.photos.map((p) => ({
+            ...p,
+            createdAt: new Date(p.createdAt),
+          }))}
+          fileId={file.id}
+          canEdit={false}
+        />
+      )}
 
       {/* Price */}
       <Card>

@@ -19,6 +19,10 @@ vi.mock("@/lib/db", () => ({
     activityLog: {
       create: vi.fn(),
     },
+    subscription: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
 }))
@@ -38,7 +42,16 @@ const mockDb = db as unknown as {
   shareLink: { findMany: MockFn; findFirst: MockFn; findUnique: MockFn; create: MockFn; update: MockFn }
   propertyFile: { findFirst: MockFn }
   activityLog: { create: MockFn }
+  subscription: { findUnique: MockFn; update: MockFn }
   $transaction: MockFn
+}
+
+const activeSubscription = {
+  id: "sub-1",
+  plan: "TRIAL",
+  status: "ACTIVE",
+  trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  currentPeriodEnd: null,
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -148,6 +161,11 @@ describe("GET /api/files/[id]/share-links", () => {
 // ─── POST /api/files/[id]/share-links ──────────────────────────────────────────
 
 describe("POST /api/files/[id]/share-links", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
+  })
+
   it("returns 401 when not authenticated", async () => {
     mockAuth.mockResolvedValue(null)
     const res = await createShareLink(makePostRequest({}), makeFileCtx())

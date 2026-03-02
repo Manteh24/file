@@ -17,6 +17,10 @@ vi.mock("@/lib/db", () => ({
       findMany: vi.fn(),
       create: vi.fn(),
     },
+    subscription: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }))
 
@@ -48,6 +52,15 @@ const mockDb = db as unknown as {
     findMany: MockFn
     create: MockFn
   }
+  subscription: { findUnique: MockFn; update: MockFn }
+}
+
+const activeSubscription = {
+  id: "sub-1",
+  plan: "TRIAL",
+  status: "ACTIVE",
+  trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  currentPeriodEnd: null,
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -161,7 +174,10 @@ describe("GET /api/crm", () => {
 // ─── POST /api/crm ──────────────────────────────────────────────────────────────
 
 describe("POST /api/crm", () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
+  })
 
   function makePostRequest(body: unknown): Request {
     return new Request("http://localhost/api/crm", {
@@ -308,7 +324,10 @@ describe("GET /api/crm/[id]", () => {
 // ─── PATCH /api/crm/[id] ───────────────────────────────────────────────────────
 
 describe("PATCH /api/crm/[id]", () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
+  })
 
   it("returns 401 when not authenticated", async () => {
     mockAuth.mockResolvedValue(null)
@@ -342,7 +361,10 @@ describe("PATCH /api/crm/[id]", () => {
 // ─── DELETE /api/crm/[id] ──────────────────────────────────────────────────────
 
 describe("DELETE /api/crm/[id]", () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
+  })
 
   it("returns 401 when not authenticated", async () => {
     mockAuth.mockResolvedValue(null)

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { updateAgentSchema } from "@/lib/validations/agent"
+import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -75,6 +76,15 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   const { id } = await params
   const { officeId } = session.user
 
+  try {
+    await requireWriteAccess(officeId!)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
+
   const existing = await db.user.findFirst({
     where: { id, officeId, role: "AGENT" },
     select: { id: true },
@@ -139,6 +149,15 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
 
   const { id } = await params
   const { officeId } = session.user
+
+  try {
+    await requireWriteAccess(officeId!)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
 
   const existing = await db.user.findFirst({
     where: { id, officeId, role: "AGENT" },

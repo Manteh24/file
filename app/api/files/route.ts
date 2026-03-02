@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { createFileSchema, fileFiltersSchema } from "@/lib/validations/file"
 import { logActivity, buildFileWhere, buildOrderBy } from "@/lib/file-helpers"
 import { bigIntToNumber } from "@/lib/utils"
+import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 // ─── GET /api/files ────────────────────────────────────────────────────────────
 // Returns files for the authenticated user's office.
@@ -99,6 +100,15 @@ export async function POST(request: Request) {
   const { contacts, salePrice, depositAmount, rentAmount, ...restFileData } = parsed.data
   const { officeId, id: userId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+
+  try {
+    await requireWriteAccess(officeId)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
 
   try {
     const file = await db.$transaction(async (tx) => {

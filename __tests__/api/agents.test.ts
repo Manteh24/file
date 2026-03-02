@@ -12,6 +12,10 @@ vi.mock("@/lib/db", () => ({
       create: vi.fn(),
       update: vi.fn(),
     },
+    subscription: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }))
 
@@ -43,6 +47,15 @@ const mockDb = db as unknown as {
     create: MockFn
     update: MockFn
   }
+  subscription: { findUnique: MockFn; update: MockFn }
+}
+
+const activeSubscription = {
+  id: "sub-1",
+  plan: "TRIAL",
+  status: "ACTIVE",
+  trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  currentPeriodEnd: null,
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -151,7 +164,10 @@ describe("GET /api/agents", () => {
 // ─── POST /api/agents ───────────────────────────────────────────────────────────
 
 describe("POST /api/agents", () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
+  })
 
   it("returns 401 when not authenticated", async () => {
     mockAuth.mockResolvedValue(null)
@@ -282,7 +298,10 @@ describe("GET /api/agents/[id]", () => {
 // ─── PATCH /api/agents/[id] ────────────────────────────────────────────────────
 
 describe("PATCH /api/agents/[id]", () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
+  })
 
   it("returns 401 when not authenticated", async () => {
     mockAuth.mockResolvedValue(null)
@@ -334,7 +353,10 @@ describe("PATCH /api/agents/[id]", () => {
 // ─── DELETE /api/agents/[id] ───────────────────────────────────────────────────
 
 describe("DELETE /api/agents/[id]", () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
+  })
 
   it("returns 401 when not authenticated", async () => {
     mockAuth.mockResolvedValue(null)

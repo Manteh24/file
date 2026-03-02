@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createAgentSchema } from "@/lib/validations/agent"
+import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 // ─── GET /api/agents ────────────────────────────────────────────────────────────
 // Returns all agents in the manager's office. Manager-only.
@@ -69,6 +70,15 @@ export async function POST(request: Request) {
 
   const { officeId } = session.user
   const { username, displayName, password, email } = parsed.data
+
+  try {
+    await requireWriteAccess(officeId!)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
 
   // Check uniqueness — username is globally unique, email is unique when non-empty
   const normalizedEmail = email || null

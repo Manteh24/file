@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { updateCustomerSchema } from "@/lib/validations/customer"
+import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -73,6 +74,15 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   const { officeId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
+  try {
+    await requireWriteAccess(officeId)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
+
   // Verify the customer belongs to this office before updating
   const existing = await db.customer.findFirst({ where: { id, officeId }, select: { id: true } })
   if (!existing) {
@@ -124,6 +134,15 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   const { id } = await params
   const { officeId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+
+  try {
+    await requireWriteAccess(officeId)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
 
   const existing = await db.customer.findFirst({ where: { id, officeId }, select: { id: true } })
   if (!existing) {

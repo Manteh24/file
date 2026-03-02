@@ -442,6 +442,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `lib/sms.ts` | KaveNegar SMS sending functions |
 | `lib/maps.ts` | Neshan API calls (geocoding, routing, POI) |
 | `lib/file-helpers.ts` | `logActivity`, `recordPriceChanges`, `buildDiff`, `deactivateShareLinks`, `buildFileWhere`, `buildOrderBy` — shared file query builders used by both the server page and the API route |
+| `lib/subscription.ts` | `resolveSubscription`, `getEffectiveSubscription` (lazy status migration), `requireWriteAccess`, `SubscriptionLockedError` |
 | `lib/image.ts` | Sharp processing pipeline (compress, watermark, resize) |
 | `lib/storage.ts` | IranServer object storage upload/download/delete |
 | `hooks/useDraft.ts` | Dexie.js IndexedDB draft management for file creation |
@@ -505,9 +506,9 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | 11 | **Settings** (office profile, billing, Zarinpal) | ✅ | ✅ | Manager-only. Office profile PATCH (name, phone, email, address, city). Zarinpal full flow: POST /api/payments/request → redirect → GET /api/payments/verify callback → subscription update. PaymentRecord model for idempotency. |
 | 12 | **AI Description** (AvalAI + template fallback) | ✅ | ✅ | `POST /api/ai/description` (auth required). `lib/ai.ts`: `generateDescription()` calls AvalAI (`gpt-4o-mini`, 15s timeout, system+user roles, temperature per tone), always falls back to `buildDescriptionTemplate()`. Tone values: `formal`/`standard`/`compelling` (رسمی/معمولی/جذاب). |
 | 13 | **Maps** (Neshan pin, POI, routing) | ✅ | ✅ | `lib/maps.ts`: `reverseGeocode`, `analyzeLocation`, `parseLocationAnalysis`. `GET /api/maps/reverse-geocode`. `POST /api/files/[id]/analyze-location`. `NeshanMapPicker` + `LocationPicker` (SSR-safe). `NeshanMapView` + `MapView` (SSR-safe). `LocationAnalysisDisplay`. FileForm: pin drop → reverse-geocode auto-fill → analyze-location after save. Detail page + public share page show map + analysis. |
-| 14 | **Image Processing** (Sharp pipeline, watermark, storage) | ❌ | ❌ | |
-| 15 | **Offline Drafts** (Dexie.js IndexedDB) | ❌ | ❌ | |
-| 16 | **Subscription / Billing** (trial, grace, locked lifecycle) | ❌ | ❌ | |
+| 14 | **Image Processing** (Sharp pipeline, watermark, storage) | ✅ | ✅ | |
+| 15 | **Offline Drafts** (Dexie.js IndexedDB) | ✅ | ✅ | |
+| 16 | **Subscription / Billing** (trial, grace, locked lifecycle) | ✅ | ✅ | `lib/subscription.ts`: `resolveSubscription()` (pure, date-based), `getEffectiveSubscription()` (lazy DB migration, no cron), `requireWriteAccess()` + `SubscriptionLockedError`. `SubscriptionBanner` in dashboard shell (near-expiry yellow, grace amber, locked red; role-aware Persian text). Write gate on 10 API handlers (POST/PATCH/DELETE for files, share-links, contracts, agents, crm). `CANCELLED` status set by admins is never auto-overridden. |
 
 ### Test Files Written
 
@@ -540,6 +541,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/api/ai-description.test.ts` | AI Description | `POST /api/ai/description` — auth, validation, happy path, AvalAI failure, fallback, all tone values (12 cases) |
 | `__tests__/lib/maps.test.ts` | Maps | `parseLocationAnalysis` — null/undefined/non-object/array inputs, missing fields, valid POIs, invalid POI shape, invalid category, extra fields (13 cases) |
 | `__tests__/api/maps.test.ts` | Maps | `GET /api/maps/reverse-geocode` — auth, missing params, NaN, out-of-range, happy path, null address (8 cases); `POST /api/files/[id]/analyze-location` — auth, 404, no lat, no lng, happy path, DB update, officeId filter (8 cases) |
+| `__tests__/lib/image.test.ts` | Image Processing | `processPropertyPhoto` — rotate, resize params, JPEG quality, no watermark when officeName absent, composite watermark when present, XML escaping in watermark SVG (9 cases) |
+| `__tests__/api/upload.test.ts` | Image Processing | `POST /api/upload` — auth, officeId, missing file, missing fileId, bad MIME, file too large, wrong office, photo limit, happy path, buffer passed to processPropertyPhoto, key/buffer passed to uploadFile, order = photo count (12 cases) |
+| `__tests__/hooks/useDraft.test.ts` | Offline Drafts | `loadDraftFromDb` — null when absent, returns stored draft, correct key (3 cases); `saveDraftToDb` — correct key/data, savedAt Date, upsert behavior (3 cases); `clearDraftFromDb` — correct key, resolves safely (2 cases) |
+| `__tests__/lib/subscription.test.ts` | Subscription / Billing | `resolveSubscription` — CANCELLED always locked, active far/near expiry, grace window boundaries, locked threshold, SMALL/LARGE use currentPeriodEnd, null currentPeriodEnd locked (14 cases); `getEffectiveSubscription` — null when not found, no DB update when status matches, DB update on drift, no update for CANCELLED (4 cases) (19 total) |
 
 ### Admin Panel & UI Fixes (post-feature work)
 - **Middleware redirect:** Admin users (SUPER_ADMIN / MID_ADMIN — `officeId = null`) are now redirected at middleware level to `/admin/dashboard` instead of going through `/dashboard` first. Two checks added: auth-page redirect and `/dashboard` prefix guard.
@@ -555,6 +560,6 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 - **`app/(dashboard)/files/page.tsx`:** Status tab hrefs rebuilt via `buildStatusHref()` so switching tabs preserves all active secondary filters. `hasActiveFilters` flag drives contextual empty-state message.
 
 ### Current Status
-- **Last completed:** File List Filtering Enhancement (search, price/area range, amenities, sort, transaction/property type pills)
-- **Up next:** Feature 14 — Image Processing (Sharp pipeline, watermark, storage)
-- **Total tests:** 465 passing, 1 failing (pre-existing BigInt mismatch in share-links test)
+- **Last completed:** Feature 16 — Subscription / Billing (trial, grace, locked lifecycle)
+- **Up next:** All 16 features complete — ready for production deployment
+- **Total tests:** 513 passing, 1 failing (pre-existing BigInt mismatch in share-links test)

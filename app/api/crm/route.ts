@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createCustomerSchema, customerFiltersSchema } from "@/lib/validations/customer"
+import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 // ─── GET /api/crm ───────────────────────────────────────────────────────────────
 // Returns all customers for the authenticated user's office.
@@ -75,6 +76,15 @@ export async function POST(request: Request) {
 
   const { officeId, id: userId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+
+  try {
+    await requireWriteAccess(officeId)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
 
   try {
     const customer = await db.customer.create({

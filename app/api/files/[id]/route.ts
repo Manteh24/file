@@ -5,6 +5,7 @@ import { updateFileSchema } from "@/lib/validations/file"
 import { buildDiff, recordPriceChanges, type FieldDiff } from "@/lib/file-helpers"
 import { createManyNotifications } from "@/lib/notifications"
 import { bigIntToNumber } from "@/lib/utils"
+import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 // ─── GET /api/files/[id] ───────────────────────────────────────────────────────
 // Returns the full detail of a single file.
@@ -85,6 +86,15 @@ export async function PATCH(
   const { id } = await params
   const { officeId, role, id: userId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+
+  try {
+    await requireWriteAccess(officeId)
+  } catch (err) {
+    if (err instanceof SubscriptionLockedError) {
+      return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
+    }
+    return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
 
   let body: unknown
   try {

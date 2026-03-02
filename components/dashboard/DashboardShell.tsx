@@ -3,13 +3,16 @@
 import { useState } from "react"
 import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
+import { SubscriptionBanner } from "./SubscriptionBanner"
 import type { Role } from "@/types"
+import type { ResolvedSubscription } from "@/lib/subscription"
 
 interface DashboardShellProps {
   children: React.ReactNode
   role: Role
   officeName: string
   userName: string
+  subscription: ResolvedSubscription | null
 }
 
 export function DashboardShell({
@@ -17,6 +20,7 @@ export function DashboardShell({
   role,
   officeName,
   userName,
+  subscription,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
@@ -35,6 +39,15 @@ export function DashboardShell({
           userName={userName}
           onMenuClick={() => setSidebarOpen(true)}
         />
+        {subscription && (
+          <SubscriptionBanner
+            status={subscription.status}
+            isNearExpiry={subscription.isNearExpiry}
+            daysUntilExpiry={subscription.daysUntilExpiry}
+            graceDaysLeft={subscription.graceDaysLeft}
+            role={role}
+          />
+        )}
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
     </div>

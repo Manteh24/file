@@ -19,6 +19,7 @@ import { ArchiveFileButton } from "@/components/files/ArchiveFileButton"
 import { AgentAssignmentPanel } from "@/components/files/AgentAssignmentPanel"
 import { ShareLinksPanel } from "@/components/files/ShareLinksPanel"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
+import { PhotoGallery } from "@/components/files/PhotoGallery"
 import { MapView } from "@/components/shared/MapView"
 import { formatToman, formatJalali } from "@/lib/utils"
 import { parseLocationAnalysis } from "@/lib/maps"
@@ -172,6 +173,25 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
           )}
         </div>
       </div>
+
+      {/* Photos */}
+      {(file.photos.length > 0 || canEdit) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">تصاویر ملک</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <PhotoGallery
+              initialPhotos={file.photos.map((p) => ({
+                ...p,
+                createdAt: new Date(p.createdAt),
+              }))}
+              fileId={file.id}
+              canEdit={canEdit}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Price */}
       <Card>

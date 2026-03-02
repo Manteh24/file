@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useFieldArray, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
-import { Plus, Trash2, Sparkles, MapPin } from "lucide-react"
+import { Plus, Trash2, Sparkles, MapPin, Wifi, WifiOff } from "lucide-react"
 import { createFileSchema, type CreateFileInput } from "@/lib/validations/file"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/form"
 import { PriceInput } from "@/components/forms/PriceInput"
 import { LocationPicker } from "@/components/files/LocationPicker"
+import { useDraft } from "@/hooks/useDraft"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
 import type { PropertyFileDetail, LocationAnalysis } from "@/types"
 import type { DescriptionTone } from "@/lib/ai"
@@ -68,6 +69,56 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
   const [locationAnalysis, setLocationAnalysis] = useState<LocationAnalysis | null>(null)
   const [savedFileId, setSavedFileId] = useState<string | null>(fileId ?? null)
 
+  // ── Offline / draft state ──────────────────────────────────────────────────
+  const [isOnline, setIsOnline] = useState(true)
+  const [justCameOnline, setJustCameOnline] = useState(false)
+  const [draftBannerDismissed, setDraftBannerDismissed] = useState(false)
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const hasDraftRef = useRef(false)
+
+  const { draft, isLoading: draftLoading, hasDraft, saveDraft, clearDraft } = useDraft()
+
+  // Keep ref in sync so the online event handler always sees the latest value
+  hasDraftRef.current = hasDraft
+
+  // Detect online/offline transitions
+  useEffect(() => {
+    setIsOnline(navigator.onLine)
+
+    const handleOnline = () => {
+      setIsOnline(true)
+      if (!isEdit && hasDraftRef.current) setJustCameOnline(true)
+    }
+    const handleOffline = () => {
+      setIsOnline(false)
+      setJustCameOnline(false)
+    }
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+    return () => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    }
+  }, [isEdit]) // isEdit is stable — effect runs once
+
+  // Auto-save form changes to IndexedDB draft (create mode only, 1.5 s debounce)
+  useEffect(() => {
+    if (isEdit) return
+
+    const subscription = form.watch((values) => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+      draftTimerRef.current = setTimeout(() => {
+        void saveDraft(values as CreateFileInput)
+      }, 1500)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+    }
+  }, [isEdit, form, saveDraft])
+
   const form = useForm<CreateFileInput>({
     // Cast needed: standardSchemaResolver's return type has a different third generic
     // than useForm<CreateFileInput> expects. Runtime behavior is correct.
@@ -114,6 +165,15 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
     transactionType === "LONG_TERM_RENT" || transactionType === "SHORT_TERM_RENT"
 
   async function onSubmit(values: CreateFileInput) {
+    // Offline: save to draft only, do not call the server
+    if (!isOnline) {
+      await saveDraft(values)
+      form.setError("root", {
+        message: "اتصال به اینترنت قطع است. اطلاعات به صورت محلی ذخیره شد.",
+      })
+      return
+    }
+
     const url = isEdit ? `/api/files/${fileId}` : "/api/files"
     const method = isEdit ? "PATCH" : "POST"
 
@@ -151,6 +211,9 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
         // Non-critical — location analysis failure doesn't block navigation
       }
     }
+
+    // Clear the local draft after a successful server save
+    if (!isEdit) await clearDraft()
 
     router.push(`/files/${targetId}`)
     router.refresh()
@@ -227,6 +290,70 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+
+        {/* Draft restore banner — shown in create mode when a previous draft is available */}
+        {!isEdit && hasDraft && !draftBannerDismissed && !draftLoading && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-800 dark:bg-amber-950/30">
+            <p className="text-amber-800 dark:text-amber-200">
+              پیش‌نویس ذخیره‌شده‌ای موجود است. آیا می‌خواهید بازیابی کنید؟
+            </p>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="border-amber-300 hover:bg-amber-100 dark:border-amber-700"
+                onClick={() => {
+                  if (draft) form.reset(draft.formData)
+                  setDraftBannerDismissed(true)
+                }}
+              >
+                بازیابی
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  void clearDraft()
+                  setDraftBannerDismissed(true)
+                }}
+              >
+                رد کردن
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Reconnect banner — shown when coming back online with a draft pending */}
+        {!isEdit && justCameOnline && hasDraft && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
+            <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
+              <Wifi className="h-4 w-4 shrink-0" />
+              <p>اتصال برقرار شد. پیش‌نویس آماده ارسال است.</p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={async () => {
+                  setJustCameOnline(false)
+                  await form.handleSubmit(onSubmit)()
+                }}
+              >
+                ارسال به سرور
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => setJustCameOnline(false)}
+              >
+                بعداً
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Transaction Type */}
         <section className="space-y-4">
@@ -629,7 +756,8 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateDescription}
-                disabled={aiLoading}
+                disabled={aiLoading || !isOnline}
+                title={!isOnline ? "اتصال اینترنت برای تولید توضیحات لازم است" : undefined}
               >
                 <Sparkles className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
                 {aiLoading ? "در حال تولید..." : "تولید توضیحات"}
@@ -681,6 +809,18 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
           <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
         )}
 
+        {/* Offline status indicator */}
+        {!isOnline && (
+          <div className="flex items-center gap-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-800 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-200">
+            <WifiOff className="h-4 w-4 shrink-0" />
+            <span>
+              {isEdit
+                ? "اتصال قطع است. لطفاً پس از اتصال مجدد تغییرات را ذخیره کنید."
+                : "اتصال قطع است. اطلاعات به صورت محلی ذخیره می‌شود."}
+            </span>
+          </div>
+        )}
+
         {/* Submit */}
         <div className="flex gap-3 justify-end">
           <Button
@@ -695,7 +835,9 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
               ? "در حال ذخیره..."
               : isEdit
               ? "ذخیره تغییرات"
-              : "ثبت فایل"}
+              : isOnline
+              ? "ثبت فایل"
+              : "ذخیره محلی"}
           </Button>
         </div>
       </form>
