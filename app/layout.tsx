@@ -13,7 +13,7 @@ const vazirmatn = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "املاک‌یار",
+  title: "املاکبین",
   description: "سیستم مدیریت دفتر املاک",
   manifest: "/manifest.json",
 }

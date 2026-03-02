@@ -19,7 +19,7 @@ class DraftDatabase extends Dexie {
   drafts!: Table<FileDraft, string>
 
   constructor() {
-    super("AmlakiarDrafts")
+    super("AmlakBinDrafts")
     // key is the primary key — put() with the same key overwrites the existing record
     this.version(1).stores({ drafts: "key" })
   }

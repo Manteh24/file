@@ -71,7 +71,7 @@ export function Sidebar({ role, officeName, isOpen, onClose }: SidebarProps) {
       >
         {/* Brand */}
         <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-border">
-          <span className="text-lg font-bold tracking-tight">املاک‌یار</span>
+          <span className="text-lg font-bold tracking-tight">املاکبین</span>
           <button
             onClick={onClose}
             className="lg:hidden rounded-md p-1 text-muted-foreground hover:text-foreground"

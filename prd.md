@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-## املاک‌یار — Real Estate Agent & Office Management SaaS
+## املاکبین — Real Estate Agent & Office Management SaaS
 
 **Version:** 1.0 (Draft)
 **Date:** 2026-02-19

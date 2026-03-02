@@ -61,7 +61,7 @@ export function AdminSidebar({ role, isOpen, onClose }: AdminSidebarProps) {
         {/* Brand */}
         <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-border">
           <div>
-            <span className="text-lg font-bold tracking-tight">املاک‌یار</span>
+            <span className="text-lg font-bold tracking-tight">املاکبین</span>
             <span className="me-2 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
               پنل مدیریت
             </span>

@@ -264,7 +264,7 @@ export default async function SharePage({ params }: SharePageProps) {
       </div>
 
       {/* Footer */}
-      <p className="text-center text-xs text-muted-foreground pb-4">ارائه‌شده توسط سامانه املاک‌یار</p>
+      <p className="text-center text-xs text-muted-foreground pb-4">ارائه‌شده توسط سامانه املاکبین</p>
     </div>
   )
 }
