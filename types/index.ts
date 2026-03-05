@@ -6,7 +6,8 @@ import type { DefaultSession } from "next-auth"
 
 export type Role = "SUPER_ADMIN" | "MID_ADMIN" | "MANAGER" | "AGENT"
 export type CustomerType = "BUYER" | "RENTER" | "SELLER" | "LANDLORD"
-export type Plan = "TRIAL" | "SMALL" | "LARGE"
+export type Plan = "FREE" | "PRO" | "TEAM"
+export type BillingCycle = "MONTHLY" | "ANNUAL"
 export type SubStatus = "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED"
 
 export type TransactionType = "SALE" | "LONG_TERM_RENT" | "SHORT_TERM_RENT" | "PRE_SALE"
@@ -268,7 +269,9 @@ export interface OfficeProfile {
 export interface SubscriptionInfo {
   plan: Plan
   status: SubStatus
-  trialEndsAt: Date
+  isTrial: boolean
+  billingCycle: BillingCycle
+  trialEndsAt: Date | null
   currentPeriodEnd: Date | null
 }
 
@@ -313,7 +316,7 @@ export interface AdminStats {
   // Offices & growth
   totalOffices: number
   newOfficesThisMonth: number
-  byPlan: { TRIAL: number; SMALL: number; LARGE: number }
+  byPlan: { FREE: number; PRO: number; TEAM: number }
   // Active vs locked
   byStatus: { ACTIVE: number; GRACE: number; LOCKED: number; CANCELLED: number }
   // Revenue (last 30 days), in Toman
@@ -332,7 +335,9 @@ export interface AdminOfficeSummary {
   subscription: {
     plan: Plan
     status: SubStatus
-    trialEndsAt: Date
+    isTrial: boolean
+    billingCycle: BillingCycle
+    trialEndsAt: Date | null
     currentPeriodEnd: Date | null
   } | null
   _count: {
@@ -353,7 +358,9 @@ export interface AdminOfficeDetail {
     id: string
     plan: Plan
     status: SubStatus
-    trialEndsAt: Date
+    isTrial: boolean
+    billingCycle: BillingCycle
+    trialEndsAt: Date | null
     currentPeriodEnd: Date | null
   } | null
   agents: Array<{
@@ -372,6 +379,7 @@ export interface AdminOfficeDetail {
   paymentRecords: Array<{
     id: string
     plan: Plan
+    billingCycle: BillingCycle
     amount: number
     status: string
     refId: string | null

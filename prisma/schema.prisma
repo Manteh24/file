@@ -17,9 +17,14 @@ enum Role {
 }
 
 enum Plan {
-  TRIAL
-  SMALL
-  LARGE
+  FREE
+  PRO
+  TEAM
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
 }
 
 enum SubStatus {
@@ -83,13 +88,15 @@ model Office {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
-  users           User[]
-  subscription    Subscription?
-  files           PropertyFile[]
-  customers       Customer[]
-  contracts       Contract[]
-  paymentRecords  PaymentRecord[]
+  users            User[]
+  subscription     Subscription?
+  files            PropertyFile[]
+  customers        Customer[]
+  contracts        Contract[]
+  paymentRecords   PaymentRecord[]
   adminAssignments AdminOfficeAssignment[]
+  aiUsageLogs      AiUsageLog[]
+  branches         Branch[]
 
   @@map("offices")
 }
@@ -108,10 +115,13 @@ model User {
   avatarUrl    String?
   // Nullable: SUPER_ADMIN and MID_ADMIN users have no tenant office (officeId = null)
   officeId     String?
+  // Nullable: links user to a specific branch (Team plan multi-branch, hidden until month 4)
+  branchId     String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   office              Office?          @relation(fields: [officeId], references: [id])
+  branch              Branch?          @relation(fields: [branchId], references: [id])
   adminAssignments    AdminOfficeAssignment[]
   sessions            UserSession[]
   createdFiles        PropertyFile[]   @relation("CreatedFiles")
@@ -141,18 +151,22 @@ model UserSession {
   @@map("user_sessions")
 }
 
-// One subscription per office. Created automatically on registration (TRIAL plan).
+// One subscription per office. Created automatically on registration.
 model Subscription {
-  id               String    @id @default(cuid())
-  officeId         String    @unique
-  plan             Plan      @default(TRIAL)
-  status           SubStatus @default(ACTIVE)
-  // trialEndsAt is set to now + 30 days at registration.
-  trialEndsAt      DateTime
-  // currentPeriodEnd is set when the office upgrades to a paid plan.
+  id               String       @id @default(cuid())
+  officeId         String       @unique
+  plan             Plan         @default(PRO)
+  status           SubStatus    @default(ACTIVE)
+  // True while the office is on a free trial period (PRO or TEAM trial).
+  // FREE plan offices never have a trial — isTrial stays false.
+  isTrial          Boolean      @default(true)
+  billingCycle     BillingCycle @default(MONTHLY)
+  // Set to now + 30 days at registration for trial offices. Null for FREE plan.
+  trialEndsAt      DateTime?
+  // Set when the office makes a successful payment. Governs paid plan expiry.
   currentPeriodEnd DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   office           Office    @relation(fields: [officeId], references: [id])
 
@@ -411,24 +425,56 @@ model Notification {
 // Tracks Zarinpal payment attempts. Created when a payment is initiated so the
 // verify callback can look up the office without a user session.
 model PaymentRecord {
-  id        String   @id @default(cuid())
-  officeId  String
-  plan      Plan
+  id           String       @id @default(cuid())
+  officeId     String
+  plan         Plan
+  billingCycle BillingCycle @default(MONTHLY)
   // Amount stored in Rials (Zarinpal unit = Toman × 10)
-  amount    Int
+  amount       Int
   // Zarinpal's unique payment identifier — used as the lookup key in the callback
-  authority String   @unique
+  authority    String       @unique
   // PENDING → VERIFIED on success, FAILED on verification failure
-  status    String   @default("PENDING")
+  status       String       @default("PENDING")
   // Zarinpal ref_id returned on successful verification
-  refId     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  refId        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
-  office    Office   @relation(fields: [officeId], references: [id])
+  office       Office   @relation(fields: [officeId], references: [id])
 
   @@index([officeId])
   @@map("payment_records")
+}
+
+// Tracks AI description generation calls per office per Shamsi calendar month.
+// Used to enforce the FREE plan limit of 10 AI calls/month.
+// shamsiMonth is stored as a YYYYMM integer (e.g. 140412 = Farvardin 1404).
+model AiUsageLog {
+  id          String @id @default(cuid())
+  officeId    String
+  shamsiMonth Int
+  count       Int    @default(0)
+
+  office      Office @relation(fields: [officeId], references: [id])
+
+  @@unique([officeId, shamsiMonth])
+  @@map("ai_usage_logs")
+}
+
+// Office branch for multi-branch management (Team plan).
+// Schema included at launch; UI and enforcement enabled at month 4.
+model Branch {
+  id        String   @id @default(cuid())
+  officeId  String
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+
+  office    Office   @relation(fields: [officeId], references: [id])
+  users     User[]
+
+  @@index([officeId])
+  @@map("branches")
 }
 
 // Links a MID_ADMIN user to specific offices they are allowed to support.

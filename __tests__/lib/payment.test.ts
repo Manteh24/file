@@ -51,4 +51,16 @@ describe("calculateNewPeriodEnd", () => {
     expect(calculateNewPeriodEnd(undefined)).toBeInstanceOf(Date)
     expect(calculateNewPeriodEnd(new Date())).toBeInstanceOf(Date)
   })
+
+  it("adds 365 days for ANNUAL billing cycle", () => {
+    const futureDate = new Date()
+    futureDate.setDate(futureDate.getDate() + 15)
+
+    const result = calculateNewPeriodEnd(futureDate, "ANNUAL")
+
+    const expectedDate = new Date(futureDate)
+    expectedDate.setDate(expectedDate.getDate() + 365)
+
+    expect(Math.abs(result.getTime() - expectedDate.getTime())).toBeLessThan(1000)
+  })
 })

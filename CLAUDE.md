@@ -520,11 +520,11 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/actions/signout.test.ts` | Dashboard | `signOutAction` — calls `signOut({ redirectTo: "/login" })`, error propagation (2 cases) |
 | `__tests__/dashboard/page.test.ts` | Dashboard | `trialDaysLeft` calculation (6 cases), `planLabels` (3 cases), `statusConfig` (4 cases) |
 | `__tests__/validations/file.test.ts` | File Management | `contactSchema` (6 cases), `createFileSchema` (16 cases), `updateFileSchema` (5 cases), `changeFileStatusSchema` (4 cases) |
-| `__tests__/api/files.test.ts` | File Management | `GET /api/files` (6 cases), `POST /api/files` (9 cases) |
+| `__tests__/api/files.test.ts` | File Management + Redesign | `GET /api/files` (6 cases), `POST /api/files` (9 cases); FREE plan active file count limit enforcement (1 case) (16 total) |
 | `__tests__/validations/customer.test.ts` | CRM | `createCustomerSchema` (15 cases), `updateCustomerSchema` (4 cases), `customerNoteSchema` (5 cases) |
 | `__tests__/api/customers.test.ts` | CRM | `GET /api/crm` (5 cases), `POST /api/crm` (7 cases), `GET/PATCH/DELETE /api/crm/[id]` (9 cases), `GET/POST /api/crm/[id]/notes` (8 cases) |
 | `__tests__/validations/agent.test.ts` | Agent Management | `createAgentSchema` (16 cases), `updateAgentSchema` (6 cases), `resetPasswordSchema` (5 cases) |
-| `__tests__/api/agents.test.ts` | Agent Management | `GET /api/agents` (5 cases), `POST /api/agents` (6 cases), `GET/PATCH/DELETE /api/agents/[id]` (9 cases), `POST /api/agents/[id]/reset-password` (5 cases) |
+| `__tests__/api/agents.test.ts` | Agent Management + Redesign | `GET /api/agents` (5 cases), `POST /api/agents` (6 cases), `GET/PATCH/DELETE /api/agents/[id]` (9 cases), `POST /api/agents/[id]/reset-password` (5 cases); FREE/PRO user count limit enforcement (2 cases) (29 total) |
 | `__tests__/validations/contract.test.ts` | Contracts | `createContractSchema` (16 cases) |
 | `__tests__/api/contracts.test.ts` | Contracts | `GET /api/contracts` (5 cases), `POST /api/contracts` (12 cases), `GET /api/contracts/[id]` (5 cases) |
 | `__tests__/validations/shareLink.test.ts` | Share Links | `createShareLinkSchema` (7 cases) |
@@ -538,13 +538,14 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `__tests__/api/payments.test.ts` | Settings | `POST /api/payments/request` (6 cases), `GET /api/payments/verify` (7 cases) |
 | `__tests__/lib/payment.test.ts` | Settings | `calculateNewPeriodEnd` (4 cases) |
 | `__tests__/lib/ai.test.ts` | AI Description | `buildDescriptionTemplate` — transaction types, property types, location, physical details, amenities, tone differences, edge cases (24 cases) |
-| `__tests__/api/ai-description.test.ts` | AI Description | `POST /api/ai/description` — auth, validation, happy path, AvalAI failure, fallback, all tone values (12 cases) |
+| `__tests__/api/ai-description.test.ts` | AI Description + Redesign | `POST /api/ai/description` — auth, validation, happy path, AvalAI failure, fallback, all tone values (12 cases); FREE plan AI limit enforcement, incrementAiUsage called, PRO skips count check (4 cases) (16 total) |
 | `__tests__/lib/maps.test.ts` | Maps | `parseLocationAnalysis` — null/undefined/non-object/array inputs, missing fields, valid POIs, invalid POI shape, invalid category, extra fields (13 cases) |
 | `__tests__/api/maps.test.ts` | Maps | `GET /api/maps/reverse-geocode` — auth, missing params, NaN, out-of-range, happy path, null address (8 cases); `POST /api/files/[id]/analyze-location` — auth, 404, no lat, no lng, happy path, DB update, officeId filter (8 cases) |
 | `__tests__/lib/image.test.ts` | Image Processing | `processPropertyPhoto` — rotate, resize params, JPEG quality, no watermark when officeName absent, composite watermark when present, XML escaping in watermark SVG (9 cases) |
 | `__tests__/api/upload.test.ts` | Image Processing | `POST /api/upload` — auth, officeId, missing file, missing fileId, bad MIME, file too large, wrong office, photo limit, happy path, buffer passed to processPropertyPhoto, key/buffer passed to uploadFile, order = photo count (12 cases) |
 | `__tests__/hooks/useDraft.test.ts` | Offline Drafts | `loadDraftFromDb` — null when absent, returns stored draft, correct key (3 cases); `saveDraftToDb` — correct key/data, savedAt Date, upsert behavior (3 cases); `clearDraftFromDb` — correct key, resolves safely (2 cases) |
-| `__tests__/lib/subscription.test.ts` | Subscription / Billing | `resolveSubscription` — CANCELLED always locked, active far/near expiry, grace window boundaries, locked threshold, SMALL/LARGE use currentPeriodEnd, null currentPeriodEnd locked (14 cases); `getEffectiveSubscription` — null when not found, no DB update when status matches, DB update on drift, no update for CANCELLED (4 cases) (19 total) |
+| `__tests__/lib/subscription.test.ts` | Subscription / Billing + Redesign | `resolveSubscription` — FREE plan always ACTIVE, CANCELLED always locked, active far/near expiry, grace window boundaries, locked threshold, PRO/TEAM paid plans use currentPeriodEnd, null currentPeriodEnd locked (14 cases); `getEffectiveSubscription` — null when not found, no DB update when matches, DB update on drift, no update for CANCELLED (4 cases); `PLAN_LIMITS` constants (3); `PLAN_FEATURES` constants (3); `getCurrentShamsiMonth` (1); `getAiUsageThisMonth` (3); `incrementAiUsage` (1) (31 total) |
+| `__tests__/api/cron.test.ts` | Subscription Redesign | `POST /api/cron/lock-expired-trials` — missing secret → 401, wrong secret → 401, no expired trials → no-op, expired with >2 users → locks extras, ≤2 users → no lock, multiple offices → sums usersLocked (6 cases) |
 
 ### Admin Panel & UI Fixes (post-feature work)
 - **Middleware redirect:** Admin users (SUPER_ADMIN / MID_ADMIN — `officeId = null`) are now redirected at middleware level to `/admin/dashboard` instead of going through `/dashboard` first. Two checks added: auth-page redirect and `/dashboard` prefix guard.
@@ -559,7 +560,20 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 - **`components/files/FileFilterPanel.tsx`:** New `"use client"` collapsible panel. State initialized via `useState(() => initState(initialParams))` (lazy initializer — no `useEffect` prop sync). Accumulates changes locally; navigates on "اعمال فیلترها" (not live per-keystroke). Active-filter count badge on toggle button. "پاک کردن" shortcut visible when filters are active and panel is closed.
 - **`app/(dashboard)/files/page.tsx`:** Status tab hrefs rebuilt via `buildStatusHref()` so switching tabs preserves all active secondary filters. `hasActiveFilters` flag drives contextual empty-state message.
 
+### Subscription Tier Redesign (post-feature work)
+- **Plans:** `FREE | PRO | TEAM` replaced `TRIAL | SMALL | LARGE`. `BillingCycle: MONTHLY | ANNUAL`.
+- **Schema additions:** `Subscription.isTrial`, `Subscription.billingCycle`, `PaymentRecord.billingCycle`, new `AiUsageLog` model (per-office per-Shamsi-month AI counter), new `Branch` model (schema-only, UI hidden), `User.branchId` nullable FK.
+- **`lib/subscription.ts`:** `PLAN_LIMITS` + `PLAN_FEATURES` constants (enforced at API level). `getAiUsageThisMonth`, `incrementAiUsage`, `getUserCount`, `getActiveFileCount` DB helpers. `getCurrentShamsiMonth()` using date-fns-jalali. `resolveSubscription` handles FREE (always ACTIVE/Infinity), isTrial flag replaces TRIAL plan value.
+- **`lib/payment.ts`:** Prices now nested `PLAN_PRICES_RIALS[plan][billingCycle]`. `calculateNewPeriodEnd(currentPeriodEnd, billingCycle)` — adds 30 or 365 days.
+- **API limit enforcement:** `POST /api/agents` (user count per plan), `POST /api/files` (active file count, FREE only), `POST /api/ai/description` (AI monthly limit, FREE only), `POST /api/sms/send` (FREE: no SMS), `POST /api/files/[id]/analyze-location` (FREE: no maps).
+- **Cron:** `POST /api/api/cron/lock-expired-trials` — guarded by `x-cron-secret` header; deactivates users at index 2+ for expired trials.
+- **Registration flow:** `?plan=` searchParam read in server component, passed to `RegisterForm`; plan-specific subscription creation in `actions.ts` (FREE: isTrial=false, no trialEndsAt; PRO/TEAM: 30-day trial).
+- **Pricing page:** `app/(public)/pricing/page.tsx` + `PricingCards.tsx` client component with MONTHLY/ANNUAL toggle, 3 columns (TEAM|PRO★|FREE), CTAs to `/register?plan=`.
+- **UI:** `SubscriptionBanner` shows plan name in banners (FREE returns null), `SubscriptionCard` shows FREE/PRO/TEAM with billingCycle toggle, annual "۲ ماه رایگان" CTA. Share page shows watermark footer for FREE plan. Admin: plan dropdown + isTrial checkbox.
+- **Data migration:** `scripts/migrate-plans.ts` — converts SMALL→PRO, LARGE→TEAM, TRIAL→PRO(isTrial=true) in a `$transaction`.
+- **Tests updated/added:** `dashboard/page.test.ts`, `lib/subscription.test.ts`, `api/payments.test.ts`, `validations/settings.test.ts`, `api/settings.test.ts`, `lib/payment.test.ts`, `api/agents.test.ts`, `api/files.test.ts`, `api/ai-description.test.ts`, `api/sms.test.ts`, `api/maps.test.ts`, `api/share-links.test.ts`. New: `api/cron.test.ts`.
+
 ### Current Status
-- **Last completed:** Feature 16 — Subscription / Billing (trial, grace, locked lifecycle)
-- **Up next:** All 16 features complete — ready for production deployment
-- **Total tests:** 513 passing, 1 failing (pre-existing BigInt mismatch in share-links test)
+- **Last completed:** Subscription Tier Redesign (FREE/PRO/TEAM) — all phases complete
+- **Up next:** Production deployment (run Prisma migrations + data migration script on VPS)
+- **Total tests:** 542 passing, 0 failing (32 test files)

@@ -3,9 +3,12 @@
 import Link from "next/link"
 import { Clock, AlertTriangle, XCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import type { SubStatus, Role } from "@/types"
+import type { SubStatus, Role, Plan } from "@/types"
+import { PLAN_LABELS } from "@/lib/payment"
 
 interface SubscriptionBannerProps {
+  plan: Plan
+  isTrial: boolean
   status: SubStatus
   isNearExpiry: boolean
   daysUntilExpiry: number
@@ -16,6 +19,7 @@ interface SubscriptionBannerProps {
 type BannerState = "near_expiry" | "grace" | "locked"
 
 function deriveBannerState(props: SubscriptionBannerProps): BannerState | null {
+  if (props.plan === "FREE") return null
   if (props.status === "LOCKED" || props.status === "CANCELLED") return "locked"
   if (props.status === "GRACE") return "grace"
   if (props.isNearExpiry) return "near_expiry"
@@ -23,16 +27,20 @@ function deriveBannerState(props: SubscriptionBannerProps): BannerState | null {
 }
 
 export function SubscriptionBanner({
+  plan,
+  isTrial,
   status,
   isNearExpiry,
   daysUntilExpiry,
   graceDaysLeft,
   role,
 }: SubscriptionBannerProps) {
-  const bannerState = deriveBannerState({ status, isNearExpiry, daysUntilExpiry, graceDaysLeft, role })
+  const bannerState = deriveBannerState({ plan, isTrial, status, isNearExpiry, daysUntilExpiry, graceDaysLeft, role })
   if (!bannerState) return null
 
   const isManager = role === "MANAGER"
+  const planLabel = PLAN_LABELS[plan]
+  const subscriptionLabel = isTrial ? `آزمایشی ${planLabel}` : planLabel
   const daysLeft = Math.max(1, Math.ceil(daysUntilExpiry))
   const daysLeftPersian = daysLeft.toLocaleString("fa-IR")
   const graceDaysPersian = graceDaysLeft.toLocaleString("fa-IR")
@@ -45,13 +53,13 @@ export function SubscriptionBanner({
         <AlertDescription className="text-yellow-800">
           {isManager ? (
             <>
-              اشتراک شما در {daysLeftPersian} روز دیگر منقضی می‌شود.{" "}
+              {subscriptionLabel} شما {daysLeftPersian} روز دیگر به پایان می‌رسد.{" "}
               <Link href="/settings" className="font-medium underline underline-offset-2 hover:no-underline">
                 تمدید اشتراک
               </Link>
             </>
           ) : (
-            `اشتراک دفتر در ${daysLeftPersian} روز دیگر منقضی می‌شود. با مدیر خود تماس بگیرید.`
+            `اشتراک ${subscriptionLabel} دفتر در ${daysLeftPersian} روز دیگر منقضی می‌شود. با مدیر خود تماس بگیرید.`
           )}
         </AlertDescription>
       </Alert>
@@ -66,7 +74,7 @@ export function SubscriptionBanner({
         <AlertDescription className="text-amber-800">
           {isManager ? (
             <>
-              اشتراک شما منقضی شده است. {graceDaysPersian} روز تا محدودیت دسترسی باقی است.{" "}
+              اشتراک {subscriptionLabel} شما منقضی شده است. {graceDaysPersian} روز تا محدودیت دسترسی باقی است.{" "}
               <Link href="/settings" className="font-medium underline underline-offset-2 hover:no-underline">
                 تمدید اشتراک
               </Link>

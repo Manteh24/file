@@ -1,8 +1,9 @@
 import { z } from "zod"
 
 export const updateSubscriptionSchema = z.object({
-  plan: z.enum(["TRIAL", "SMALL", "LARGE"]).optional(),
+  plan: z.enum(["FREE", "PRO", "TEAM"]).optional(),
   status: z.enum(["ACTIVE", "GRACE", "LOCKED", "CANCELLED"]).optional(),
+  isTrial: z.boolean().optional(),
   // Number of days to extend the trial or current period by
   extendDays: z.number().int().min(1).max(365).optional(),
 })

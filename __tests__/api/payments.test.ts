@@ -23,7 +23,10 @@ vi.mock("@/lib/payment", () => ({
   requestPayment: vi.fn(),
   verifyPayment: vi.fn(),
   calculateNewPeriodEnd: vi.fn().mockReturnValue(new Date("2026-04-01")),
-  PLAN_PRICES_RIALS: { SMALL: 4_900_000, LARGE: 9_900_000 },
+  PLAN_PRICES_RIALS: {
+    PRO:  { MONTHLY: 2_900_000, ANNUAL: 29_000_000 },
+    TEAM: { MONTHLY: 5_900_000, ANNUAL: 59_000_000 },
+  },
 }))
 
 // Set NEXTAUTH_URL so the verify route builds absolute redirect URLs
@@ -72,7 +75,7 @@ describe("POST /api/payments/request", () => {
     const req = new Request("http://localhost/api/payments/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "SMALL" }),
+      body: JSON.stringify({ plan: "PRO" }),
     })
     const res = await requestPaymentRoute(req)
     expect(res.status).toBe(401)
@@ -83,17 +86,17 @@ describe("POST /api/payments/request", () => {
     const req = new Request("http://localhost/api/payments/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "SMALL" }),
+      body: JSON.stringify({ plan: "PRO" }),
     })
     const res = await requestPaymentRoute(req)
     expect(res.status).toBe(403)
   })
 
-  it("returns 400 for invalid plan value", async () => {
+  it("returns 400 for invalid plan value (FREE is not purchasable)", async () => {
     const req = new Request("http://localhost/api/payments/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "TRIAL" }),
+      body: JSON.stringify({ plan: "FREE" }),
     })
     const res = await requestPaymentRoute(req)
     expect(res.status).toBe(400)
@@ -104,7 +107,7 @@ describe("POST /api/payments/request", () => {
     const req = new Request("http://localhost/api/payments/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "SMALL" }),
+      body: JSON.stringify({ plan: "PRO" }),
     })
     const res = await requestPaymentRoute(req)
     expect(res.status).toBe(502)
@@ -112,18 +115,19 @@ describe("POST /api/payments/request", () => {
     expect(body.success).toBe(false)
   })
 
-  it("creates a PaymentRecord with status PENDING on success", async () => {
+  it("creates a PaymentRecord with status PENDING on success (MONTHLY)", async () => {
     const req = new Request("http://localhost/api/payments/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "SMALL" }),
+      body: JSON.stringify({ plan: "PRO", billingCycle: "MONTHLY" }),
     })
     await requestPaymentRoute(req)
     expect(mockDb.paymentRecord.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           officeId: "office-1",
-          plan: "SMALL",
+          plan: "PRO",
+          billingCycle: "MONTHLY",
           status: "PENDING",
           authority: "A000000001234",
         }),
@@ -131,11 +135,11 @@ describe("POST /api/payments/request", () => {
     )
   })
 
-  it("returns payUrl and authority on success", async () => {
+  it("returns payUrl and authority on success for TEAM plan", async () => {
     const req = new Request("http://localhost/api/payments/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: "LARGE" }),
+      body: JSON.stringify({ plan: "TEAM", billingCycle: "ANNUAL" }),
     })
     const res = await requestPaymentRoute(req)
     expect(res.status).toBe(200)
@@ -152,8 +156,9 @@ describe("GET /api/payments/verify", () => {
   const pendingRecord = {
     id: "pr-1",
     officeId: "office-1",
-    plan: "SMALL",
-    amount: 4_900_000,
+    plan: "PRO",
+    billingCycle: "MONTHLY",
+    amount: 2_900_000,
     status: "PENDING",
   }
 

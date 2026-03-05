@@ -6,7 +6,7 @@ import { getAccessibleOfficeIds } from "@/lib/admin"
 import { SubscriptionManager } from "@/components/admin/SubscriptionManager"
 import { formatToman } from "@/lib/utils"
 
-const PLAN_LABELS = { TRIAL: "آزمایشی", SMALL: "کوچک", LARGE: "بزرگ" }
+const PLAN_LABELS = { FREE: "رایگان", PRO: "حرفه‌ای", TEAM: "تیم" }
 const STATUS_LABELS = { ACTIVE: "فعال", GRACE: "مهلت", LOCKED: "قفل", CANCELLED: "لغو" }
 const ROLE_LABELS = { MANAGER: "مدیر", AGENT: "مشاور" }
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
@@ -44,6 +44,8 @@ export default async function AdminOfficeDetailPage({
           id: true,
           plan: true,
           status: true,
+          isTrial: true,
+          billingCycle: true,
           trialEndsAt: true,
           currentPeriodEnd: true,
         },
@@ -105,7 +107,9 @@ export default async function AdminOfficeDetailPage({
           <div className="grid grid-cols-2 gap-3">
             <InfoRow label="پلن" value={PLAN_LABELS[sub.plan]} />
             <InfoRow label="وضعیت" value={STATUS_LABELS[sub.status]} />
-            <InfoRow label="پایان آزمایشی" value={format(new Date(sub.trialEndsAt), "yyyy/MM/dd")} />
+            {sub.trialEndsAt && (
+              <InfoRow label="پایان آزمایشی" value={format(new Date(sub.trialEndsAt), "yyyy/MM/dd")} />
+            )}
             {sub.currentPeriodEnd && (
               <InfoRow label="پایان دوره" value={format(new Date(sub.currentPeriodEnd), "yyyy/MM/dd")} />
             )}
@@ -119,6 +123,7 @@ export default async function AdminOfficeDetailPage({
           officeId={office.id}
           currentPlan={sub.plan}
           currentStatus={sub.status}
+          currentIsTrial={sub.isTrial}
         />
       )}
 

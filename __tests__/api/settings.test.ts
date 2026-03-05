@@ -45,8 +45,10 @@ const fakeOffice = {
 }
 
 const fakeSubscription = {
-  plan: "TRIAL",
+  plan: "PRO",
   status: "ACTIVE",
+  isTrial: true,
+  billingCycle: "MONTHLY",
   trialEndsAt: new Date("2026-03-22"),
   currentPeriodEnd: null,
 }
@@ -83,7 +85,7 @@ describe("GET /api/settings", () => {
     const body = await res.json()
     expect(body.success).toBe(true)
     expect(body.data.office.id).toBe("office-1")
-    expect(body.data.subscription.plan).toBe("TRIAL")
+    expect(body.data.subscription.plan).toBe("PRO")
   })
 
   it("returns subscription null when no subscription record exists", async () => {

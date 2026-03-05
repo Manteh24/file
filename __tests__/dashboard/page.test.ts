@@ -2,18 +2,19 @@ import { describe, it, expect, vi, afterEach } from "vitest"
 import type { Plan, SubStatus } from "@/types"
 
 // ─── Helpers mirroring the dashboard page logic ───────────────────────────────
-// The dashboard page computes trialDaysLeft inline. We replicate the exact
-// formula here so changes to the component are caught immediately if the
-// formula diverges.
+// The dashboard page computes trialDaysLeft based on the isTrial flag and
+// trialEndsAt date. We replicate the exact formula here so changes to the
+// component are caught immediately if the formula diverges.
 
 function computeTrialDaysLeft(subscription: {
   plan: Plan
+  isTrial: boolean
   status: SubStatus
   trialEndsAt: Date | null
   currentPeriodEnd: Date | null
 } | null): number | null {
   if (!subscription) return null
-  if (subscription.plan !== "TRIAL" || !subscription.trialEndsAt) return null
+  if (!subscription.isTrial || !subscription.trialEndsAt) return null
 
   return Math.max(
     0,
@@ -26,9 +27,9 @@ function computeTrialDaysLeft(subscription: {
 // ─── Plan / status label maps — mirrors the page constants ───────────────────
 
 const planLabels: Record<Plan, string> = {
-  TRIAL: "آزمایشی",
-  SMALL: "پایه",
-  LARGE: "حرفه‌ای",
+  FREE: "رایگان",
+  PRO: "حرفه‌ای",
+  TEAM: "تیم",
 }
 
 const statusConfig: Record<SubStatus, { label: string; color: string }> = {
@@ -49,9 +50,10 @@ describe("trialDaysLeft calculation", () => {
     expect(computeTrialDaysLeft(null)).toBeNull()
   })
 
-  it("returns null for a SMALL plan subscription", () => {
+  it("returns null for a PRO plan subscription that is not on trial", () => {
     const sub = {
-      plan: "SMALL" as Plan,
+      plan: "PRO" as Plan,
+      isTrial: false,
       status: "ACTIVE" as SubStatus,
       trialEndsAt: null,
       currentPeriodEnd: new Date(),
@@ -59,9 +61,10 @@ describe("trialDaysLeft calculation", () => {
     expect(computeTrialDaysLeft(sub)).toBeNull()
   })
 
-  it("returns null for a LARGE plan subscription", () => {
+  it("returns null for a TEAM plan subscription that is not on trial", () => {
     const sub = {
-      plan: "LARGE" as Plan,
+      plan: "TEAM" as Plan,
+      isTrial: false,
       status: "ACTIVE" as SubStatus,
       trialEndsAt: null,
       currentPeriodEnd: new Date(),
@@ -69,9 +72,10 @@ describe("trialDaysLeft calculation", () => {
     expect(computeTrialDaysLeft(sub)).toBeNull()
   })
 
-  it("returns null for a TRIAL subscription without a trialEndsAt date", () => {
+  it("returns null for a FREE plan subscription", () => {
     const sub = {
-      plan: "TRIAL" as Plan,
+      plan: "FREE" as Plan,
+      isTrial: false,
       status: "ACTIVE" as SubStatus,
       trialEndsAt: null,
       currentPeriodEnd: null,
@@ -79,7 +83,18 @@ describe("trialDaysLeft calculation", () => {
     expect(computeTrialDaysLeft(sub)).toBeNull()
   })
 
-  it("returns the correct number of days when trial ends in the future", () => {
+  it("returns null for a trial subscription without a trialEndsAt date", () => {
+    const sub = {
+      plan: "PRO" as Plan,
+      isTrial: true,
+      status: "ACTIVE" as SubStatus,
+      trialEndsAt: null,
+      currentPeriodEnd: null,
+    }
+    expect(computeTrialDaysLeft(sub)).toBeNull()
+  })
+
+  it("returns the correct number of days when PRO trial ends in the future", () => {
     // Fix Date.now() to a known point
     const now = new Date("2026-02-19T12:00:00.000Z")
     vi.useFakeTimers()
@@ -87,7 +102,8 @@ describe("trialDaysLeft calculation", () => {
 
     const trialEndsAt = new Date("2026-02-24T12:00:00.000Z") // exactly 5 days later
     const sub = {
-      plan: "TRIAL" as Plan,
+      plan: "PRO" as Plan,
+      isTrial: true,
       status: "ACTIVE" as SubStatus,
       trialEndsAt,
       currentPeriodEnd: null,
@@ -102,7 +118,8 @@ describe("trialDaysLeft calculation", () => {
 
     const trialEndsAt = new Date("2026-02-10T12:00:00.000Z") // 9 days in the past
     const sub = {
-      plan: "TRIAL" as Plan,
+      plan: "PRO" as Plan,
+      isTrial: true,
       status: "ACTIVE" as SubStatus,
       trialEndsAt,
       currentPeriodEnd: null,
@@ -118,7 +135,8 @@ describe("trialDaysLeft calculation", () => {
     // 1 millisecond remaining — ceil to 1 day
     const trialEndsAt = new Date(now.getTime() + 1)
     const sub = {
-      plan: "TRIAL" as Plan,
+      plan: "TEAM" as Plan,
+      isTrial: true,
       status: "ACTIVE" as SubStatus,
       trialEndsAt,
       currentPeriodEnd: null,
@@ -128,16 +146,16 @@ describe("trialDaysLeft calculation", () => {
 })
 
 describe("planLabels", () => {
-  it("maps TRIAL to the correct Persian label", () => {
-    expect(planLabels["TRIAL"]).toBe("آزمایشی")
+  it("maps FREE to the correct Persian label", () => {
+    expect(planLabels["FREE"]).toBe("رایگان")
   })
 
-  it("maps SMALL to the correct Persian label", () => {
-    expect(planLabels["SMALL"]).toBe("پایه")
+  it("maps PRO to the correct Persian label", () => {
+    expect(planLabels["PRO"]).toBe("حرفه‌ای")
   })
 
-  it("maps LARGE to the correct Persian label", () => {
-    expect(planLabels["LARGE"]).toBe("حرفه‌ای")
+  it("maps TEAM to the correct Persian label", () => {
+    expect(planLabels["TEAM"]).toBe("تیم")
   })
 })
 

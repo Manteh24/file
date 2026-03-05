@@ -37,6 +37,8 @@ export async function GET(
           id: true,
           plan: true,
           status: true,
+          isTrial: true,
+          billingCycle: true,
           trialEndsAt: true,
           currentPeriodEnd: true,
         },
@@ -60,6 +62,7 @@ export async function GET(
         select: {
           id: true,
           plan: true,
+          billingCycle: true,
           amount: true,
           status: true,
           refId: true,

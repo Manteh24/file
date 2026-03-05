@@ -102,23 +102,6 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
     }
   }, [isEdit]) // isEdit is stable — effect runs once
 
-  // Auto-save form changes to IndexedDB draft (create mode only, 1.5 s debounce)
-  useEffect(() => {
-    if (isEdit) return
-
-    const subscription = form.watch((values) => {
-      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
-      draftTimerRef.current = setTimeout(() => {
-        void saveDraft(values as CreateFileInput)
-      }, 1500)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
-    }
-  }, [isEdit, form, saveDraft])
-
   const form = useForm<CreateFileInput>({
     // Cast needed: standardSchemaResolver's return type has a different third generic
     // than useForm<CreateFileInput> expects. Runtime behavior is correct.
@@ -153,6 +136,23 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
         })) ?? [{ type: "OWNER", name: "", phone: "", notes: "" }],
     },
   })
+
+  // Auto-save form changes to IndexedDB draft (create mode only, 1.5 s debounce)
+  useEffect(() => {
+    if (isEdit) return
+
+    const subscription = form.watch((values) => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+      draftTimerRef.current = setTimeout(() => {
+        void saveDraft(values as CreateFileInput)
+      }, 1500)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+    }
+  }, [isEdit, form, saveDraft])
 
   const { fields: contactFields, append, remove } = useFieldArray({
     control: form.control,

@@ -33,7 +33,7 @@ export default async function AdminMidAdminsPage() {
         city: true,
         createdAt: true,
         subscription: {
-          select: { plan: true, status: true, trialEndsAt: true, currentPeriodEnd: true },
+          select: { plan: true, status: true, isTrial: true, billingCycle: true, trialEndsAt: true, currentPeriodEnd: true },
         },
         _count: { select: { users: true, files: true } },
       },

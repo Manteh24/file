@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { sendSms } from "@/lib/sms"
 import { sendSmsSchema } from "@/lib/validations/sms"
+import { getEffectiveSubscription, PLAN_FEATURES } from "@/lib/subscription"
 
 // ─── POST /api/sms/send ───────────────────────────────────────────────────────
 // Sends an SMS via KaveNegar. Requires authentication.
@@ -11,6 +12,18 @@ export async function POST(request: Request) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
+  }
+
+  // Check plan feature gate
+  const { officeId } = session.user
+  if (officeId) {
+    const sub = await getEffectiveSubscription(officeId)
+    if (sub && !PLAN_FEATURES[sub.plan].hasSms) {
+      return NextResponse.json(
+        { success: false, error: "ارسال پیامک در پلن رایگان فعال نیست" },
+        { status: 403 }
+      )
+    }
   }
 
   let body: unknown

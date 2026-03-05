@@ -1,5 +1,50 @@
+import { format } from "date-fns-jalali"
 import { db } from "@/lib/db"
-import type { Plan, SubStatus } from "@/types"
+import type { Plan, BillingCycle, SubStatus } from "@/types"
+
+// ─── Plan Feature Definitions ─────────────────────────────────────────────────
+
+export const PLAN_LIMITS = {
+  FREE: { maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10 },
+  PRO:  { maxUsers: 7, maxActiveFiles: Infinity, maxAiPerMonth: Infinity },
+  TEAM: { maxUsers: Infinity, maxActiveFiles: Infinity, maxAiPerMonth: Infinity },
+} as const
+
+export const PLAN_FEATURES = {
+  FREE: {
+    hasSms: false,
+    hasMaps: false,
+    hasReports: false,
+    hasPdfExport: false,
+    hasLinkTracking: false,
+    hasCustomBranding: false,
+    hasAdvancedAnalytics: false,
+    hasMultiBranch: false,
+    watermarkLinks: true,
+  },
+  PRO: {
+    hasSms: true,
+    hasMaps: true,
+    hasReports: true,
+    hasPdfExport: true,
+    hasLinkTracking: true,
+    hasCustomBranding: true,
+    hasAdvancedAnalytics: false,
+    hasMultiBranch: false,
+    watermarkLinks: false,
+  },
+  TEAM: {
+    hasSms: true,
+    hasMaps: true,
+    hasReports: true,
+    hasPdfExport: true,
+    hasLinkTracking: true,
+    hasCustomBranding: true,
+    hasAdvancedAnalytics: true,
+    hasMultiBranch: true,
+    watermarkLinks: false,
+  },
+} as const
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -8,19 +53,23 @@ export interface RawSubscription {
   id: string
   plan: Plan
   status: SubStatus
-  trialEndsAt: Date
+  isTrial: boolean
+  billingCycle: BillingCycle
+  trialEndsAt: Date | null
   currentPeriodEnd: Date | null
 }
 
 // The computed, decision-ready subscription state passed to UI and API guards.
 export interface ResolvedSubscription {
+  plan: Plan
+  billingCycle: BillingCycle
   // Effective status — may differ from stored DB status if the row hasn't been
   // lazily updated yet (e.g. trial ended overnight, status still says ACTIVE).
   status: SubStatus
   // Whether this office may perform write operations (create/edit/delete).
   canWrite: boolean
   // Days until expiry as a float. Negative values mean the subscription has
-  // already expired (e.g. -3.2 means ~3 days ago).
+  // already expired. Infinity for FREE plan (never expires).
   daysUntilExpiry: number
   // Remaining days inside the 7-day grace window. Only meaningful when
   // status === "GRACE". 0 when not in grace.
@@ -28,6 +77,8 @@ export interface ResolvedSubscription {
   // True when the subscription is still ACTIVE but expires within 7 days.
   // Used to show the pre-expiry reminder banner.
   isNearExpiry: boolean
+  // True while on a free trial period (PRO or TEAM trial). Always false for FREE plan.
+  isTrial: boolean
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24
@@ -40,17 +91,35 @@ const NEAR_EXPIRY_DAYS = 7
  * Pure function — derives the effective subscription state from raw DB fields.
  * No database calls; fully testable without mocks.
  *
- * Transition thresholds:
+ * FREE plan:   always ACTIVE, canWrite: true, never expires.
+ * CANCELLED:   always LOCKED (admin override — respected as-is).
+ * Trial/Paid:  expiry driven by trialEndsAt (isTrial=true) or currentPeriodEnd.
+ *
+ * Transition thresholds for expiring plans:
  *   daysUntilExpiry > 7   → ACTIVE (not near expiry)
  *   0 < days <= 7         → ACTIVE (near expiry — show reminder banner)
  *   -7 < days <= 0        → GRACE  (full write access + warning banner)
  *   days <= -7            → LOCKED (read-only)
- *   status === CANCELLED  → always LOCKED (admin override — respected as-is)
  */
 export function resolveSubscription(sub: RawSubscription): ResolvedSubscription {
+  const base = { plan: sub.plan, billingCycle: sub.billingCycle, isTrial: sub.isTrial }
+
+  // FREE plan never expires — always fully active, no banners needed.
+  if (sub.plan === "FREE") {
+    return {
+      ...base,
+      status: "ACTIVE",
+      canWrite: true,
+      daysUntilExpiry: Infinity,
+      graceDaysLeft: 0,
+      isNearExpiry: false,
+    }
+  }
+
   // Admin-cancelled offices are always locked regardless of dates.
   if (sub.status === "CANCELLED") {
     return {
+      ...base,
       status: "CANCELLED",
       canWrite: false,
       daysUntilExpiry: -Infinity,
@@ -59,14 +128,15 @@ export function resolveSubscription(sub: RawSubscription): ResolvedSubscription 
     }
   }
 
-  // Determine which date field governs this plan.
-  const expiryDate: Date | null =
-    sub.plan === "TRIAL" ? sub.trialEndsAt : sub.currentPeriodEnd
+  // Determine which date field governs expiry.
+  // isTrial=true → trialEndsAt; paid → currentPeriodEnd.
+  const expiryDate: Date | null = sub.isTrial ? sub.trialEndsAt : sub.currentPeriodEnd
 
   // A paid plan with no currentPeriodEnd is treated as immediately expired
   // (defensive — this should not happen after a successful payment).
   if (!expiryDate) {
     return {
+      ...base,
       status: "LOCKED",
       canWrite: false,
       daysUntilExpiry: -Infinity,
@@ -77,21 +147,18 @@ export function resolveSubscription(sub: RawSubscription): ResolvedSubscription 
 
   const daysUntilExpiry = (expiryDate.getTime() - Date.now()) / MS_PER_DAY
 
-  // Not expired yet
   if (daysUntilExpiry > NEAR_EXPIRY_DAYS) {
-    return { status: "ACTIVE", canWrite: true, daysUntilExpiry, graceDaysLeft: 0, isNearExpiry: false }
+    return { ...base, status: "ACTIVE", canWrite: true, daysUntilExpiry, graceDaysLeft: 0, isNearExpiry: false }
   }
   if (daysUntilExpiry > 0) {
-    return { status: "ACTIVE", canWrite: true, daysUntilExpiry, graceDaysLeft: 0, isNearExpiry: true }
+    return { ...base, status: "ACTIVE", canWrite: true, daysUntilExpiry, graceDaysLeft: 0, isNearExpiry: true }
   }
-
-  // Expired — determine grace vs locked
   if (daysUntilExpiry > -GRACE_DAYS) {
     const graceDaysLeft = Math.ceil(GRACE_DAYS + daysUntilExpiry)
-    return { status: "GRACE", canWrite: true, daysUntilExpiry, graceDaysLeft, isNearExpiry: false }
+    return { ...base, status: "GRACE", canWrite: true, daysUntilExpiry, graceDaysLeft, isNearExpiry: false }
   }
 
-  return { status: "LOCKED", canWrite: false, daysUntilExpiry, graceDaysLeft: 0, isNearExpiry: false }
+  return { ...base, status: "LOCKED", canWrite: false, daysUntilExpiry, graceDaysLeft: 0, isNearExpiry: false }
 }
 
 // ─── DB-Touching Helpers ──────────────────────────────────────────────────────
@@ -112,6 +179,8 @@ export async function getEffectiveSubscription(
       id: true,
       plan: true,
       status: true,
+      isTrial: true,
+      billingCycle: true,
       trialEndsAt: true,
       currentPeriodEnd: true,
     },
@@ -133,7 +202,62 @@ export async function getEffectiveSubscription(
   return resolved
 }
 
-// ─── API Route Guard ──────────────────────────────────────────────────────────
+// ─── AI Usage Helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Returns the current Shamsi calendar month as a YYYYMM integer.
+ * Example: Farvardin 1404 → 140401, Esfand 1403 → 140312.
+ */
+export function getCurrentShamsiMonth(): number {
+  return parseInt(format(new Date(), "yyyyMM"), 10)
+}
+
+/**
+ * Returns the number of AI description calls made by the office this Shamsi month.
+ */
+export async function getAiUsageThisMonth(officeId: string): Promise<number> {
+  const shamsiMonth = getCurrentShamsiMonth()
+  const log = await db.aiUsageLog.findUnique({
+    where: { officeId_shamsiMonth: { officeId, shamsiMonth } },
+    select: { count: true },
+  })
+  return log?.count ?? 0
+}
+
+/**
+ * Increments the AI usage counter for the office in the current Shamsi month.
+ * Uses upsert so the row is created on first use and incremented thereafter.
+ */
+export async function incrementAiUsage(officeId: string): Promise<void> {
+  const shamsiMonth = getCurrentShamsiMonth()
+  await db.aiUsageLog.upsert({
+    where: { officeId_shamsiMonth: { officeId, shamsiMonth } },
+    create: { officeId, shamsiMonth, count: 1 },
+    update: { count: { increment: 1 } },
+  })
+}
+
+// ─── Plan Limit Helpers ───────────────────────────────────────────────────────
+
+/**
+ * Returns the number of active users (managers + agents) in the office.
+ */
+export async function getUserCount(officeId: string): Promise<number> {
+  return db.user.count({
+    where: { officeId, isActive: true },
+  })
+}
+
+/**
+ * Returns the number of currently ACTIVE property files for the office.
+ */
+export async function getActiveFileCount(officeId: string): Promise<number> {
+  return db.propertyFile.count({
+    where: { officeId, status: "ACTIVE" },
+  })
+}
+
+// ─── API Route Guards ─────────────────────────────────────────────────────────
 
 export class SubscriptionLockedError extends Error {
   constructor() {

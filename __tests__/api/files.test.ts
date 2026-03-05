@@ -13,6 +13,7 @@ vi.mock("@/lib/db", () => ({
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
     activityLog: {
       create: vi.fn(),
@@ -37,6 +38,7 @@ const mockDb = db as unknown as {
     findMany: MockFn
     findFirst: MockFn
     create: MockFn
+    count: MockFn
   }
   activityLog: { create: MockFn }
   subscription: { findUnique: MockFn; update: MockFn }
@@ -45,8 +47,10 @@ const mockDb = db as unknown as {
 
 const activeSubscription = {
   id: "sub-1",
-  plan: "TRIAL",
+  plan: "PRO",
   status: "ACTIVE",
+  isTrial: true,
+  billingCycle: "MONTHLY",
   trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   currentPeriodEnd: null,
 }
@@ -269,5 +273,27 @@ describe("POST /api/files", () => {
 
     expect(response.status).toBe(400)
     expect(data.success).toBe(false)
+  })
+
+  it("returns 403 when FREE plan active file count is at the limit (maxActiveFiles=10)", async () => {
+    mockAuth.mockResolvedValue(managerSession)
+    const freeSubscription = {
+      id: "sub-free",
+      plan: "FREE",
+      status: "ACTIVE",
+      isTrial: false,
+      billingCycle: "MONTHLY",
+      trialEndsAt: null,
+      currentPeriodEnd: null,
+    }
+    mockDb.subscription.findUnique.mockResolvedValue(freeSubscription)
+    mockDb.propertyFile.count.mockResolvedValue(10) // at limit
+
+    const response = await POST(makeRequest(validBody))
+    const data = await response.json()
+
+    expect(response.status).toBe(403)
+    expect(data.success).toBe(false)
+    expect(data.error).toContain("فایل")
   })
 })

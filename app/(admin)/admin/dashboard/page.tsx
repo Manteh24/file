@@ -18,9 +18,9 @@ export default async function AdminDashboardPage() {
   const [
     totalOffices,
     newOfficesThisMonth,
-    trialCount,
-    smallCount,
-    largeCount,
+    freeCount,
+    proCount,
+    teamCount,
     activeCount,
     graceCount,
     lockedCount,
@@ -32,9 +32,9 @@ export default async function AdminDashboardPage() {
   ] = await Promise.all([
     db.office.count({ where: officeFilter }),
     db.office.count({ where: { ...officeFilter, createdAt: { gte: startOfMonth } } }),
-    db.subscription.count({ where: { office: officeFilter, plan: "TRIAL" } }),
-    db.subscription.count({ where: { office: officeFilter, plan: "SMALL" } }),
-    db.subscription.count({ where: { office: officeFilter, plan: "LARGE" } }),
+    db.subscription.count({ where: { office: officeFilter, plan: "FREE" } }),
+    db.subscription.count({ where: { office: officeFilter, plan: "PRO" } }),
+    db.subscription.count({ where: { office: officeFilter, plan: "TEAM" } }),
     db.subscription.count({ where: { office: officeFilter, status: "ACTIVE" } }),
     db.subscription.count({ where: { office: officeFilter, status: "GRACE" } }),
     db.subscription.count({ where: { office: officeFilter, status: "LOCKED" } }),
@@ -72,14 +72,14 @@ export default async function AdminDashboardPage() {
             accent="green"
           />
           <StatsCard
-            label="پلن آزمایشی"
-            value={trialCount.toLocaleString("fa-IR")}
-            subLabel={`${smallCount.toLocaleString("fa-IR")} کوچک · ${largeCount.toLocaleString("fa-IR")} بزرگ`}
+            label="پلن رایگان"
+            value={freeCount.toLocaleString("fa-IR")}
+            subLabel="حساب‌های رایگان"
           />
           <StatsCard
             label="پلن‌های پولی"
-            value={(smallCount + largeCount).toLocaleString("fa-IR")}
-            subLabel="کوچک + بزرگ"
+            value={(proCount + teamCount).toLocaleString("fa-IR")}
+            subLabel={`${proCount.toLocaleString("fa-IR")} حرفه‌ای · ${teamCount.toLocaleString("fa-IR")} تیم`}
             accent="green"
           />
         </div>

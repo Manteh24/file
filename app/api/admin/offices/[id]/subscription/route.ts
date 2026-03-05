@@ -26,7 +26,7 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: parsed.error.issues[0]?.message }, { status: 400 })
   }
 
-  const { plan, status, extendDays } = parsed.data
+  const { plan, status, isTrial, extendDays } = parsed.data
 
   const subscription = await db.subscription.findUnique({ where: { officeId: id } })
   if (!subscription) {
@@ -38,9 +38,10 @@ export async function PATCH(
   let currentPeriodEnd = subscription.currentPeriodEnd
 
   if (extendDays) {
-    if (subscription.plan === "TRIAL") {
+    const effectiveIsTrial = isTrial ?? subscription.isTrial
+    if (effectiveIsTrial) {
       // Extend trial: if still in future, add days; else start from today
-      const base = trialEndsAt > new Date() ? trialEndsAt : new Date()
+      const base = trialEndsAt && trialEndsAt > new Date() ? trialEndsAt : new Date()
       trialEndsAt = new Date(base.getTime() + extendDays * 24 * 60 * 60 * 1000)
     } else {
       // Extend paid period
@@ -56,6 +57,7 @@ export async function PATCH(
     data: {
       ...(plan ? { plan } : {}),
       ...(status ? { status } : {}),
+      ...(isTrial !== undefined ? { isTrial } : {}),
       trialEndsAt,
       currentPeriodEnd,
     },

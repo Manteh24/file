@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button"
 import type { Plan, SubStatus } from "@/types"
 
 const PLAN_LABELS: Record<Plan, string> = {
-  TRIAL: "آزمایشی",
-  SMALL: "کوچک",
-  LARGE: "بزرگ",
+  FREE: "رایگان",
+  PRO: "حرفه‌ای",
+  TEAM: "تیم",
 }
 
 const STATUS_LABELS: Record<SubStatus, string> = {
@@ -21,15 +21,18 @@ interface SubscriptionManagerProps {
   officeId: string
   currentPlan: Plan
   currentStatus: SubStatus
+  currentIsTrial: boolean
 }
 
 export function SubscriptionManager({
   officeId,
   currentPlan,
   currentStatus,
+  currentIsTrial,
 }: SubscriptionManagerProps) {
   const [plan, setPlan] = useState<Plan>(currentPlan)
   const [status, setStatus] = useState<SubStatus>(currentStatus)
+  const [isTrial, setIsTrial] = useState<boolean>(currentIsTrial)
   const [extendDays, setExtendDays] = useState("")
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -43,6 +46,7 @@ export function SubscriptionManager({
       const body: Record<string, unknown> = {}
       if (plan !== currentPlan) body.plan = plan
       if (status !== currentStatus) body.status = status
+      if (isTrial !== currentIsTrial) body.isTrial = isTrial
       const days = parseInt(extendDays, 10)
       if (!isNaN(days) && days > 0) body.extendDays = days
 
@@ -83,7 +87,7 @@ export function SubscriptionManager({
             onChange={(e) => { setPlan(e.target.value as Plan); setSaved(false) }}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           >
-            {(["TRIAL", "SMALL", "LARGE"] as Plan[]).map((p) => (
+            {(["FREE", "PRO", "TEAM"] as Plan[]).map((p) => (
               <option key={p} value={p}>{PLAN_LABELS[p]}</option>
             ))}
           </select>
@@ -117,6 +121,17 @@ export function SubscriptionManager({
           />
         </div>
       </div>
+
+      {/* isTrial toggle */}
+      <label className="flex items-center gap-2 text-sm cursor-pointer">
+        <input
+          type="checkbox"
+          checked={isTrial}
+          onChange={(e) => { setIsTrial(e.target.checked); setSaved(false) }}
+          className="rounded border-border"
+        />
+        دوره آزمایشی
+      </label>
 
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={loading} size="sm">

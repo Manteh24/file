@@ -41,6 +41,8 @@ export function DashboardShell({
         />
         {subscription && (
           <SubscriptionBanner
+            plan={subscription.plan}
+            isTrial={subscription.isTrial}
             status={subscription.status}
             isNearExpiry={subscription.isNearExpiry}
             daysUntilExpiry={subscription.daysUntilExpiry}
