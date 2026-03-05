@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ChevronLeft } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { parseLocationAnalysis } from "@/lib/maps"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { FileForm } from "@/components/files/FileForm"
 
@@ -57,6 +58,7 @@ export default async function EditFilePage({ params }: EditFilePageProps) {
 
       <FileForm
         fileId={id}
+        initialLocationAnalysis={parseLocationAnalysis(file.locationAnalysis)}
         initialData={{
           transactionType: file.transactionType,
           propertyType: file.propertyType ?? undefined,
@@ -67,6 +69,8 @@ export default async function EditFilePage({ params }: EditFilePageProps) {
           salePrice: file.salePrice != null ? Number(file.salePrice) : undefined,
           depositAmount: file.depositAmount != null ? Number(file.depositAmount) : undefined,
           rentAmount: file.rentAmount != null ? Number(file.rentAmount) : undefined,
+          latitude: file.latitude ?? undefined,
+          longitude: file.longitude ?? undefined,
           address: file.address ?? "",
           neighborhood: file.neighborhood ?? "",
           description: file.description ?? "",

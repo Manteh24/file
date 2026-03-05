@@ -97,6 +97,7 @@ model Office {
   adminAssignments AdminOfficeAssignment[]
   aiUsageLogs      AiUsageLog[]
   branches         Branch[]
+  notes            OfficeNote[]
 
   @@map("offices")
 }
@@ -133,6 +134,8 @@ model User {
   createdCustomers    Customer[]       @relation("CreatedCustomers")
   customerNotes       CustomerNote[]   @relation("CustomerNotes")
   finalizedContracts  Contract[]       @relation("FinalizedContracts")
+  officeNotes         OfficeNote[]
+  adminActions        AdminActionLog[]
 
   @@map("users")
 }
@@ -491,4 +494,39 @@ model AdminOfficeAssignment {
   @@unique([adminUserId, officeId])
   @@index([adminUserId])
   @@map("admin_office_assignments")
+}
+
+// Audit log for every admin mutation — written on every PATCH/POST/DELETE from admin API routes.
+model AdminActionLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  // Human-readable action: UPDATE_SUBSCRIPTION, TOGGLE_USER_ACTIVE, SUSPEND_OFFICE, etc.
+  action     String
+  // The entity type being acted on: OFFICE | USER | SUBSCRIPTION | MID_ADMIN
+  targetType String
+  targetId   String
+  // Optional before/after state or supporting context stored as JSON
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  admin      User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@map("admin_action_logs")
+}
+
+// Admin-internal notes attached to an office — not visible to the office manager.
+model OfficeNote {
+  id        String   @id @default(cuid())
+  officeId  String
+  adminId   String
+  content   String
+  createdAt DateTime @default(now())
+
+  office    Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  admin     User   @relation(fields: [adminId], references: [id])
+
+  @@index([officeId])
+  @@map("office_notes")
 }

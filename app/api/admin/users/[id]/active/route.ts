@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getAccessibleOfficeIds } from "@/lib/admin"
+import { getAccessibleOfficeIds, logAdminAction } from "@/lib/admin"
 import { toggleActiveSchema } from "@/lib/validations/admin"
 
 export async function PATCH(
@@ -43,6 +43,11 @@ export async function PATCH(
   await db.user.update({
     where: { id },
     data: { isActive: parsed.data.active },
+  })
+
+  await logAdminAction(session.user.id, "TOGGLE_USER_ACTIVE", "USER", id, {
+    active: parsed.data.active,
+    officeId: target.officeId,
   })
 
   return NextResponse.json({ success: true })

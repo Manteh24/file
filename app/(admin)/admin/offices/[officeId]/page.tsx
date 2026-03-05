@@ -1,9 +1,12 @@
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { format } from "date-fns-jalali"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getAccessibleOfficeIds } from "@/lib/admin"
 import { SubscriptionManager } from "@/components/admin/SubscriptionManager"
+import { OfficeNotesPanel } from "@/components/admin/OfficeNotesPanel"
+import { SuspendReactivateButtons } from "@/components/admin/SuspendReactivateButtons"
 import { formatToman } from "@/lib/utils"
 
 const PLAN_LABELS = { FREE: "رایگان", PRO: "حرفه‌ای", TEAM: "تیم" }
@@ -117,6 +120,25 @@ export default async function AdminOfficeDetailPage({
         </div>
       )}
 
+      {/* Suspend / Reactivate + View-As */}
+      {sub && (
+        <div className="flex items-center justify-between">
+          <SuspendReactivateButtons
+            officeId={office.id}
+            currentStatus={sub.status}
+            officeName={office.name}
+          />
+          <Link
+            href={`/admin/offices/${office.id}/view-as`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+          >
+            مشاهده به عنوان مدیر ↗
+          </Link>
+        </div>
+      )}
+
       {/* Subscription manager */}
       {sub && (
         <SubscriptionManager
@@ -126,6 +148,9 @@ export default async function AdminOfficeDetailPage({
           currentIsTrial={sub.isTrial}
         />
       )}
+
+      {/* Admin notes */}
+      <OfficeNotesPanel officeId={office.id} />
 
       {/* Agents / Users */}
       <div>

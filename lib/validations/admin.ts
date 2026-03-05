@@ -26,3 +26,34 @@ export const setAssignmentsSchema = z.object({
 export const toggleActiveSchema = z.object({
   active: z.boolean(),
 })
+
+export const createOfficeNoteSchema = z.object({
+  content: z.string().min(1, "محتوا الزامی است").max(2000, "حداکثر ۲۰۰۰ کاراکتر"),
+})
+
+export const subscriptionFiltersSchema = z.object({
+  plan: z.enum(["FREE", "PRO", "TEAM"]).optional(),
+  status: z.enum(["ACTIVE", "GRACE", "LOCKED", "CANCELLED"]).optional(),
+  isTrial: z.enum(["true", "false"]).optional(),
+  expiringSoon: z.enum(["true"]).optional(),
+  billingCycle: z.enum(["MONTHLY", "ANNUAL"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+})
+
+export const paymentFiltersSchema = z.object({
+  status: z.enum(["PENDING", "VERIFIED", "FAILED"]).optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  officeId: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+})
+
+export const actionLogFiltersSchema = z.object({
+  adminId: z.string().optional(),
+  action: z.string().optional(),
+  targetType: z.enum(["OFFICE", "USER", "SUBSCRIPTION", "MID_ADMIN"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+})

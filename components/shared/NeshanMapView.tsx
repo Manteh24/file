@@ -18,7 +18,16 @@ export function NeshanMapView({ lat, lng }: NeshanMapViewProps) {
 
   function handleMapSetter(map: SDKMap) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    markerRef.current = new Marker({ color: "#ef4444" }).setLngLat([lng, lat]).addTo(map as any)
+    const m = map as any
+    const addMarker = () => {
+      markerRef.current = new Marker({ color: "#ef4444" }).setLngLat([lng, lat]).addTo(m)
+    }
+    // Wait for map load before placing the marker — mapSetter may fire before tiles are ready
+    if (m.loaded()) {
+      addMarker()
+    } else {
+      m.once("load", addMarker)
+    }
   }
 
   useEffect(() => {

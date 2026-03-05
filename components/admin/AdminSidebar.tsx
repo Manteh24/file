@@ -7,6 +7,10 @@ import {
   Building2,
   Users,
   UserCog,
+  CreditCard,
+  Banknote,
+  BarChart3,
+  ScrollText,
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -22,7 +26,11 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: "/admin/dashboard", label: "داشبورد", icon: LayoutDashboard },
   { href: "/admin/offices", label: "دفاتر", icon: Building2 },
+  { href: "/admin/subscriptions", label: "اشتراک‌ها", icon: CreditCard },
+  { href: "/admin/payments", label: "پرداخت‌ها", icon: Banknote },
+  { href: "/admin/kpi", label: "شاخص‌ها", icon: BarChart3 },
   { href: "/admin/users", label: "کاربران", icon: Users },
+  { href: "/admin/action-logs", label: "گزارش عملکرد", icon: ScrollText, superAdminOnly: true },
   { href: "/admin/mid-admins", label: "تیم", icon: UserCog, superAdminOnly: true },
 ]
 

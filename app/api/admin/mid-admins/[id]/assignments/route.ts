@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { setAssignmentsSchema } from "@/lib/validations/admin"
+import { logAdminAction } from "@/lib/admin"
 import type { MidAdminAssignment } from "@/types"
 
 export async function GET(
@@ -67,6 +68,11 @@ export async function PUT(
         ]
       : []),
   ])
+
+  await logAdminAction(session.user.id, "UPDATE_MID_ADMIN_ASSIGNMENTS", "MID_ADMIN", id, {
+    officeCount: officeIds.length,
+    officeIds,
+  })
 
   return NextResponse.json({ success: true })
 }

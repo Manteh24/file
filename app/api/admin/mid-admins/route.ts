@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createMidAdminSchema } from "@/lib/validations/admin"
+import { logAdminAction } from "@/lib/admin"
 import bcrypt from "bcryptjs"
 import type { MidAdminSummary } from "@/types"
 
@@ -69,6 +70,10 @@ export async function POST(request: Request) {
       officeId: null,
     },
     select: { id: true, username: true },
+  })
+
+  await logAdminAction(session.user.id, "CREATE_MID_ADMIN", "MID_ADMIN", midAdmin.id, {
+    username: midAdmin.username,
   })
 
   return NextResponse.json({ success: true, data: midAdmin }, { status: 201 })

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getAccessibleOfficeIds } from "@/lib/admin"
+import { getAccessibleOfficeIds, logAdminAction } from "@/lib/admin"
 import { updateSubscriptionSchema } from "@/lib/validations/admin"
 
 export async function PATCH(
@@ -61,6 +61,12 @@ export async function PATCH(
       trialEndsAt,
       currentPeriodEnd,
     },
+  })
+
+  await logAdminAction(session.user.id, "UPDATE_SUBSCRIPTION", "SUBSCRIPTION", subscription.id, {
+    officeId: id,
+    before: { plan: subscription.plan, status: subscription.status, isTrial: subscription.isTrial },
+    after: { plan: plan ?? subscription.plan, status: status ?? subscription.status, isTrial: isTrial ?? subscription.isTrial, extendDays },
   })
 
   return NextResponse.json({ success: true })

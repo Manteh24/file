@@ -26,22 +26,31 @@ export function NeshanMapPicker({ initialLat, initialLng, onPinDrop }: NeshanMap
   const centerLng = initialLng ?? DEFAULT_LNG
 
   function handleMapSetter(map: SDKMap) {
-    // Place initial marker if coordinates were provided
-    if (initialLat !== undefined && initialLng !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      markerRef.current = new Marker({ color: "#ef4444" }).setLngLat([initialLng, initialLat]).addTo(map as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const m = map as any
+
+    const addInitialMarker = () => {
+      if (initialLat !== undefined && initialLng !== undefined) {
+        markerRef.current = new Marker({ color: "#ef4444" }).setLngLat([initialLng, initialLat]).addTo(m)
+      }
     }
 
-    // Drop or move marker on click — mapbox-gl event type from the internal bundled version
+    // Wait for map load before placing the initial marker — mapSetter may fire before tiles are ready
+    if (m.loaded()) {
+      addInitialMarker()
+    } else {
+      m.once("load", addInitialMarker)
+    }
+
+    // Drop or move marker on click — map is already loaded by the time the user clicks
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    map.on("click", (e: any) => {
+    m.on("click", (e: any) => {
       const { lat, lng } = e.lngLat
 
       if (markerRef.current) {
         markerRef.current.setLngLat([lng, lat])
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        markerRef.current = new Marker({ color: "#ef4444" }).setLngLat([lng, lat]).addTo(map as any)
+        markerRef.current = new Marker({ color: "#ef4444" }).setLngLat([lng, lat]).addTo(m)
       }
 
       onPinDrop(lat, lng)

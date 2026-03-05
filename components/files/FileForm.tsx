@@ -27,6 +27,8 @@ interface FileFormProps {
   // When provided, the form is in edit mode
   initialData?: Partial<PropertyFileDetail>
   fileId?: string
+  // Pre-loaded location analysis from DB (edit mode only)
+  initialLocationAnalysis?: LocationAnalysis | null
 }
 
 const TRANSACTION_TYPE_OPTIONS = [
@@ -59,14 +61,16 @@ const TONE_OPTIONS: { value: DescriptionTone; label: string }[] = [
   { value: "compelling", label: "جذاب" },
 ]
 
-export function FileForm({ initialData, fileId }: FileFormProps) {
+export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileFormProps) {
   const router = useRouter()
   const isEdit = !!fileId
 
   const [aiTone, setAiTone] = useState<DescriptionTone>("standard")
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
-  const [locationAnalysis, setLocationAnalysis] = useState<LocationAnalysis | null>(null)
+  const [locationAnalysis, setLocationAnalysis] = useState<LocationAnalysis | null>(
+    initialLocationAnalysis ?? null
+  )
   const [savedFileId, setSavedFileId] = useState<string | null>(fileId ?? null)
 
   // ── Offline / draft state ──────────────────────────────────────────────────
@@ -193,22 +197,13 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
     const targetId = isEdit ? fileId! : result.data?.id
     if (targetId) setSavedFileId(targetId)
 
-    // Trigger location analysis if we have lat/lng
+    // Persist location analysis to DB so the detail page can display it
     const formValues = form.getValues()
     if (targetId && formValues.latitude !== undefined && formValues.longitude !== undefined) {
       try {
-        const analysisRes = await fetch(`/api/files/${targetId}/analyze-location`, {
-          method: "POST",
-        })
-        const analysisResult = (await analysisRes.json()) as {
-          success: boolean
-          data?: LocationAnalysis
-        }
-        if (analysisResult.success && analysisResult.data) {
-          setLocationAnalysis(analysisResult.data)
-        }
+        await fetch(`/api/files/${targetId}/analyze-location`, { method: "POST" })
       } catch {
-        // Non-critical — location analysis failure doesn't block navigation
+        // Non-critical — analysis failure doesn't block navigation
       }
     }
 
@@ -223,17 +218,18 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
     form.setValue("latitude", lat, { shouldDirty: true })
     form.setValue("longitude", lng, { shouldDirty: true })
 
-    try {
-      const res = await fetch(`/api/maps/reverse-geocode?lat=${lat}&lng=${lng}`)
-      const result = (await res.json()) as {
-        success: boolean
-        data?: { address: string | null }
-      }
-      if (result.success && result.data?.address) {
-        form.setValue("address", result.data.address, { shouldDirty: true })
-      }
-    } catch {
-      // Non-critical — reverse geocode failure is silent
+    // Fetch address and location analysis in parallel
+    const [geoOutcome, analysisOutcome] = await Promise.allSettled([
+      fetch(`/api/maps/reverse-geocode?lat=${lat}&lng=${lng}`).then((r) => r.json() as Promise<{ success: boolean; data?: { address: string | null } }>),
+      fetch(`/api/maps/location-analysis?lat=${lat}&lng=${lng}`).then((r) => r.json() as Promise<{ success: boolean; data?: LocationAnalysis }>),
+    ])
+
+    if (geoOutcome.status === "fulfilled" && geoOutcome.value.success && geoOutcome.value.data?.address) {
+      form.setValue("address", geoOutcome.value.data.address, { shouldDirty: true })
+    }
+
+    if (analysisOutcome.status === "fulfilled" && analysisOutcome.value.success && analysisOutcome.value.data) {
+      setLocationAnalysis(analysisOutcome.value.data)
     }
   }
 
@@ -242,6 +238,22 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
     setAiLoading(true)
 
     const values = form.getValues()
+    // Build a compact location context string from analysis for the AI prompt
+    let locationContext: string | null = null
+    if (locationAnalysis) {
+      const parts: string[] = []
+      if (locationAnalysis.transitWalkingMinutes !== undefined) {
+        parts.push(`${locationAnalysis.transitWalkingMinutes} دقیقه تا حمل‌ونقل عمومی`)
+      }
+      const parks = locationAnalysis.nearbyPOIs.filter((p) => p.category === "park").length
+      const schools = locationAnalysis.nearbyPOIs.filter((p) => p.category === "school").length
+      const hospitals = locationAnalysis.nearbyPOIs.filter((p) => p.category === "hospital").length
+      if (parks > 0) parts.push(`${parks} پارک مجاور`)
+      if (schools > 0) parts.push(`مدرسه در نزدیکی`)
+      if (hospitals > 0) parts.push(`بیمارستان در نزدیکی`)
+      if (parts.length > 0) locationContext = parts.join("، ")
+    }
+
     const payload = {
       transactionType: values.transactionType,
       propertyType: values.propertyType ?? null,
@@ -259,6 +271,7 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
       hasStorage: values.hasStorage,
       hasBalcony: values.hasBalcony,
       hasSecurity: values.hasSecurity,
+      locationContext,
       tone: aiTone,
     }
 
@@ -588,7 +601,7 @@ export function FileForm({ initialData, fileId }: FileFormProps) {
             />
           </div>
 
-          {/* Location analysis shown after save */}
+          {/* Location analysis shown immediately after pin drop */}
           {locationAnalysis && (
             <div className="rounded-lg border p-3">
               <p className="mb-1 text-xs font-medium text-muted-foreground">تحلیل موقعیت</p>
