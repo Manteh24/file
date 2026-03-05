@@ -21,6 +21,8 @@ export interface DescriptionInput {
   hasStorage?: boolean
   hasBalcony?: boolean
   hasSecurity?: boolean
+  // Compact summary of nearby amenities from location analysis — passed to the AI prompt when available
+  locationContext?: string | null
 }
 
 export interface DescriptionResult {
@@ -161,6 +163,7 @@ function buildUserMessage(input: DescriptionInput, tone: DescriptionTone): strin
   const lines = [`لحن: ${toneLabel}`, `${transactionLabel} ${propertyLabel}`]
   if (specs.length > 0) lines.push(specs.join(" | "))
   if (amenities.length > 0) lines.push(amenities.join("، "))
+  if (input.locationContext) lines.push(`دسترسی: ${input.locationContext}`)
 
   return lines.join("\n")
 }

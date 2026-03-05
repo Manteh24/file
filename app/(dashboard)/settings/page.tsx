@@ -74,7 +74,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     }),
     db.subscription.findUnique({
       where: { officeId },
-      select: { plan: true, status: true, trialEndsAt: true, currentPeriodEnd: true },
+      select: { plan: true, status: true, isTrial: true, billingCycle: true, trialEndsAt: true, currentPeriodEnd: true },
     }),
   ])
 

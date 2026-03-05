@@ -32,11 +32,12 @@ export const updateOfficeProfileSchema = z.object({
 
 export type UpdateOfficeProfileInput = z.infer<typeof updateOfficeProfileSchema>
 
-// Only SMALL and LARGE are purchasable — TRIAL is granted automatically at registration
+// Only PRO and TEAM are purchasable — FREE is always free, trial is granted at registration
 export const requestPaymentSchema = z.object({
-  plan: z.enum(["SMALL", "LARGE"], {
+  plan: z.enum(["PRO", "TEAM"], {
     error: "پلن انتخاب‌شده معتبر نیست",
   }),
+  billingCycle: z.enum(["MONTHLY", "ANNUAL"]).default("MONTHLY"),
 })
 
 export type RequestPaymentInput = z.infer<typeof requestPaymentSchema>

@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { registerSchema } from "@/lib/validations/auth"
-import type { ApiResponse } from "@/types"
+import type { ApiResponse, Plan } from "@/types"
 
 /**
  * Registration Server Action.
@@ -30,7 +30,7 @@ export async function registerAction(
     return { success: false, error: firstError }
   }
 
-  const { displayName, officeName, email, password, referralCode } = parsed.data
+  const { displayName, officeName, email, password, referralCode, plan } = parsed.data
 
   // 2. Check for duplicate email
   const existingUser = await db.user.findUnique({ where: { email } })
@@ -52,9 +52,16 @@ export async function registerAction(
   // 4. Hash password — cost factor 12 is a good balance of security and speed
   const passwordHash = await bcrypt.hash(password, 12)
 
-  // 5. Create Office, User, and Subscription atomically
-  const trialEndsAt = new Date()
-  trialEndsAt.setDate(trialEndsAt.getDate() + 30)
+  // 5. Create Office, User, and Subscription atomically.
+  // FREE plan: no trial, permanent free access.
+  // PRO/TEAM: 30-day full trial, no card required.
+  const chosenPlan: Plan = plan ?? "PRO"
+  const isFree = chosenPlan === "FREE"
+  const trialEndsAt = isFree ? null : (() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 30)
+    return d
+  })()
 
   try {
     await db.$transaction(async (tx) => {
@@ -76,13 +83,13 @@ export async function registerAction(
         },
       })
 
-      // Subscription is always created here — no separate endpoint needed.
-      // TRIAL plan gives full Large Plan access for 30 days.
       await tx.subscription.create({
         data: {
           officeId: office.id,
-          plan: "TRIAL",
+          plan: chosenPlan,
           status: "ACTIVE",
+          isTrial: !isFree,
+          billingCycle: "MONTHLY",
           trialEndsAt,
         },
       })

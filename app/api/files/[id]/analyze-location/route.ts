@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { analyzeLocation } from "@/lib/maps"
+import { getEffectiveSubscription, PLAN_FEATURES } from "@/lib/subscription"
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -16,6 +17,15 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { id } = await params
   const { officeId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+
+  // Check plan feature gate
+  const sub = await getEffectiveSubscription(officeId)
+  if (sub && !PLAN_FEATURES[sub.plan].hasMaps) {
+    return NextResponse.json(
+      { success: false, error: "آنالیز موقعیت در پلن رایگان فعال نیست" },
+      { status: 403 }
+    )
+  }
 
   // Verify the file belongs to this user's office
   const file = await db.propertyFile.findFirst({

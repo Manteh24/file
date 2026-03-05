@@ -36,6 +36,8 @@ export async function GET(request: Request) {
         select: {
           plan: true,
           status: true,
+          isTrial: true,
+          billingCycle: true,
           trialEndsAt: true,
           currentPeriodEnd: true,
         },

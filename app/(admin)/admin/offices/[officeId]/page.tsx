@@ -1,12 +1,15 @@
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { format } from "date-fns-jalali"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getAccessibleOfficeIds } from "@/lib/admin"
 import { SubscriptionManager } from "@/components/admin/SubscriptionManager"
+import { OfficeNotesPanel } from "@/components/admin/OfficeNotesPanel"
+import { SuspendReactivateButtons } from "@/components/admin/SuspendReactivateButtons"
 import { formatToman } from "@/lib/utils"
 
-const PLAN_LABELS = { TRIAL: "آزمایشی", SMALL: "کوچک", LARGE: "بزرگ" }
+const PLAN_LABELS = { FREE: "رایگان", PRO: "حرفه‌ای", TEAM: "تیم" }
 const STATUS_LABELS = { ACTIVE: "فعال", GRACE: "مهلت", LOCKED: "قفل", CANCELLED: "لغو" }
 const ROLE_LABELS = { MANAGER: "مدیر", AGENT: "مشاور" }
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
@@ -44,6 +47,8 @@ export default async function AdminOfficeDetailPage({
           id: true,
           plan: true,
           status: true,
+          isTrial: true,
+          billingCycle: true,
           trialEndsAt: true,
           currentPeriodEnd: true,
         },
@@ -105,11 +110,32 @@ export default async function AdminOfficeDetailPage({
           <div className="grid grid-cols-2 gap-3">
             <InfoRow label="پلن" value={PLAN_LABELS[sub.plan]} />
             <InfoRow label="وضعیت" value={STATUS_LABELS[sub.status]} />
-            <InfoRow label="پایان آزمایشی" value={format(new Date(sub.trialEndsAt), "yyyy/MM/dd")} />
+            {sub.trialEndsAt && (
+              <InfoRow label="پایان آزمایشی" value={format(new Date(sub.trialEndsAt), "yyyy/MM/dd")} />
+            )}
             {sub.currentPeriodEnd && (
               <InfoRow label="پایان دوره" value={format(new Date(sub.currentPeriodEnd), "yyyy/MM/dd")} />
             )}
           </div>
+        </div>
+      )}
+
+      {/* Suspend / Reactivate + View-As */}
+      {sub && (
+        <div className="flex items-center justify-between">
+          <SuspendReactivateButtons
+            officeId={office.id}
+            currentStatus={sub.status}
+            officeName={office.name}
+          />
+          <Link
+            href={`/admin/offices/${office.id}/view-as`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+          >
+            مشاهده به عنوان مدیر ↗
+          </Link>
         </div>
       )}
 
@@ -119,8 +145,12 @@ export default async function AdminOfficeDetailPage({
           officeId={office.id}
           currentPlan={sub.plan}
           currentStatus={sub.status}
+          currentIsTrial={sub.isTrial}
         />
       )}
+
+      {/* Admin notes */}
+      <OfficeNotesPanel officeId={office.id} />
 
       {/* Agents / Users */}
       <div>

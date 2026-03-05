@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils"
 import type { AdminOfficeSummary, Plan, SubStatus } from "@/types"
 
 const PLAN_LABELS: Record<Plan, string> = {
-  TRIAL: "آزمایشی",
-  SMALL: "کوچک",
-  LARGE: "بزرگ",
+  FREE: "رایگان",
+  PRO: "حرفه‌ای",
+  TEAM: "تیم",
 }
 
 const STATUS_LABELS: Record<SubStatus, string> = {

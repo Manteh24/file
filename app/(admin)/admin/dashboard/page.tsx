@@ -1,8 +1,16 @@
+import { format } from "date-fns-jalali"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getAccessibleOfficeIds, buildOfficeFilter } from "@/lib/admin"
-import { StatsCard } from "@/components/admin/StatsCard"
+import {
+  getAccessibleOfficeIds,
+  buildOfficeFilter,
+  calculateMrr,
+  calculateChurnRate,
+  calculateTrialConversionRate,
+  calculateAiCostThisMonth,
+} from "@/lib/admin"
 import { formatToman } from "@/lib/utils"
+import { StatsCard } from "@/components/admin/StatsCard"
 
 export default async function AdminDashboardPage() {
   const session = await auth()
@@ -14,141 +22,146 @@ export default async function AdminDashboardPage() {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  const shamsiMonth = parseInt(format(now, "yyyyMM"), 10)
 
   const [
-    totalOffices,
-    newOfficesThisMonth,
-    trialCount,
-    smallCount,
-    largeCount,
-    activeCount,
-    graceCount,
-    lockedCount,
-    cancelledCount,
-    payments,
-    totalManagers,
-    totalAgents,
-    inactiveUsers,
+    // Row 1
+    activeOfficesCount,
+    mrr,
+    churnRate,
+    trialConversionPct,
+    // Row 2
+    newSignupsThisMonth,
+    aiCostToman,
+    proCount,
+    teamCount,
+    // Row 3
+    paymentFailures30d,
+    totalAiCalls,
+    filesCreatedThisMonth,
+    activePayingCount,
+    arpu_mrr,
   ] = await Promise.all([
-    db.office.count({ where: officeFilter }),
+    // Active offices = ACTIVE or GRACE, any plan
+    db.subscription.count({ where: { office: officeFilter, status: { in: ["ACTIVE", "GRACE"] } } }),
+    calculateMrr(officeFilter),
+    calculateChurnRate(officeFilter),
+    calculateTrialConversionRate(officeFilter),
     db.office.count({ where: { ...officeFilter, createdAt: { gte: startOfMonth } } }),
-    db.subscription.count({ where: { office: officeFilter, plan: "TRIAL" } }),
-    db.subscription.count({ where: { office: officeFilter, plan: "SMALL" } }),
-    db.subscription.count({ where: { office: officeFilter, plan: "LARGE" } }),
-    db.subscription.count({ where: { office: officeFilter, status: "ACTIVE" } }),
-    db.subscription.count({ where: { office: officeFilter, status: "GRACE" } }),
-    db.subscription.count({ where: { office: officeFilter, status: "LOCKED" } }),
-    db.subscription.count({ where: { office: officeFilter, status: "CANCELLED" } }),
-    db.paymentRecord.findMany({
-      where: { office: officeFilter, status: "VERIFIED", createdAt: { gte: thirtyDaysAgo } },
-      select: { amount: true },
+    calculateAiCostThisMonth(officeFilter),
+    db.subscription.count({ where: { office: officeFilter, plan: "PRO", status: { in: ["ACTIVE", "GRACE"] } } }),
+    db.subscription.count({ where: { office: officeFilter, plan: "TEAM", status: { in: ["ACTIVE", "GRACE"] } } }),
+    db.paymentRecord.count({ where: { office: officeFilter, status: "FAILED", createdAt: { gte: thirtyDaysAgo } } }),
+    db.aiUsageLog.aggregate({ where: { office: officeFilter, shamsiMonth }, _sum: { count: true } }),
+    db.propertyFile.count({ where: { office: officeFilter, createdAt: { gte: startOfMonth } } }),
+    db.subscription.count({
+      where: { office: officeFilter, plan: { in: ["PRO", "TEAM"] }, isTrial: false, status: { in: ["ACTIVE", "GRACE"] } },
     }),
-    db.user.count({ where: { office: officeFilter, role: "MANAGER" } }),
-    db.user.count({ where: { office: officeFilter, role: "AGENT" } }),
-    db.user.count({ where: { office: officeFilter, isActive: false } }),
+    calculateMrr(officeFilter),
   ])
 
-  // Zarinpal amounts are in Rials — divide by 10 for Toman
-  const revenueThirtyDays = Math.floor(
-    payments.reduce((sum, p) => sum + p.amount, 0) / 10
+  const totalAiCallsCount = totalAiCalls._sum.count ?? 0
+  const arr = mrr * 12
+  const arpu = activePayingCount > 0 ? Math.round(arpu_mrr / activePayingCount) : 0
+
+  // Parse churn for LTV
+  const churnPctNum = parseFloat(
+    churnRate.replace("٪", "").replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 1776))
   )
+  const ltvEstimate =
+    !isNaN(churnPctNum) && churnPctNum > 0
+      ? formatToman(Math.round(arpu / (churnPctNum / 100)))
+      : "—"
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <h1 className="text-xl font-bold">داشبورد مدیریت</h1>
 
-      {/* 1. Offices & Growth */}
+      {/* Row 1 — اعداد صبحگاهی */}
       <section>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3">دفاتر و رشد</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          شاخص‌های اصلی
+        </h2>
+        <div className="grid grid-cols-4 gap-4">
           <StatsCard
-            label="کل دفاتر"
-            value={totalOffices.toLocaleString("fa-IR")}
+            label="دفاتر فعال"
+            value={activeOfficesCount.toLocaleString("fa-IR")}
+            subLabel={`${proCount.toLocaleString("fa-IR")} حرفه‌ای · ${teamCount.toLocaleString("fa-IR")} تیم`}
+            accent="green"
+          />
+          <StatsCard
+            label="MRR"
+            value={formatToman(mrr)}
+            subLabel={`ARR: ${formatToman(arr)}`}
+            accent="green"
+          />
+          <StatsCard
+            label="نرخ ریزش"
+            value={churnRate}
+            subLabel="قفل + لغو / کل پولی"
+            accent={churnRate !== "—" && parseFloat(churnRate) > 10 ? "red" : "default"}
+          />
+          <StatsCard
+            label="تبدیل آزمایشی به پولی"
+            value={trialConversionPct}
+            subLabel="پولی / کل PRO+TEAM"
             accent="default"
           />
+        </div>
+      </section>
+
+      {/* Row 2 — نبض رشد */}
+      <section>
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          نبض رشد
+        </h2>
+        <div className="grid grid-cols-3 gap-4">
           <StatsCard
-            label="دفاتر جدید این ماه"
-            value={newOfficesThisMonth.toLocaleString("fa-IR")}
+            label="ثبت‌نام‌های این ماه"
+            value={newSignupsThisMonth.toLocaleString("fa-IR")}
+            subLabel="دفاتر جدید"
             accent="green"
           />
           <StatsCard
-            label="پلن آزمایشی"
-            value={trialCount.toLocaleString("fa-IR")}
-            subLabel={`${smallCount.toLocaleString("fa-IR")} کوچک · ${largeCount.toLocaleString("fa-IR")} بزرگ`}
+            label="هزینه هوش مصنوعی این ماه"
+            value={formatToman(aiCostToman)}
+            subLabel={`${totalAiCallsCount.toLocaleString("fa-IR")} درخواست`}
+            accent={aiCostToman > 1_000_000 ? "amber" : "default"}
           />
           <StatsCard
-            label="پلن‌های پولی"
-            value={(smallCount + largeCount).toLocaleString("fa-IR")}
-            subLabel="کوچک + بزرگ"
-            accent="green"
+            label="دفاتر پولی فعال"
+            value={(proCount + teamCount).toLocaleString("fa-IR")}
+            subLabel="پرداخت‌کننده (بدون آزمایشی)"
+            accent="default"
           />
         </div>
       </section>
 
-      {/* 2. Active vs Locked */}
+      {/* Row 3 — شاخص‌های سلامت */}
       <section>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3">وضعیت اشتراک‌ها</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          سلامت پلتفرم
+        </h2>
+        <div className="grid grid-cols-4 gap-4">
           <StatsCard
-            label="فعال"
-            value={activeCount.toLocaleString("fa-IR")}
+            label="پرداخت‌های ناموفق (۳۰ روز)"
+            value={paymentFailures30d.toLocaleString("fa-IR")}
+            accent={paymentFailures30d > 0 ? "red" : "default"}
+          />
+          <StatsCard
+            label="تخمین LTV"
+            value={ltvEstimate}
+            subLabel="ARPU / نرخ ریزش"
+          />
+          <StatsCard
+            label="فایل‌های جدید این ماه"
+            value={filesCreatedThisMonth.toLocaleString("fa-IR")}
             accent="green"
           />
           <StatsCard
-            label="در مهلت"
-            value={graceCount.toLocaleString("fa-IR")}
-            accent="amber"
-          />
-          <StatsCard
-            label="قفل شده"
-            value={lockedCount.toLocaleString("fa-IR")}
-            accent="red"
-          />
-          <StatsCard
-            label="لغو شده"
-            value={cancelledCount.toLocaleString("fa-IR")}
-          />
-        </div>
-      </section>
-
-      {/* 3. Revenue */}
-      <section>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3">درآمد (۳۰ روز گذشته)</h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <StatsCard
-            label="درآمد تأییدشده"
-            value={formatToman(revenueThirtyDays)}
-            subLabel="مجموع پرداخت‌های تأییدشده"
-            accent="green"
-          />
-          <StatsCard
-            label="تعداد تراکنش‌ها"
-            value={payments.length.toLocaleString("fa-IR")}
-            subLabel="پرداخت‌های موفق ۳۰ روز اخیر"
-          />
-        </div>
-      </section>
-
-      {/* 4. Platform Users */}
-      <section>
-        <h2 className="text-sm font-semibold text-muted-foreground mb-3">کاربران پلتفرم</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            label="مدیران"
-            value={totalManagers.toLocaleString("fa-IR")}
-          />
-          <StatsCard
-            label="مشاوران"
-            value={totalAgents.toLocaleString("fa-IR")}
-          />
-          <StatsCard
-            label="کل کاربران"
-            value={(totalManagers + totalAgents).toLocaleString("fa-IR")}
-          />
-          <StatsCard
-            label="غیرفعال"
-            value={inactiveUsers.toLocaleString("fa-IR")}
-            accent={inactiveUsers > 0 ? "amber" : "default"}
+            label="ARPU"
+            value={arpu > 0 ? formatToman(arpu) : "—"}
+            subLabel="میانگین درآمد هر دفتر پولی"
           />
         </div>
       </section>

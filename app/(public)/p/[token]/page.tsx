@@ -37,7 +37,7 @@ export default async function SharePage({ params }: SharePageProps) {
     include: {
       file: {
         include: {
-          office: { select: { name: true } },
+          office: { select: { name: true, subscription: { select: { plan: true } } } },
           photos: { orderBy: { order: "asc" as const } },
         },
       },
@@ -263,8 +263,17 @@ export default async function SharePage({ params }: SharePageProps) {
         <p className="text-xs text-muted-foreground">{file.office.name}</p>
       </div>
 
-      {/* Footer */}
-      <p className="text-center text-xs text-muted-foreground pb-4">ارائه‌شده توسط سامانه املاکبین</p>
+      {/* Footer — FREE plan shows powered-by watermark */}
+      {file.office.subscription?.plan === "FREE" ? (
+        <p className="text-center text-xs text-muted-foreground pb-4">
+          ساخته شده با{" "}
+          <a href="/pricing" className="font-medium text-primary hover:underline">
+            سرایار
+          </a>
+        </p>
+      ) : (
+        <p className="text-center text-xs text-muted-foreground pb-4">ارائه‌شده توسط سامانه املاکبین</p>
+      )}
     </div>
   )
 }

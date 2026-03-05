@@ -6,7 +6,8 @@ import type { DefaultSession } from "next-auth"
 
 export type Role = "SUPER_ADMIN" | "MID_ADMIN" | "MANAGER" | "AGENT"
 export type CustomerType = "BUYER" | "RENTER" | "SELLER" | "LANDLORD"
-export type Plan = "TRIAL" | "SMALL" | "LARGE"
+export type Plan = "FREE" | "PRO" | "TEAM"
+export type BillingCycle = "MONTHLY" | "ANNUAL"
 export type SubStatus = "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED"
 
 export type TransactionType = "SALE" | "LONG_TERM_RENT" | "SHORT_TERM_RENT" | "PRE_SALE"
@@ -268,7 +269,9 @@ export interface OfficeProfile {
 export interface SubscriptionInfo {
   plan: Plan
   status: SubStatus
-  trialEndsAt: Date
+  isTrial: boolean
+  billingCycle: BillingCycle
+  trialEndsAt: Date | null
   currentPeriodEnd: Date | null
 }
 
@@ -313,7 +316,7 @@ export interface AdminStats {
   // Offices & growth
   totalOffices: number
   newOfficesThisMonth: number
-  byPlan: { TRIAL: number; SMALL: number; LARGE: number }
+  byPlan: { FREE: number; PRO: number; TEAM: number }
   // Active vs locked
   byStatus: { ACTIVE: number; GRACE: number; LOCKED: number; CANCELLED: number }
   // Revenue (last 30 days), in Toman
@@ -332,7 +335,9 @@ export interface AdminOfficeSummary {
   subscription: {
     plan: Plan
     status: SubStatus
-    trialEndsAt: Date
+    isTrial: boolean
+    billingCycle: BillingCycle
+    trialEndsAt: Date | null
     currentPeriodEnd: Date | null
   } | null
   _count: {
@@ -353,7 +358,9 @@ export interface AdminOfficeDetail {
     id: string
     plan: Plan
     status: SubStatus
-    trialEndsAt: Date
+    isTrial: boolean
+    billingCycle: BillingCycle
+    trialEndsAt: Date | null
     currentPeriodEnd: Date | null
   } | null
   agents: Array<{
@@ -372,6 +379,7 @@ export interface AdminOfficeDetail {
   paymentRecords: Array<{
     id: string
     plan: Plan
+    billingCycle: BillingCycle
     amount: number
     status: string
     refId: string | null
@@ -405,4 +413,93 @@ export interface MidAdminAssignment {
   officeId: string
   assignedAt: Date
   office: { id: string; name: string; city: string | null }
+}
+
+export interface OfficeNoteItem {
+  id: string
+  content: string
+  adminName: string
+  createdAt: Date
+}
+
+export interface AdminActionLogItem {
+  id: string
+  adminName: string
+  action: string
+  targetType: string
+  targetId: string
+  metadata: Record<string, unknown> | null
+  createdAt: Date
+}
+
+export interface AdminSubscriptionSummary {
+  id: string
+  officeName: string
+  officeId: string
+  plan: Plan
+  status: SubStatus
+  isTrial: boolean
+  billingCycle: BillingCycle
+  trialEndsAt: Date | null
+  currentPeriodEnd: Date | null
+}
+
+export interface AdminPaymentSummary {
+  id: string
+  officeId: string
+  officeName: string
+  plan: Plan
+  billingCycle: BillingCycle
+  // Amount in Toman
+  amountToman: number
+  status: string
+  refId: string | null
+  createdAt: Date
+}
+
+// KPI data structure for the dedicated /admin/kpi page
+export interface AdminKpiData {
+  // Group 1 — Growth
+  growth: {
+    activePayingOffices: number
+    activeTrialOffices: number
+    newSignupsThisMonth: number
+    freeAccounts: number
+    mrr: number
+    arr: number
+  }
+  // Group 2 — Activation & Retention
+  activation: {
+    avgTimeToFirstFileDays: number | null
+    week1RetentionPct: string
+    trialConversionPct: string
+    churnRate: string
+    reactivationCount: number
+  }
+  // Group 3 — Referral (Phase 2 — all N/A for now)
+  referral: null
+  // Group 4 — Revenue Quality
+  revenueQuality: {
+    annualVsMonthlyRatio: string
+    arpu: number
+    paymentFailureRate: string
+    ltvEstimate: string
+    ltvCacRatio: string
+  }
+  // Group 5 — Product Usage
+  usage: {
+    aiCallsThisMonth: number
+    avgAiPerOffice: number
+    estimatedAiCostToman: number
+    publicLinkViewsTotal: number
+    filesCreatedThisMonth: number
+    freeUsersAtAiLimit: number
+  }
+  // Group 6 — Support
+  support: {
+    npsScore: string
+    smsDeliveryRate: string
+    paymentFailures30d: number
+    supportResponseTime: string
+  }
 }

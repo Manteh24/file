@@ -22,6 +22,8 @@ export const registerSchema = z
       .max(20, "کد معرف نمی‌تواند بیشتر از ۲۰ کاراکتر باشد")
       .optional()
       .or(z.literal("")),
+    // plan is set from the pricing page CTA (?plan=free|pro|team). Defaults to PRO trial.
+    plan: z.enum(["FREE", "PRO", "TEAM"]).default("PRO").optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "رمزهای عبور یکسان نیستند",

@@ -2,6 +2,12 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { generateDescriptionSchema } from "@/lib/validations/ai"
 import { generateDescription } from "@/lib/ai"
+import {
+  getEffectiveSubscription,
+  PLAN_LIMITS,
+  getAiUsageThisMonth,
+  incrementAiUsage,
+} from "@/lib/subscription"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -10,6 +16,28 @@ export async function POST(request: Request) {
       { success: false, error: "احراز هویت الزامی است" },
       { status: 401 }
     )
+  }
+
+  const { officeId } = session.user
+  if (!officeId) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+  }
+
+  // Check monthly AI usage limit for plans that have one
+  const sub = await getEffectiveSubscription(officeId)
+  if (sub) {
+    const limit = PLAN_LIMITS[sub.plan].maxAiPerMonth
+    if (isFinite(limit)) {
+      const usedThisMonth = await getAiUsageThisMonth(officeId)
+      if (usedThisMonth >= limit) {
+        return NextResponse.json(
+          { success: false, error: "محدودیت ماهانه توضیحات هوشمند به پایان رسید" },
+          { status: 403 }
+        )
+      }
+    }
+    // Increment before generation to prevent race-condition burst
+    await incrementAiUsage(officeId)
   }
 
   let body: unknown

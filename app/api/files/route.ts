@@ -4,7 +4,7 @@ import { db } from "@/lib/db"
 import { createFileSchema, fileFiltersSchema } from "@/lib/validations/file"
 import { logActivity, buildFileWhere, buildOrderBy } from "@/lib/file-helpers"
 import { bigIntToNumber } from "@/lib/utils"
-import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
+import { requireWriteAccess, SubscriptionLockedError, getEffectiveSubscription, PLAN_LIMITS, getActiveFileCount } from "@/lib/subscription"
 
 // ─── GET /api/files ────────────────────────────────────────────────────────────
 // Returns files for the authenticated user's office.
@@ -108,6 +108,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
+
+  // Enforce per-plan active file limit
+  const sub = await getEffectiveSubscription(officeId)
+  if (sub) {
+    const limit = PLAN_LIMITS[sub.plan].maxActiveFiles
+    if (isFinite(limit)) {
+      const activeCount = await getActiveFileCount(officeId)
+      if (activeCount >= limit) {
+        return NextResponse.json(
+          { success: false, error: "حداکثر تعداد فایل فعال به پایان رسید" },
+          { status: 403 }
+        )
+      }
+    }
   }
 
   try {

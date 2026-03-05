@@ -48,8 +48,10 @@ const mockDb = db as unknown as {
 
 const activeSubscription = {
   id: "sub-1",
-  plan: "TRIAL",
+  plan: "PRO",
   status: "ACTIVE",
+  isTrial: true,
+  billingCycle: "MONTHLY",
   trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   currentPeriodEnd: null,
 }
@@ -232,7 +234,7 @@ describe("POST /api/files/[id]/share-links", () => {
     expect(res.status).toBe(201)
     expect(mockDb.shareLink.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ customPrice: 3000000 }),
+        data: expect.objectContaining({ customPrice: BigInt(3000000) }),
       })
     )
   })

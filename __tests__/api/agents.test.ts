@@ -11,6 +11,7 @@ vi.mock("@/lib/db", () => ({
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
     subscription: {
       findUnique: vi.fn(),
@@ -46,14 +47,17 @@ const mockDb = db as unknown as {
     findFirst: MockFn
     create: MockFn
     update: MockFn
+    count: MockFn
   }
   subscription: { findUnique: MockFn; update: MockFn }
 }
 
 const activeSubscription = {
   id: "sub-1",
-  plan: "TRIAL",
+  plan: "PRO",
   status: "ACTIVE",
+  isTrial: true,
+  billingCycle: "MONTHLY",
   trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   currentPeriodEnd: null,
 }
@@ -166,7 +170,10 @@ describe("GET /api/agents", () => {
 describe("POST /api/agents", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockAuth.mockResolvedValue(managerSession)
     mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
+    // PRO plan allows up to 7 users; return 1 so the limit check passes
+    mockDb.user.count.mockResolvedValue(1)
   })
 
   it("returns 401 when not authenticated", async () => {
@@ -253,6 +260,44 @@ describe("POST /api/agents", () => {
         data: expect.objectContaining({ role: "AGENT", officeId: "office-1" }),
       })
     )
+  })
+
+  it("returns 403 when FREE plan user count is at the limit (maxUsers=1)", async () => {
+    const freeSubscription = {
+      id: "sub-free",
+      plan: "FREE",
+      status: "ACTIVE",
+      isTrial: false,
+      billingCycle: "MONTHLY",
+      trialEndsAt: null,
+      currentPeriodEnd: null,
+    }
+    mockDb.subscription.findUnique.mockResolvedValue(freeSubscription)
+    mockDb.user.count.mockResolvedValue(1) // at limit
+    const res = await createAgent(
+      new Request("http://localhost/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validCreateBody),
+      })
+    )
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toContain("کاربر")
+  })
+
+  it("returns 403 when PRO plan user count is at the limit (maxUsers=7)", async () => {
+    mockDb.user.count.mockResolvedValue(7) // at PRO limit
+    const res = await createAgent(
+      new Request("http://localhost/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validCreateBody),
+      })
+    )
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toContain("کاربر")
   })
 })
 

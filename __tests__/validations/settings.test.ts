@@ -93,20 +93,27 @@ describe("updateOfficeProfileSchema", () => {
 })
 
 describe("requestPaymentSchema", () => {
-  it("accepts SMALL plan", () => {
-    const result = requestPaymentSchema.safeParse({ plan: "SMALL" })
+  it("accepts PRO plan with default billingCycle", () => {
+    const result = requestPaymentSchema.safeParse({ plan: "PRO" })
     expect(result.success).toBe(true)
-    expect(result.data?.plan).toBe("SMALL")
+    expect(result.data?.plan).toBe("PRO")
+    expect(result.data?.billingCycle).toBe("MONTHLY")
   })
 
-  it("accepts LARGE plan", () => {
-    const result = requestPaymentSchema.safeParse({ plan: "LARGE" })
+  it("accepts TEAM plan", () => {
+    const result = requestPaymentSchema.safeParse({ plan: "TEAM" })
     expect(result.success).toBe(true)
-    expect(result.data?.plan).toBe("LARGE")
+    expect(result.data?.plan).toBe("TEAM")
   })
 
-  it("rejects TRIAL plan (not purchasable)", () => {
-    const result = requestPaymentSchema.safeParse({ plan: "TRIAL" })
+  it("accepts ANNUAL billingCycle", () => {
+    const result = requestPaymentSchema.safeParse({ plan: "PRO", billingCycle: "ANNUAL" })
+    expect(result.success).toBe(true)
+    expect(result.data?.billingCycle).toBe("ANNUAL")
+  })
+
+  it("rejects FREE plan (not purchasable)", () => {
+    const result = requestPaymentSchema.safeParse({ plan: "FREE" })
     expect(result.success).toBe(false)
   })
 

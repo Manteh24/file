@@ -1,20 +1,24 @@
+import type { BillingCycle } from "@/types"
+
 // ─── Plan Constants ────────────────────────────────────────────────────────────
 
-export const PLAN_PRICES_TOMAN: Record<"SMALL" | "LARGE", number> = {
-  SMALL: 490_000,
-  LARGE: 990_000,
+// Monthly and annual prices in Toman for each paid plan.
+// Annual = 10 months price (2 months free).
+export const PLAN_PRICES_TOMAN: Record<"PRO" | "TEAM", Record<BillingCycle, number>> = {
+  PRO:  { MONTHLY: 290_000, ANNUAL: 2_900_000 },
+  TEAM: { MONTHLY: 590_000, ANNUAL: 5_900_000 },
 }
 
 // Zarinpal accepts amounts in Rials. 1 Toman = 10 Rials.
-export const PLAN_PRICES_RIALS: Record<"SMALL" | "LARGE", number> = {
-  SMALL: 4_900_000,
-  LARGE: 9_900_000,
+export const PLAN_PRICES_RIALS: Record<"PRO" | "TEAM", Record<BillingCycle, number>> = {
+  PRO:  { MONTHLY: 2_900_000, ANNUAL: 29_000_000 },
+  TEAM: { MONTHLY: 5_900_000, ANNUAL: 59_000_000 },
 }
 
-export const PLAN_LABELS: Record<"TRIAL" | "SMALL" | "LARGE", string> = {
-  TRIAL: "آزمایشی",
-  SMALL: "پایه",
-  LARGE: "حرفه‌ای",
+export const PLAN_LABELS: Record<"FREE" | "PRO" | "TEAM", string> = {
+  FREE: "رایگان",
+  PRO:  "حرفه‌ای",
+  TEAM: "تیم",
 }
 
 // ─── Zarinpal API Types ────────────────────────────────────────────────────────
@@ -44,7 +48,8 @@ type RequestPaymentResult =
  * Returns { success: false, error } on any failure — never throws.
  */
 export async function requestPayment(
-  plan: "SMALL" | "LARGE",
+  plan: "PRO" | "TEAM",
+  billingCycle: BillingCycle,
   callbackUrl: string
 ): Promise<RequestPaymentResult> {
   const merchantId = process.env.ZARINPAL_MERCHANT_ID
@@ -53,10 +58,11 @@ export async function requestPayment(
     return { success: false, error: "درگاه پرداخت پیکربندی نشده است" }
   }
 
+  const cycleLabel = billingCycle === "ANNUAL" ? "سالانه" : "ماهانه"
   const body: ZarinpalRequestBody = {
     merchant_id: merchantId,
-    amount: PLAN_PRICES_RIALS[plan],
-    description: `تمدید اشتراک پلن ${PLAN_LABELS[plan]}`,
+    amount: PLAN_PRICES_RIALS[plan][billingCycle],
+    description: `اشتراک ${PLAN_LABELS[plan]} — ${cycleLabel}`,
     callback_url: callbackUrl,
   }
 
@@ -80,7 +86,6 @@ export async function requestPayment(
       errors?: unknown[] | Record<string, unknown>
     }
 
-    // Zarinpal returns errors as an array or object depending on the error type
     const hasErrors = Array.isArray(data.errors)
       ? data.errors.length > 0
       : data.errors && typeof data.errors === "object" && Object.keys(data.errors).length > 0
@@ -114,7 +119,8 @@ type VerifyPaymentResult =
  * Returns { success: false, error } on any failure — never throws.
  */
 export async function verifyPayment(
-  plan: "SMALL" | "LARGE",
+  plan: "PRO" | "TEAM",
+  billingCycle: BillingCycle,
   authority: string
 ): Promise<VerifyPaymentResult> {
   const merchantId = process.env.ZARINPAL_MERCHANT_ID
@@ -125,7 +131,7 @@ export async function verifyPayment(
 
   const body: ZarinpalVerifyBody = {
     merchant_id: merchantId,
-    amount: PLAN_PRICES_RIALS[plan],
+    amount: PLAN_PRICES_RIALS[plan][billingCycle],
     authority,
   }
 
@@ -152,7 +158,6 @@ export async function verifyPayment(
     const refId = String(data.data?.ref_id ?? "")
 
     if (code === 101) {
-      // Already verified — idempotent re-verification
       return { success: true, refId, alreadyVerified: true }
     }
 
@@ -172,16 +177,18 @@ export async function verifyPayment(
 
 /**
  * Returns the new subscription period end date after a successful payment.
- * If currentPeriodEnd is in the future, renewal stacks (adds 30 days to it).
- * Otherwise, starts a fresh 30-day period from today.
+ * If currentPeriodEnd is in the future, renewal stacks onto it.
+ * Otherwise, starts a fresh period from today.
+ * Monthly adds 30 days; annual adds 365 days.
  */
 export function calculateNewPeriodEnd(
-  currentPeriodEnd: Date | null | undefined
+  currentPeriodEnd: Date | null | undefined,
+  billingCycle: BillingCycle = "MONTHLY"
 ): Date {
   const now = new Date()
   const base =
     currentPeriodEnd && currentPeriodEnd > now ? currentPeriodEnd : now
   const result = new Date(base)
-  result.setDate(result.getDate() + 30)
+  result.setDate(result.getDate() + (billingCycle === "ANNUAL" ? 365 : 30))
   return result
 }

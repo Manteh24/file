@@ -6,14 +6,42 @@ vi.mock("@/lib/auth", () => ({ auth: vi.fn() }))
 
 vi.mock("@/lib/ai", () => ({ generateDescription: vi.fn() }))
 
+vi.mock("@/lib/subscription", () => ({
+  getEffectiveSubscription: vi.fn().mockResolvedValue({
+    plan: "PRO",
+    status: "ACTIVE",
+    canWrite: true,
+    isTrial: true,
+    billingCycle: "MONTHLY",
+    daysUntilExpiry: Infinity,
+    isNearExpiry: false,
+    graceDaysLeft: 0,
+  }),
+  PLAN_LIMITS: {
+    FREE: { maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10 },
+    PRO: { maxUsers: 7, maxActiveFiles: Infinity, maxAiPerMonth: Infinity },
+    TEAM: { maxUsers: Infinity, maxActiveFiles: Infinity, maxAiPerMonth: Infinity },
+  },
+  getAiUsageThisMonth: vi.fn().mockResolvedValue(0),
+  incrementAiUsage: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { auth } from "@/lib/auth"
 import { generateDescription } from "@/lib/ai"
+import {
+  getEffectiveSubscription,
+  getAiUsageThisMonth,
+  incrementAiUsage,
+} from "@/lib/subscription"
 import { POST as descriptionRoute } from "@/app/api/ai/description/route"
 
 type MockFn = ReturnType<typeof vi.fn>
 
 const mockAuth = auth as MockFn
 const mockGenerate = generateDescription as MockFn
+const mockGetEffectiveSub = getEffectiveSubscription as MockFn
+const mockGetAiUsage = getAiUsageThisMonth as MockFn
+const mockIncrementAiUsage = incrementAiUsage as MockFn
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -53,6 +81,17 @@ const fullPayload = {
 // ─── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("POST /api/ai/description", () => {
+  const proSub = {
+    plan: "PRO",
+    status: "ACTIVE",
+    canWrite: true,
+    isTrial: true,
+    billingCycle: "MONTHLY",
+    daysUntilExpiry: Infinity,
+    isNearExpiry: false,
+    graceDaysLeft: 0,
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockAuth.mockResolvedValue(session)
@@ -61,6 +100,10 @@ describe("POST /api/ai/description", () => {
       description: "یک توضیحات خوب برای ملک",
       usedFallback: false,
     })
+    // Reset subscription mocks to PRO defaults each test
+    mockGetEffectiveSub.mockResolvedValue(proSub)
+    mockGetAiUsage.mockResolvedValue(0)
+    mockIncrementAiUsage.mockResolvedValue(undefined)
   })
 
   it("returns 401 when not authenticated", async () => {
@@ -176,5 +219,56 @@ describe("POST /api/ai/description", () => {
       const res = await descriptionRoute(req)
       expect(res.status).toBe(200)
     }
+  })
+
+  it("calls incrementAiUsage before generating description on success", async () => {
+    const req = makePostRequest(minimalPayload)
+    await descriptionRoute(req)
+    expect(mockIncrementAiUsage).toHaveBeenCalledWith("office-1")
+  })
+
+  it("returns 403 when FREE plan has reached the 10/month AI limit", async () => {
+    mockGetEffectiveSub.mockResolvedValue({
+      plan: "FREE",
+      status: "ACTIVE",
+      canWrite: true,
+      isTrial: false,
+      billingCycle: "MONTHLY",
+      daysUntilExpiry: Infinity,
+      isNearExpiry: false,
+      graceDaysLeft: 0,
+    })
+    mockGetAiUsage.mockResolvedValue(10) // at limit
+    const req = makePostRequest(minimalPayload)
+    const res = await descriptionRoute(req)
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.success).toBe(false)
+    expect(body.error).toContain("محدودیت")
+  })
+
+  it("returns 200 when FREE plan is under the 10/month limit", async () => {
+    mockGetEffectiveSub.mockResolvedValue({
+      plan: "FREE",
+      status: "ACTIVE",
+      canWrite: true,
+      isTrial: false,
+      billingCycle: "MONTHLY",
+      daysUntilExpiry: Infinity,
+      isNearExpiry: false,
+      graceDaysLeft: 0,
+    })
+    mockGetAiUsage.mockResolvedValue(9) // one slot remaining
+    const req = makePostRequest(minimalPayload)
+    const res = await descriptionRoute(req)
+    expect(res.status).toBe(200)
+    expect(mockIncrementAiUsage).toHaveBeenCalledWith("office-1")
+  })
+
+  it("does not check AI usage count for PRO plan (Infinity limit)", async () => {
+    // PRO is the default mock — getAiUsageThisMonth should NOT be called
+    const req = makePostRequest(minimalPayload)
+    await descriptionRoute(req)
+    expect(mockGetAiUsage).not.toHaveBeenCalled()
   })
 })

@@ -20,6 +20,8 @@ export const generateDescriptionSchema = z.object({
   hasStorage: z.boolean().optional(),
   hasBalcony: z.boolean().optional(),
   hasSecurity: z.boolean().optional(),
+  // Optional summary of nearby amenities from location analysis (e.g. "۵ دقیقه تا مترو، پارک مجاور")
+  locationContext: z.string().max(500).nullable().optional(),
   tone: z.enum(["formal", "standard", "compelling"]),
 })
 

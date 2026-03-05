@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createAgentSchema } from "@/lib/validations/agent"
-import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
+import { requireWriteAccess, SubscriptionLockedError, getEffectiveSubscription, PLAN_LIMITS, getUserCount } from "@/lib/subscription"
 
 // ─── GET /api/agents ────────────────────────────────────────────────────────────
 // Returns all agents in the manager's office. Manager-only.
@@ -78,6 +78,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
+
+  // Enforce per-plan user count limit
+  const sub = await getEffectiveSubscription(officeId!)
+  if (sub) {
+    const limit = PLAN_LIMITS[sub.plan].maxUsers
+    if (isFinite(limit)) {
+      const currentCount = await getUserCount(officeId!)
+      if (currentCount >= limit) {
+        return NextResponse.json(
+          { success: false, error: `پلن شما حداکثر ${limit} کاربر را پشتیبانی می‌کند` },
+          { status: 403 }
+        )
+      }
+    }
   }
 
   // Check uniqueness — username is globally unique, email is unique when non-empty

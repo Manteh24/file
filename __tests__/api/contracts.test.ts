@@ -48,8 +48,10 @@ const mockDb = db as unknown as {
 
 const activeSubscription = {
   id: "sub-1",
-  plan: "TRIAL",
+  plan: "PRO",
   status: "ACTIVE",
+  isTrial: true,
+  billingCycle: "MONTHLY",
   trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
   currentPeriodEnd: null,
 }

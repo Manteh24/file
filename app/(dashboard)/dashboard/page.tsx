@@ -14,9 +14,9 @@ import { formatJalali } from "@/lib/utils"
 import type { Plan, SubStatus } from "@/types"
 
 const planLabels: Record<Plan, string> = {
-  TRIAL: "آزمایشی",
-  SMALL: "پایه",
-  LARGE: "حرفه‌ای",
+  FREE: "رایگان",
+  PRO: "حرفه‌ای",
+  TEAM: "تیم",
 }
 
 const statusConfig: Record<SubStatus, { label: string; color: string }> = {
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
   ])
 
   const trialDaysLeft =
-    subscription?.plan === "TRIAL" && subscription.trialEndsAt
+    subscription?.isTrial && subscription.trialEndsAt
       ? Math.max(
           0,
           Math.ceil(

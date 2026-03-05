@@ -29,7 +29,8 @@ export async function GET(request: Request) {
   let record: {
     id: string
     officeId: string
-    plan: "SMALL" | "LARGE"
+    plan: "PRO" | "TEAM"
+    billingCycle: "MONTHLY" | "ANNUAL"
     amount: number
     status: string
   } | null
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
   try {
     record = await db.paymentRecord.findUnique({
       where: { authority },
-      select: { id: true, officeId: true, plan: true, amount: true, status: true },
+      select: { id: true, officeId: true, plan: true, billingCycle: true, amount: true, status: true },
     }) as typeof record
   } catch {
     return NextResponse.redirect(settingsUrl("error"))
@@ -52,7 +53,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(settingsUrl("already_verified"))
   }
 
-  const verifyResult = await verifyPayment(record.plan, authority)
+  const verifyResult = await verifyPayment(record.plan, record.billingCycle, authority)
   if (!verifyResult.success) {
     // Mark record as failed so it's not retried
     await db.paymentRecord.update({
@@ -74,7 +75,7 @@ export async function GET(request: Request) {
     // Non-fatal — calculateNewPeriodEnd handles null gracefully
   }
 
-  const newPeriodEnd = calculateNewPeriodEnd(currentPeriodEnd)
+  const newPeriodEnd = calculateNewPeriodEnd(currentPeriodEnd, record.billingCycle)
 
   try {
     await db.$transaction([
@@ -89,7 +90,9 @@ export async function GET(request: Request) {
         where: { officeId: record.officeId },
         data: {
           plan: record.plan,
+          billingCycle: record.billingCycle,
           status: "ACTIVE",
+          isTrial: false,
           currentPeriodEnd: newPeriodEnd,
         },
       }),
