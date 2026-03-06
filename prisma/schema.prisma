@@ -98,6 +98,10 @@ model Office {
   aiUsageLogs      AiUsageLog[]
   branches         Branch[]
   notes            OfficeNote[]
+  // Referral that brought this office to the platform (one office can be referred once)
+  referral         Referral?
+  // The referral code this office owns and shares with others to earn commissions
+  ownReferralCode  ReferralCode?
 
   @@map("offices")
 }
@@ -114,6 +118,8 @@ model User {
   isActive     Boolean       @default(true)
   // avatarUrl will be populated by the image processing pipeline (Feature 14)
   avatarUrl    String?
+  // Internal admin note (not visible to the user)
+  adminNote    String?
   // Nullable: SUPER_ADMIN and MID_ADMIN users have no tenant office (officeId = null)
   officeId     String?
   // Nullable: links user to a specific branch (Team plan multi-branch, hidden until month 4)
@@ -136,6 +142,9 @@ model User {
   finalizedContracts  Contract[]       @relation("FinalizedContracts")
   officeNotes         OfficeNote[]
   adminActions        AdminActionLog[]
+  adminCreatedCodes   ReferralCode[]   @relation("AdminCreatedReferralCodes")
+  adminPaidEarnings   ReferralMonthlyEarning[] @relation("AdminPaidEarnings")
+  sentBroadcasts      AdminBroadcast[]
 
   @@map("users")
 }
@@ -529,4 +538,88 @@ model OfficeNote {
 
   @@index([officeId])
   @@map("office_notes")
+}
+
+// A referral code — may belong to an office (auto-generated) or be standalone (partner code).
+model ReferralCode {
+  id                          String   @id @default(cuid())
+  code                        String   @unique
+  // null for partner/standalone codes that don't belong to any single office
+  officeId                    String?  @unique
+  office                      Office?  @relation(fields: [officeId], references: [id])
+  label                       String?
+  // Toman per active referred office per month (0 for auto-generated office codes)
+  commissionPerOfficePerMonth Int      @default(0)
+  isActive                    Boolean  @default(true)
+  createdAt                   DateTime @default(now())
+  createdByAdminId            String?
+  createdByAdmin              User?    @relation("AdminCreatedReferralCodes", fields: [createdByAdminId], references: [id])
+
+  referrals       Referral[]
+  monthlyEarnings ReferralMonthlyEarning[]
+
+  @@map("referral_codes")
+}
+
+// Records which referral code brought a given office to the platform.
+// Each office can only be referred once (officeId is unique).
+model Referral {
+  id             String       @id @default(cuid())
+  referralCodeId String
+  referralCode   ReferralCode @relation(fields: [referralCodeId], references: [id])
+  // officeId is unique — each office can only be referred once
+  officeId       String       @unique
+  office         Office       @relation(fields: [officeId], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@map("referrals")
+}
+
+// Monthly commission snapshot for a referral code.
+// yearMonth is Gregorian YYYY-MM (e.g. "2026-03").
+model ReferralMonthlyEarning {
+  id                String       @id @default(cuid())
+  referralCodeId    String
+  referralCode      ReferralCode @relation(fields: [referralCodeId], references: [id])
+  yearMonth         String       // "2026-03"
+  activeOfficeCount Int
+  // commissionAmount = activeOfficeCount * code.commissionPerOfficePerMonth
+  commissionAmount  BigInt
+  isPaid            Boolean      @default(false)
+  paidAt            DateTime?
+  paidByAdminId     String?
+  paidByAdmin       User?        @relation("AdminPaidEarnings", fields: [paidByAdminId], references: [id])
+  createdAt         DateTime     @default(now())
+
+  @@unique([referralCodeId, yearMonth])
+  @@map("referral_monthly_earnings")
+}
+
+// Record of admin broadcast messages sent to office managers.
+model AdminBroadcast {
+  id             String    @id @default(cuid())
+  subject        String
+  body           String
+  // "ONE" | "ALL" | "FILTERED"
+  targetType     String
+  targetOfficeId String?
+  // for FILTERED: e.g. { plan: "FREE", status: "ACTIVE" }
+  targetFilter   Json?
+  recipientCount Int
+  sendSms        Boolean   @default(false)
+  sentAt         DateTime  @default(now())
+  sentByAdminId  String
+  sentByAdmin    User      @relation(fields: [sentByAdminId], references: [id])
+
+  @@map("admin_broadcasts")
+}
+
+// Key-value store for platform-wide settings editable by SUPER_ADMIN.
+model PlatformSetting {
+  key              String   @id
+  value            String
+  updatedAt        DateTime @updatedAt
+  updatedByAdminId String?
+
+  @@map("platform_settings")
 }

@@ -1,6 +1,7 @@
 import { format } from "date-fns-jalali"
 import { db } from "@/lib/db"
 import { PLAN_PRICES_TOMAN } from "@/lib/payment"
+import { findActiveReferredOffices } from "@/lib/referral"
 import type { Role } from "@/types"
 
 interface SessionUser {
@@ -144,4 +145,91 @@ export async function calculateAiCostThisMonth(
     _sum: { count: true },
   })
   return (logs._sum.count ?? 0) * AI_UNIT_COST_TOMAN
+}
+
+// ─── Referral KPI Helpers ──────────────────────────────────────────────────────
+
+export interface ReferralKpiData {
+  participationRate: string
+  referralConversionRate: string
+  activeReferrers: number
+  avgOfficesPerReferrer: string
+  commissionThisMonth: number
+}
+
+/**
+ * Computes referral KPI metrics for Group 3.
+ * officeFilter scopes to accessible offices.
+ * yearMonth: Gregorian "YYYY-MM" for current-month commission sum.
+ */
+export async function calculateReferralKpis(
+  officeFilter: { id?: { in: string[] } },
+  yearMonth: string
+): Promise<ReferralKpiData> {
+  // Total offices in scope
+  const totalOffices = await db.office.count({ where: officeFilter })
+
+  // Offices that have a non-null referralCode stored
+  const officesWithCode = await db.office.count({
+    where: { ...officeFilter, referralCode: { not: null } },
+  })
+
+  // Participation rate: offices that entered a referral code / total
+  const participationRate =
+    totalOffices > 0
+      ? `${((officesWithCode / totalOffices) * 100).toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪`
+      : "—"
+
+  // Referral conversion: offices with Referral record AND isTrial=false / all offices with Referral record
+  const [totalReferred, convertedReferred] = await Promise.all([
+    db.referral.count({ where: { office: officeFilter } }),
+    db.referral.count({
+      where: {
+        office: { ...officeFilter, subscription: { isTrial: false } },
+      },
+    }),
+  ])
+  const referralConversionRate =
+    totalReferred > 0
+      ? `${((convertedReferred / totalReferred) * 100).toLocaleString("fa-IR", { maximumFractionDigits: 1 })}٪`
+      : "—"
+
+  // Active referrers: codes with ≥1 active paid referral
+  const allCodes = await db.referralCode.findMany({
+    where:
+      officeFilter.id !== undefined
+        ? { OR: [{ officeId: { in: officeFilter.id.in } }, { officeId: null }] }
+        : {},
+    select: { id: true },
+  })
+
+  let activeReferrers = 0
+  let totalActivePaidReferrals = 0
+  for (const c of allCodes) {
+    const activeIds = await findActiveReferredOffices(c.id)
+    if (activeIds.length > 0) {
+      activeReferrers++
+      totalActivePaidReferrals += activeIds.length
+    }
+  }
+
+  const avgOfficesPerReferrer =
+    activeReferrers > 0
+      ? (totalActivePaidReferrals / activeReferrers).toLocaleString("fa-IR", { maximumFractionDigits: 1 })
+      : "—"
+
+  // Commission this month: sum of ReferralMonthlyEarning for the given month
+  const earningsAgg = await db.referralMonthlyEarning.aggregate({
+    where: { yearMonth },
+    _sum: { commissionAmount: true },
+  })
+  const commissionThisMonth = Number(earningsAgg._sum.commissionAmount ?? 0n)
+
+  return {
+    participationRate,
+    referralConversionRate,
+    activeReferrers,
+    avgOfficesPerReferrer,
+    commissionThisMonth,
+  }
 }

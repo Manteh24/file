@@ -488,132 +488,37 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 ## 20. Development Progress
 
 > Workflow rule: build one feature at a time, write tests before moving to the next feature.
-> Update this section after every feature + test cycle.
 
 ### Feature Build Order & Status
 
-| # | Feature | Built | Tested | Notes |
-|---|---------|-------|--------|-------|
-| 1 | **Authentication** (register, login, session management, 2-session limit, middleware) | ✅ | ✅ | |
-| 2 | **Dashboard** (layout, shell, sidebar, topbar, KPI cards, sign-out action) | ✅ | ✅ | |
-| 3 | **File Management** (create, edit, list, status lifecycle, activity log) | ✅ | ✅ | |
-| 4 | **CRM** (customers, contact history) | ✅ | ✅ | |
-| 5 | **Agent Management** (manager-only) | ✅ | ✅ | |
-| 6 | **Contracts** (finalization, commission, archive) | ✅ | ✅ | |
-| 7 | **Share Links** (public view page, token, custom price) | ✅ | ✅ | |
-| 8 | **SMS** (KaveNegar integration, templates) | ✅ | ✅ | |
-| 9 | **Notifications** (PWA push + 30s polling) | ✅ | ✅ | PWA background push deferred (needs VAPID + HTTPS deploy) |
-| 10 | **Reports** (financial, activity) | ✅ | ✅ | Manager-only server component; period filter tabs; KPI cards; type breakdown; agent performance; recent contracts + activity log |
-| 11 | **Settings** (office profile, billing, Zarinpal) | ✅ | ✅ | Manager-only. Office profile PATCH (name, phone, email, address, city). Zarinpal full flow: POST /api/payments/request → redirect → GET /api/payments/verify callback → subscription update. PaymentRecord model for idempotency. |
-| 12 | **AI Description** (AvalAI + template fallback) | ✅ | ✅ | `POST /api/ai/description` (auth required). `lib/ai.ts`: `generateDescription()` calls AvalAI (`gpt-4o-mini`, 15s timeout, system+user roles, temperature per tone), always falls back to `buildDescriptionTemplate()`. Tone values: `formal`/`standard`/`compelling` (رسمی/معمولی/جذاب). |
-| 13 | **Maps** (Neshan pin, POI, routing) | ✅ | ✅ | `lib/maps.ts`: `reverseGeocode`, `analyzeLocation`, `parseLocationAnalysis`. `GET /api/maps/reverse-geocode`. `POST /api/files/[id]/analyze-location`. `NeshanMapPicker` + `LocationPicker` (SSR-safe). `NeshanMapView` + `MapView` (SSR-safe). `LocationAnalysisDisplay`. FileForm: pin drop → reverse-geocode auto-fill → analyze-location after save. Detail page + public share page show map + analysis. |
-| 14 | **Image Processing** (Sharp pipeline, watermark, storage) | ✅ | ✅ | |
-| 15 | **Offline Drafts** (Dexie.js IndexedDB) | ✅ | ✅ | |
-| 16 | **Subscription / Billing** (trial, grace, locked lifecycle) | ✅ | ✅ | `lib/subscription.ts`: `resolveSubscription()` (pure, date-based), `getEffectiveSubscription()` (lazy DB migration, no cron), `requireWriteAccess()` + `SubscriptionLockedError`. `SubscriptionBanner` in dashboard shell (near-expiry yellow, grace amber, locked red; role-aware Persian text). Write gate on 10 API handlers (POST/PATCH/DELETE for files, share-links, contracts, agents, crm). `CANCELLED` status set by admins is never auto-overridden. |
-
-### Test Files Written
-
-| Test File | Feature | What It Covers |
-|-----------|---------|---------------|
-| `__tests__/validations/auth.test.ts` | Authentication | `registerSchema` (24 cases), `loginSchema` (5 cases), `forgotPasswordSchema` (2 cases) |
-| `__tests__/actions/register.test.ts` | Authentication | `registerAction` — validation, duplicate checks, DB failure, happy path (9 cases) |
-| `__tests__/lib/utils.test.ts` | Dashboard | `formatToman` (5 cases), `formatJalali` (3 cases) |
-| `__tests__/actions/signout.test.ts` | Dashboard | `signOutAction` — calls `signOut({ redirectTo: "/login" })`, error propagation (2 cases) |
-| `__tests__/dashboard/page.test.ts` | Dashboard | `trialDaysLeft` calculation (6 cases), `planLabels` (3 cases), `statusConfig` (4 cases) |
-| `__tests__/validations/file.test.ts` | File Management | `contactSchema` (6 cases), `createFileSchema` (16 cases), `updateFileSchema` (5 cases), `changeFileStatusSchema` (4 cases) |
-| `__tests__/api/files.test.ts` | File Management + Redesign | `GET /api/files` (6 cases), `POST /api/files` (9 cases); FREE plan active file count limit enforcement (1 case) (16 total) |
-| `__tests__/validations/customer.test.ts` | CRM | `createCustomerSchema` (15 cases), `updateCustomerSchema` (4 cases), `customerNoteSchema` (5 cases) |
-| `__tests__/api/customers.test.ts` | CRM | `GET /api/crm` (5 cases), `POST /api/crm` (7 cases), `GET/PATCH/DELETE /api/crm/[id]` (9 cases), `GET/POST /api/crm/[id]/notes` (8 cases) |
-| `__tests__/validations/agent.test.ts` | Agent Management | `createAgentSchema` (16 cases), `updateAgentSchema` (6 cases), `resetPasswordSchema` (5 cases) |
-| `__tests__/api/agents.test.ts` | Agent Management + Redesign | `GET /api/agents` (5 cases), `POST /api/agents` (6 cases), `GET/PATCH/DELETE /api/agents/[id]` (9 cases), `POST /api/agents/[id]/reset-password` (5 cases); FREE/PRO user count limit enforcement (2 cases) (29 total) |
-| `__tests__/validations/contract.test.ts` | Contracts | `createContractSchema` (16 cases) |
-| `__tests__/api/contracts.test.ts` | Contracts | `GET /api/contracts` (5 cases), `POST /api/contracts` (12 cases), `GET /api/contracts/[id]` (5 cases) |
-| `__tests__/validations/shareLink.test.ts` | Share Links | `createShareLinkSchema` (7 cases) |
-| `__tests__/api/share-links.test.ts` | Share Links | `GET /api/files/[id]/share-links` (5 cases), `POST /api/files/[id]/share-links` (8 cases), `PATCH /api/share-links/[id]` (5 cases) |
-| `__tests__/validations/sms.test.ts` | SMS | `sendSmsSchema` — valid phone formats, invalid phones, message length (14 cases) |
-| `__tests__/api/sms.test.ts` | SMS | `POST /api/sms/send` — auth, validation, KaveNegar error, happy path (8 cases) |
-| `__tests__/api/notifications.test.ts` | Notifications | `GET /api/notifications` (4 cases), `PATCH /api/notifications/[id]` (3 cases), `PATCH /api/notifications/read-all` (2 cases) |
-| `__tests__/reports/calculations.test.ts` | Reports | `getDateFilter` (7 cases), `normalisePeriod` (6 cases), `getTransactionTypeLabel` (4 cases), `getActivityActionLabel` (7 cases), `PERIOD_OPTIONS` (3 cases) |
-| `__tests__/validations/settings.test.ts` | Settings | `updateOfficeProfileSchema` (12 cases), `requestPaymentSchema` (4 cases) |
-| `__tests__/api/settings.test.ts` | Settings | `GET /api/settings` (5 cases), `PATCH /api/settings` (7 cases) |
-| `__tests__/api/payments.test.ts` | Settings | `POST /api/payments/request` (6 cases), `GET /api/payments/verify` (7 cases) |
-| `__tests__/lib/payment.test.ts` | Settings | `calculateNewPeriodEnd` (4 cases) |
-| `__tests__/lib/ai.test.ts` | AI Description | `buildDescriptionTemplate` — transaction types, property types, location, physical details, amenities, tone differences, edge cases (24 cases) |
-| `__tests__/api/ai-description.test.ts` | AI Description + Redesign | `POST /api/ai/description` — auth, validation, happy path, AvalAI failure, fallback, all tone values (12 cases); FREE plan AI limit enforcement, incrementAiUsage called, PRO skips count check (4 cases) (16 total) |
-| `__tests__/lib/maps.test.ts` | Maps | `parseLocationAnalysis` — null/undefined/non-object/array inputs, missing fields, valid POIs, invalid POI shape, invalid category, extra fields (13 cases) |
-| `__tests__/api/maps.test.ts` | Maps | `GET /api/maps/reverse-geocode` — auth, missing params, NaN, out-of-range, happy path, null address (8 cases); `POST /api/files/[id]/analyze-location` — auth, 404, no lat, no lng, happy path, DB update, officeId filter (8 cases) |
-| `__tests__/lib/image.test.ts` | Image Processing | `processPropertyPhoto` — rotate, resize params, JPEG quality, no watermark when officeName absent, composite watermark when present, XML escaping in watermark SVG (9 cases) |
-| `__tests__/api/upload.test.ts` | Image Processing | `POST /api/upload` — auth, officeId, missing file, missing fileId, bad MIME, file too large, wrong office, photo limit, happy path, buffer passed to processPropertyPhoto, key/buffer passed to uploadFile, order = photo count (12 cases) |
-| `__tests__/hooks/useDraft.test.ts` | Offline Drafts | `loadDraftFromDb` — null when absent, returns stored draft, correct key (3 cases); `saveDraftToDb` — correct key/data, savedAt Date, upsert behavior (3 cases); `clearDraftFromDb` — correct key, resolves safely (2 cases) |
-| `__tests__/lib/subscription.test.ts` | Subscription / Billing + Redesign | `resolveSubscription` — FREE plan always ACTIVE, CANCELLED always locked, active far/near expiry, grace window boundaries, locked threshold, PRO/TEAM paid plans use currentPeriodEnd, null currentPeriodEnd locked (14 cases); `getEffectiveSubscription` — null when not found, no DB update when matches, DB update on drift, no update for CANCELLED (4 cases); `PLAN_LIMITS` constants (3); `PLAN_FEATURES` constants (3); `getCurrentShamsiMonth` (1); `getAiUsageThisMonth` (3); `incrementAiUsage` (1) (31 total) |
-| `__tests__/api/cron.test.ts` | Subscription Redesign | `POST /api/cron/lock-expired-trials` — missing secret → 401, wrong secret → 401, no expired trials → no-op, expired with >2 users → locks extras, ≤2 users → no lock, multiple offices → sums usersLocked (6 cases) |
-
-### Admin Panel & UI Fixes (post-feature work)
-- **Middleware redirect:** Admin users (SUPER_ADMIN / MID_ADMIN — `officeId = null`) are now redirected at middleware level to `/admin/dashboard` instead of going through `/dashboard` first. Two checks added: auth-page redirect and `/dashboard` prefix guard.
-- **RTL table header alignment:** All `<th>` elements in admin tables changed from `text-end` to `text-start`. In RTL, `text-end` = left; `text-start` = right (correct for RTL).
-- **MID_ADMIN label:** Renamed from `پشتیبان / پشتیبانان` to `تیم / عضو تیم` across AdminTopbar, AdminSidebar, mid-admins page, and MidAdminForm — kept generic as the role scope may expand.
-
-### File List Filtering Enhancement (post-feature work)
-- **Scope:** Enhancement to Feature 3 (File Management) — no schema changes, all model fields already existed.
-- **New filters exposed:** text search (`address`/`neighborhood` ILIKE), transaction type (pills), property type (pills), price range (min/max, context-aware column), area range (min/max), amenities (all 5 boolean fields as AND checkboxes), sort order (6 options).
-- **`lib/validations/file.ts`:** `fileFiltersSchema` extended with 11 new fields. Amenity params use `z.enum(["true"]).transform(() => true)` — absent = don't filter. `SORT_OPTIONS` exported as const tuple.
-- **`lib/file-helpers.ts`:** `buildFileWhere(officeId, role, userId, filters)` and `buildOrderBy(sort)` added — shared between the server page (direct DB) and `GET /api/files` to keep filter logic in one place. Price range targets `salePrice`/`depositAmount`/`rentAmount` based on `transactionType`; when no type is set, ORs across `salePrice` and `rentAmount` (safe in Tehran market — values differ by orders of magnitude). All OR arrays guarded with `.length > 0` before pushing into `AND` to avoid `{ OR: [] }` Prisma edge case.
-- **`components/files/FileFilterPanel.tsx`:** New `"use client"` collapsible panel. State initialized via `useState(() => initState(initialParams))` (lazy initializer — no `useEffect` prop sync). Accumulates changes locally; navigates on "اعمال فیلترها" (not live per-keystroke). Active-filter count badge on toggle button. "پاک کردن" shortcut visible when filters are active and panel is closed.
-- **`app/(dashboard)/files/page.tsx`:** Status tab hrefs rebuilt via `buildStatusHref()` so switching tabs preserves all active secondary filters. `hasActiveFilters` flag drives contextual empty-state message.
-
-### Subscription Tier Redesign (post-feature work)
-- **Plans:** `FREE | PRO | TEAM` replaced `TRIAL | SMALL | LARGE`. `BillingCycle: MONTHLY | ANNUAL`.
-- **Schema additions:** `Subscription.isTrial`, `Subscription.billingCycle`, `PaymentRecord.billingCycle`, new `AiUsageLog` model (per-office per-Shamsi-month AI counter), new `Branch` model (schema-only, UI hidden), `User.branchId` nullable FK.
-- **`lib/subscription.ts`:** `PLAN_LIMITS` + `PLAN_FEATURES` constants (enforced at API level). `getAiUsageThisMonth`, `incrementAiUsage`, `getUserCount`, `getActiveFileCount` DB helpers. `getCurrentShamsiMonth()` using date-fns-jalali. `resolveSubscription` handles FREE (always ACTIVE/Infinity), isTrial flag replaces TRIAL plan value.
-- **`lib/payment.ts`:** Prices now nested `PLAN_PRICES_RIALS[plan][billingCycle]`. `calculateNewPeriodEnd(currentPeriodEnd, billingCycle)` — adds 30 or 365 days.
-- **API limit enforcement:** `POST /api/agents` (user count per plan), `POST /api/files` (active file count, FREE only), `POST /api/ai/description` (AI monthly limit, FREE only), `POST /api/sms/send` (FREE: no SMS), `POST /api/files/[id]/analyze-location` (FREE: no maps).
-- **Cron:** `POST /api/api/cron/lock-expired-trials` — guarded by `x-cron-secret` header; deactivates users at index 2+ for expired trials.
-- **Registration flow:** `?plan=` searchParam read in server component, passed to `RegisterForm`; plan-specific subscription creation in `actions.ts` (FREE: isTrial=false, no trialEndsAt; PRO/TEAM: 30-day trial).
-- **Pricing page:** `app/(public)/pricing/page.tsx` + `PricingCards.tsx` client component with MONTHLY/ANNUAL toggle, 3 columns (TEAM|PRO★|FREE), CTAs to `/register?plan=`.
-- **UI:** `SubscriptionBanner` shows plan name in banners (FREE returns null), `SubscriptionCard` shows FREE/PRO/TEAM with billingCycle toggle, annual "۲ ماه رایگان" CTA. Share page shows watermark footer for FREE plan. Admin: plan dropdown + isTrial checkbox.
-- **Data migration:** `scripts/migrate-plans.ts` — converts SMALL→PRO, LARGE→TEAM, TRIAL→PRO(isTrial=true) in a `$transaction`.
-- **Tests updated/added:** `dashboard/page.test.ts`, `lib/subscription.test.ts`, `api/payments.test.ts`, `validations/settings.test.ts`, `api/settings.test.ts`, `lib/payment.test.ts`, `api/agents.test.ts`, `api/files.test.ts`, `api/ai-description.test.ts`, `api/sms.test.ts`, `api/maps.test.ts`, `api/share-links.test.ts`. New: `api/cron.test.ts`.
-
-### Admin Panel Phase 1 (post-feature work)
-- **Scope:** Core operations — KPI dashboard, subscriptions, payments, audit log, office enhancements.
-- **Schema additions:** `AdminActionLog` model (full admin audit trail: adminId, action, targetType, targetId, metadata, createdAt), `OfficeNote` model (admin-internal notes per office, cascade-deleted with office). Migration: `20260305135622_add_admin_action_log_and_office_notes`.
-- **`lib/admin.ts`:** `logAdminAction()` (fire-and-forget audit writer, never throws), `calculateMrr()` (monthly-normalised MRR in Toman using `PLAN_PRICES_TOMAN`), `calculateChurnRate()` ((locked+cancelled)/total paid → Persian ٪), `calculateTrialConversionRate()` (paid non-trial/total PRO+TEAM), `calculateAiCostThisMonth()` (AiUsageLog sum × `AI_UNIT_COST_TOMAN`=80 Toman/call).
-- **Dashboard redesign:** 3-row no-scroll layout. Row 1: Active Offices / MRR / Churn Rate / Trial→Paid Rate. Row 2: New Signups / AI Cost / Paid Offices. Row 3: Payment Failures / LTV / Files This Month / ARPU.
-- **New page `/admin/kpi`:** 6-group KPI page — Growth, Activation & Retention, Referral (N/A — Phase 2), Revenue Quality, Product Usage, Support & Satisfaction.
-- **New page `/admin/subscriptions`:** Filterable list by plan/status/isTrial/expiringSoon/billingCycle, paginated. `SubscriptionsTable` client component handles URL-driven filtering.
-- **New page `/admin/payments`:** Filterable list by status/date range, revenue summary cards, CSV export (UTF-8 BOM for Excel). `PaymentsTable` client component. `GET /api/admin/payments/export` route.
-- **New page `/admin/action-logs`:** Paginated admin audit log (SUPER_ADMIN only). GET-form filters (action/targetType/adminId). `ActionLogTable` server component.
-- **New page `/admin/offices/[id]/view-as`:** Read-only admin view of office data (files, agents, contracts, customers) with prominent red "فقط خواندنی" banner. No session switching — safe admin-side rendering.
-- **Office detail enhancements:** `SuspendReactivateButtons` (amber/green, window.confirm, POSTs to `/suspend` or `/reactivate`). `OfficeNotesPanel` (client, useEffect fetch, textarea submit). "مشاهده به عنوان مدیر ↗" link (opens in new tab).
-- **New API routes:** `GET/POST /api/admin/offices/[id]/notes`, `POST /api/admin/offices/[id]/suspend`, `POST /api/admin/offices/[id]/reactivate`, `GET /api/admin/subscriptions`, `GET /api/admin/payments`, `GET /api/admin/payments/export`, `GET /api/admin/kpi`, `GET /api/admin/action-logs`.
-- **Existing routes updated:** `PATCH subscription`, `PATCH user/active`, `POST mid-admins`, `PUT mid-admin/assignments` — all now write to AdminActionLog.
-- **Sidebar additions:** اشتراک‌ها (CreditCard), پرداخت‌ها (Banknote), شاخص‌ها (BarChart3), گزارش عملکرد (ScrollText — SUPER_ADMIN only).
-- **Tests:** No new test files added (admin UI is manually tested). All 542 existing tests still pass.
+| # | Feature | Built | Tested |
+|---|---------|-------|--------|
+| 1 | Authentication (register, login, session, 2-session limit, middleware) | ✅ | ✅ |
+| 2 | Dashboard (shell, sidebar, topbar, KPI cards) | ✅ | ✅ |
+| 3 | File Management (create, edit, list, status lifecycle, activity log) | ✅ | ✅ |
+| 4 | CRM (customers, contact history) | ✅ | ✅ |
+| 5 | Agent Management (manager-only) | ✅ | ✅ |
+| 6 | Contracts (finalization, commission, archive) | ✅ | ✅ |
+| 7 | Share Links (public view page, token, custom price) | ✅ | ✅ |
+| 8 | SMS (KaveNegar integration, templates) | ✅ | ✅ |
+| 9 | Notifications (PWA push + 30s polling) | ✅ | ✅ |
+| 10 | Reports (financial, activity — manager-only) | ✅ | ✅ |
+| 11 | Settings (office profile, billing, Zarinpal full flow) | ✅ | ✅ |
+| 12 | AI Description (AvalAI + template fallback) | ✅ | ✅ |
+| 13 | Maps (Neshan pin, POI, routing) | ✅ | ✅ |
+| 14 | Image Processing (Sharp pipeline, watermark, storage) | ✅ | ✅ |
+| 15 | Offline Drafts (Dexie.js IndexedDB) | ✅ | ✅ |
+| 16 | Subscription / Billing (trial, grace, locked lifecycle) | ✅ | ✅ |
+| — | File List Filters enhancement | ✅ | ✅ |
+| — | Subscription Tier Redesign (FREE/PRO/TEAM) | ✅ | ✅ |
+| — | Admin Panel Phase 1 (KPI, subscriptions, payments, audit log) | ✅ | ✅ |
+| — | Admin Panel Phase 2 (referrals, users enhanced, AI usage, broadcast, settings) | ✅ | ✅ |
 
 ### Current Status
-- **Last completed:** Admin Panel Phase 1 (KPI dashboard, subscriptions, payments, audit log, office enhancements)
-- **Up next:** Production deployment (run Prisma migrations + data migration script on VPS)
-- **Total tests:** 542 passing, 0 failing (32 test files)
+- **Last completed:** Admin Panel Phase 2
+- **Up next:** Production deployment (run Prisma migrations on VPS)
+- **Total tests:** 593 passing, 0 failing (40 test files)
 
----
-
-### Admin Panel — Planned Phases
-
-#### Phase 2 — Growth Operations (next sprint)
-| Section | What to Build |
-|---------|--------------|
-| **Referral Program** | `ReferralCode` + `Referral` + `ReferralCommission` models. Admin pages: referrers list, per-referrer detail, pending commissions, mark-as-paid, leaderboard, code generator, disable code. KPI Group 3 metrics become live. |
-| **AI Usage Monitoring** | Dedicated `/admin/ai-usage` page: per-office monthly breakdown, cost trend, FREE-at-limit list, anomaly flagging (office > 2× avg). |
-| **Notifications & Communication** | `AdminBroadcast` model. Send message to one office (via Notification record). Broadcast to all/filtered offices. Message history page. |
-| **Users Management (enhanced)** | User detail page. Force logout (delete UserSession rows). Admin-initiated password reset. Move user between offices. Flag/note on user. |
-| **Settings (partial)** | CAC input field (marketing spend → auto-calculates CAC = spend/new paid offices). Configurable `AI_UNIT_COST_TOMAN`. Trial length config. |
-
-#### Phase 3 — Optimization (at scale)
-| Section | What to Build |
-|---------|--------------|
-| **System Health** | `CronLog` model. Cron job execution log viewer. KaveNegar SMS delivery webhook log. Failed API call log (server-side error collector). |
-| **Content & Files Overview** | Platform-wide files page: total active files, files created per day chart, public link view totals, most-viewed files. |
-| **Settings (full editor)** | Plan limits editor (override `PLAN_LIMITS` at runtime). Feature flags per plan. Zarinpal config (test/live mode toggle). AvalAI model/temperature config. Maintenance mode banner. |
-| **Office Soft Delete** | Add `deletedAt DateTime?` to Office. Update all tenant queries with `where: { deletedAt: null }`. Admin "archive office" button. Restore option. |
-| **NPS Collection** | `NpsResponse` model (officeId, score 0–10, comment, createdAt). Triggered via email/SMS link after 30 days of use. Rolling 90-day NPS in KPI Group 6. |
-| **Admin Login History** | `AdminSession` log model. Show last N logins per admin user with IP/UA in admin user detail. |
+### Reference Docs
+- **Test registry:** `docs/test-registry.md` — full list of test files and what they cover
+- **Roadmap:** `docs/roadmap.md` — Admin Panel Phase 3 plans

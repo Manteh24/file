@@ -8,6 +8,7 @@ import {
   calculateChurnRate,
   calculateTrialConversionRate,
   calculateAiCostThisMonth,
+  calculateReferralKpis,
   AI_UNIT_COST_TOMAN,
 } from "@/lib/admin"
 import { formatToman } from "@/lib/utils"
@@ -24,6 +25,7 @@ export default async function AdminKpiPage() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const shamsiMonth = parseInt(format(now, "yyyyMM"), 10)
+  const gregorianYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
 
   const [
     activePayingOffices,
@@ -47,6 +49,7 @@ export default async function AdminKpiPage() {
     freeUsersAtAiLimit,
     paymentFailures30d,
     aiCostToman,
+    referralKpis,
   ] = await Promise.all([
     db.subscription.count({
       where: { office: officeFilter, plan: { in: ["PRO", "TEAM"] }, isTrial: false, status: { in: ["ACTIVE", "GRACE"] } },
@@ -95,6 +98,7 @@ export default async function AdminKpiPage() {
     }),
     db.paymentRecord.count({ where: { office: officeFilter, status: "FAILED", createdAt: { gte: thirtyDaysAgo } } }),
     calculateAiCostThisMonth(officeFilter),
+    calculateReferralKpis(officeFilter, gregorianYearMonth),
   ])
 
   // Derived calculations
@@ -183,11 +187,11 @@ export default async function AdminKpiPage() {
       <KpiGroup
         title="گروه ۳ — برنامه ارجاع"
         items={[
-          { label: "نرخ مشارکت در ارجاع", value: "—", subLabel: "در دست توسعه (فاز ۲)" },
-          { label: "نرخ تبدیل ارجاع", value: "—", subLabel: "در دست توسعه" },
-          { label: "ارجاع‌دهندگان فعال", value: "—", subLabel: "در دست توسعه" },
-          { label: "میانگین دفاتر هر ارجاع‌دهنده", value: "—", subLabel: "در دست توسعه" },
-          { label: "کمیسیون این ماه", value: "—", subLabel: "در دست توسعه" },
+          { label: "نرخ مشارکت در ارجاع", value: referralKpis.participationRate, subLabel: "دفاتر با کد ارجاع / کل دفاتر" },
+          { label: "نرخ تبدیل ارجاع", value: referralKpis.referralConversionRate, subLabel: "پولی‌شده / کل ارجاع‌شده‌ها" },
+          { label: "ارجاع‌دهندگان فعال", value: referralKpis.activeReferrers.toLocaleString("fa-IR"), subLabel: "کدهایی با ≥۱ دفتر پولی" },
+          { label: "میانگین دفاتر هر ارجاع‌دهنده", value: referralKpis.avgOfficesPerReferrer },
+          { label: "کمیسیون این ماه", value: referralKpis.commissionThisMonth > 0 ? formatToman(referralKpis.commissionThisMonth) : "—", subLabel: "مجموع کمیسیون‌های ماه جاری" },
         ]}
       />
 

@@ -12,6 +12,13 @@ vi.mock("@/lib/db", () => ({
     user: {
       findUnique: vi.fn(),
     },
+    platformSetting: {
+      findUnique: vi.fn().mockResolvedValue(null), // returns null → fallback 30 days
+    },
+    referralCode: {
+      findUnique: vi.fn().mockResolvedValue(null), // no collision
+      create: vi.fn().mockResolvedValue({}),
+    },
     $transaction: vi.fn(),
   },
 }))
@@ -31,6 +38,8 @@ import type { ApiError } from "@/types"
 // Cast through unknown — the Prisma client type is replaced entirely by the vi.mock above.
 const mockDb = db as unknown as {
   user: { findUnique: ReturnType<typeof vi.fn> }
+  platformSetting: { findUnique: ReturnType<typeof vi.fn> }
+  referralCode: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> }
   $transaction: ReturnType<typeof vi.fn>
 }
 

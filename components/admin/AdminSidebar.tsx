@@ -11,6 +11,10 @@ import {
   Banknote,
   BarChart3,
   ScrollText,
+  GitBranch,
+  Zap,
+  Send,
+  Settings,
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -32,6 +36,10 @@ const navItems: NavItem[] = [
   { href: "/admin/users", label: "کاربران", icon: Users },
   { href: "/admin/action-logs", label: "گزارش عملکرد", icon: ScrollText, superAdminOnly: true },
   { href: "/admin/mid-admins", label: "تیم", icon: UserCog, superAdminOnly: true },
+  { href: "/admin/referrals", label: "ارجاع‌ها", icon: GitBranch },
+  { href: "/admin/ai-usage", label: "مصرف هوش مصنوعی", icon: Zap },
+  { href: "/admin/broadcast", label: "پیام‌رسانی", icon: Send },
+  { href: "/admin/settings", label: "تنظیمات", icon: Settings, superAdminOnly: true },
 ]
 
 interface AdminSidebarProps {

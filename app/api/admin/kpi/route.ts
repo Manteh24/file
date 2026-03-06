@@ -9,6 +9,7 @@ import {
   calculateChurnRate,
   calculateTrialConversionRate,
   calculateAiCostThisMonth,
+  calculateReferralKpis,
   AI_UNIT_COST_TOMAN,
 } from "@/lib/admin"
 import type { AdminKpiData } from "@/types"
@@ -27,6 +28,7 @@ export async function GET() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const shamsiMonth = parseInt(format(now, "yyyyMM"), 10)
+  const gregorianYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
 
   const [
     // Growth
@@ -55,6 +57,7 @@ export async function GET() {
     // Support
     paymentFailures30d,
     aiCostToman,
+    referralKpis,
   ] = await Promise.all([
     // active paying (not trial, not FREE, ACTIVE or GRACE)
     db.subscription.count({
@@ -130,6 +133,7 @@ export async function GET() {
       where: { office: officeFilter, status: "FAILED", createdAt: { gte: thirtyDaysAgo } },
     }),
     calculateAiCostThisMonth(officeFilter),
+    calculateReferralKpis(officeFilter, gregorianYearMonth),
   ])
 
   // Avg time to first file
@@ -202,7 +206,7 @@ export async function GET() {
       churnRate,
       reactivationCount: reactivations.length,
     },
-    referral: null,
+    referral: referralKpis,
     revenueQuality: {
       annualVsMonthlyRatio,
       arpu,

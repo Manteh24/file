@@ -4,6 +4,8 @@ import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { registerSchema } from "@/lib/validations/auth"
+import { getTrialLengthDays } from "@/lib/platform-settings"
+import { generateReferralCode } from "@/lib/referral"
 import type { ApiResponse, Plan } from "@/types"
 
 /**
@@ -54,23 +56,30 @@ export async function registerAction(
 
   // 5. Create Office, User, and Subscription atomically.
   // FREE plan: no trial, permanent free access.
-  // PRO/TEAM: 30-day full trial, no card required.
+  // PRO/TEAM: configurable-day full trial (default 30), no card required.
   const chosenPlan: Plan = plan ?? "PRO"
   const isFree = chosenPlan === "FREE"
+
+  const trialDays = isFree ? 0 : await getTrialLengthDays()
   const trialEndsAt = isFree ? null : (() => {
     const d = new Date()
-    d.setDate(d.getDate() + 30)
+    d.setDate(d.getDate() + trialDays)
     return d
   })()
+
+  const trimmedReferralCode = referralCode?.trim() || null
+
+  let newOfficeId: string | null = null
 
   try {
     await db.$transaction(async (tx) => {
       const office = await tx.office.create({
         data: {
           name: officeName,
-          referralCode: referralCode?.trim() || null,
+          referralCode: trimmedReferralCode,
         },
       })
+      newOfficeId = office.id
 
       await tx.user.create({
         data: {
@@ -93,10 +102,34 @@ export async function registerAction(
           trialEndsAt,
         },
       })
+
+      // Track referral if a valid code was supplied
+      if (trimmedReferralCode) {
+        const codeRecord = await tx.referralCode.findUnique({
+          where: { code: trimmedReferralCode, isActive: true },
+        })
+        if (codeRecord) {
+          await tx.referral.create({
+            data: { referralCodeId: codeRecord.id, officeId: office.id },
+          })
+        }
+      }
     })
   } catch {
     // Do not expose internal DB errors to the client
     return { success: false, error: "خطا در ثبت‌نام. لطفاً دوباره تلاش کنید." }
+  }
+
+  // Auto-generate a referral code for the new office (fire-and-forget)
+  if (newOfficeId) {
+    const officeIdForCode = newOfficeId
+    generateReferralCode(officeName)
+      .then((code) =>
+        db.referralCode.create({
+          data: { code, officeId: officeIdForCode, commissionPerOfficePerMonth: 0 },
+        })
+      )
+      .catch((err) => console.error("[register] auto-code generation failed:", err))
   }
 
   // 6. Redirect to login — redirect() throws internally (NEXT_REDIRECT error)

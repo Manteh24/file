@@ -476,8 +476,14 @@ export interface AdminKpiData {
     churnRate: string
     reactivationCount: number
   }
-  // Group 3 — Referral (Phase 2 — all N/A for now)
-  referral: null
+  // Group 3 — Referral
+  referral: {
+    participationRate: string
+    referralConversionRate: string
+    activeReferrers: number
+    avgOfficesPerReferrer: string
+    commissionThisMonth: number
+  } | null
   // Group 4 — Revenue Quality
   revenueQuality: {
     annualVsMonthlyRatio: string
