@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getAccessibleOfficeIds, buildOfficeFilter } from "@/lib/admin"
+import { canAdminDo, getAccessibleOfficeIds, buildOfficeFilter } from "@/lib/admin"
 import { createManyNotifications } from "@/lib/notifications"
 import { sendSms } from "@/lib/sms"
 import type { Plan, SubStatus } from "@/types"
@@ -26,6 +26,10 @@ export async function POST(request: Request) {
   const session = await auth()
   if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   if (!["SUPER_ADMIN", "MID_ADMIN"].includes(session.user.role)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+  }
+
+  if (session.user.role === "MID_ADMIN" && !canAdminDo(session.user, "broadcast")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 

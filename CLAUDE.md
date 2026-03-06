@@ -513,11 +513,12 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Subscription Tier Redesign (FREE/PRO/TEAM) | ✅ | ✅ |
 | — | Admin Panel Phase 1 (KPI, subscriptions, payments, audit log) | ✅ | ✅ |
 | — | Admin Panel Phase 2 (referrals, users enhanced, AI usage, broadcast, settings) | ✅ | ✅ |
+| — | Mid-Admin Permission Tiers (SUPPORT / FINANCE / FULL_ACCESS / read-only) | ✅ | ✅ |
 
 ### Current Status
-- **Last completed:** Admin Panel Phase 2
+- **Last completed:** Mid-Admin Permission Tiers
 - **Up next:** Production deployment (run Prisma migrations on VPS)
-- **Total tests:** 593 passing, 0 failing (40 test files)
+- **Total tests:** 616 passing, 0 failing (41 test files)
 
 ### Reference Docs
 - **Test registry:** `docs/test-registry.md` — full list of test files and what they cover

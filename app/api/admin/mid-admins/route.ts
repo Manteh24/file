@@ -22,6 +22,7 @@ export async function GET() {
       displayName: true,
       email: true,
       isActive: true,
+      adminTier: true,
       createdAt: true,
       _count: { select: { adminAssignments: true } },
     },
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: parsed.error.issues[0]?.message }, { status: 400 })
   }
 
-  const { username, displayName, email, password } = parsed.data
+  const { username, displayName, email, password, tier } = parsed.data
 
   // Check username uniqueness
   const existing = await db.user.findFirst({
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
       email: email || null,
       passwordHash,
       role: "MID_ADMIN",
+      adminTier: tier ?? null,
       officeId: null,
     },
     select: { id: true, username: true },

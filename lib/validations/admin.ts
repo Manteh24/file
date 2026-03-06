@@ -8,6 +8,8 @@ export const updateSubscriptionSchema = z.object({
   extendDays: z.number().int().min(1).max(365).optional(),
 })
 
+export const ADMIN_TIERS = ["SUPPORT", "FINANCE", "FULL_ACCESS"] as const
+
 export const createMidAdminSchema = z.object({
   username: z
     .string()
@@ -17,6 +19,11 @@ export const createMidAdminSchema = z.object({
   displayName: z.string().min(2, "نام نمایشی الزامی است").max(64),
   email: z.string().email("ایمیل نامعتبر").optional().or(z.literal("")),
   password: z.string().min(8, "رمز عبور حداقل ۸ کاراکتر"),
+  tier: z.enum(ADMIN_TIERS).optional(),
+})
+
+export const updateMidAdminTierSchema = z.object({
+  tier: z.enum(ADMIN_TIERS).nullable(),
 })
 
 export const setAssignmentsSchema = z.object({

@@ -3,7 +3,20 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import type { AdminOfficeSummary, MidAdminAssignment } from "@/types"
+import type { AdminOfficeSummary, AdminTier, MidAdminAssignment } from "@/types"
+
+// ─── Tier labels & descriptions ──────────────────────────────────────────────
+
+const TIER_OPTIONS: { value: AdminTier; label: string; description: string }[] = [
+  { value: "SUPPORT", label: "پشتیبانی", description: "مدیریت کاربران، خروج اجباری، ارسال پیام" },
+  { value: "FINANCE", label: "مالی", description: "مدیریت اشتراک، ارسال پیام" },
+  { value: "FULL_ACCESS", label: "دسترسی کامل", description: "همه قابلیت‌های فوق" },
+]
+
+function tierLabel(tier: AdminTier | null): string {
+  if (!tier) return "فقط مشاهده"
+  return TIER_OPTIONS.find((t) => t.value === tier)?.label ?? tier
+}
 
 interface CreateMidAdminFormProps {
   offices: AdminOfficeSummary[]
@@ -20,6 +33,7 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
     email: "",
     password: "",
   })
+  const [tier, setTier] = useState<AdminTier | "">("")
   const [selectedOfficeIds, setSelectedOfficeIds] = useState<string[]>([])
 
   function toggleOffice(id: string) {
@@ -37,7 +51,7 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
       const res = await fetch("/api/admin/mid-admins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(fields),
+        body: JSON.stringify({ ...fields, ...(tier ? { tier } : {}) }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -59,6 +73,7 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
       router.refresh()
       setOpen(false)
       setFields({ username: "", displayName: "", email: "", password: "" })
+      setTier("")
       setSelectedOfficeIds([])
     } finally {
       setLoading(false)
@@ -121,6 +136,56 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
             </div>
           </div>
 
+          {/* Permission tier */}
+          <div>
+            <label className="block text-xs text-muted-foreground mb-2">سطح دسترسی</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {TIER_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                    tier === opt.value
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/40"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="tier"
+                    value={opt.value}
+                    checked={tier === opt.value}
+                    onChange={() => setTier(opt.value)}
+                    className="mt-0.5 h-4 w-4"
+                  />
+                  <div>
+                    <div className="text-sm font-medium">{opt.label}</div>
+                    <div className="text-xs text-muted-foreground">{opt.description}</div>
+                  </div>
+                </label>
+              ))}
+              <label
+                className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                  tier === ""
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted/40"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="tier"
+                  value=""
+                  checked={tier === ""}
+                  onChange={() => setTier("")}
+                  className="mt-0.5 h-4 w-4"
+                />
+                <div>
+                  <div className="text-sm font-medium">فقط مشاهده</div>
+                  <div className="text-xs text-muted-foreground">بدون قابلیت نوشتن</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
           {/* Office assignment multi-select */}
           <div>
             <label className="block text-xs text-muted-foreground mb-2">
@@ -164,6 +229,101 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
           </div>
         </form>
       )}
+    </div>
+  )
+}
+
+// ─── Edit tier for an existing MID_ADMIN ─────────────────────────────────────
+
+interface EditTierFormProps {
+  adminId: string
+  currentTier: AdminTier | null
+}
+
+export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
+  const router = useRouter()
+  const [tier, setTier] = useState<AdminTier | "">(currentTier ?? "")
+  const [loading, setLoading] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSave() {
+    setLoading(true)
+    setSaved(false)
+    setError("")
+    try {
+      const res = await fetch(`/api/admin/mid-admins/${adminId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: tier || null }),
+      })
+      if (!res.ok) {
+        const json = await res.json()
+        setError(json.error ?? "خطا در ذخیره")
+        return
+      }
+      setSaved(true)
+      router.refresh()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {TIER_OPTIONS.map((opt) => (
+          <label
+            key={opt.value}
+            className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+              tier === opt.value
+                ? "border-primary bg-primary/5"
+                : "border-border hover:bg-muted/40"
+            }`}
+          >
+            <input
+              type="radio"
+              name="edit-tier"
+              value={opt.value}
+              checked={tier === opt.value}
+              onChange={() => { setTier(opt.value); setSaved(false) }}
+              className="mt-0.5 h-4 w-4"
+            />
+            <div>
+              <div className="text-sm font-medium">{opt.label}</div>
+              <div className="text-xs text-muted-foreground">{opt.description}</div>
+            </div>
+          </label>
+        ))}
+        <label
+          className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+            tier === ""
+              ? "border-primary bg-primary/5"
+              : "border-border hover:bg-muted/40"
+          }`}
+        >
+          <input
+            type="radio"
+            name="edit-tier"
+            value=""
+            checked={tier === ""}
+            onChange={() => { setTier(""); setSaved(false) }}
+            className="mt-0.5 h-4 w-4"
+          />
+          <div>
+            <div className="text-sm font-medium">فقط مشاهده</div>
+            <div className="text-xs text-muted-foreground">بدون قابلیت نوشتن</div>
+          </div>
+        </label>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button onClick={handleSave} disabled={loading} size="sm">
+          {loading ? "در حال ذخیره..." : "ذخیره سطح دسترسی"}
+        </Button>
+        {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
+        {error && <span className="text-xs text-red-600">{error}</span>}
+      </div>
     </div>
   )
 }

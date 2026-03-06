@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 import { loginSchema } from "@/lib/validations/auth"
-import type { Role } from "@/types"
+import type { AdminTier, Role } from "@/types"
 
 // Session duration in days. Matches UserSession.expiresAt and JWT maxAge.
 const SESSION_DURATION_DAYS = 30
@@ -49,6 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           officeId: user.officeId,
           role: user.role as Role,
+          adminTier: (user.adminTier ?? null) as AdminTier | null,
           sessionId,
           name: user.displayName,
           email: user.email ?? undefined,
@@ -66,6 +67,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.userId = user.id
         token.officeId = user.officeId
         token.role = user.role
+        token.adminTier = user.adminTier
         token.sessionId = user.sessionId
       }
       return token
@@ -76,6 +78,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.id = token.userId
       session.user.officeId = token.officeId
       session.user.role = token.role
+      session.user.adminTier = token.adminTier
       session.user.sessionId = token.sessionId
       return session
     },

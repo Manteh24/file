@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { EditAssignmentsForm } from "@/components/admin/MidAdminForm"
+import { EditAssignmentsForm, EditTierForm } from "@/components/admin/MidAdminForm"
 
 export default async function MidAdminAssignmentsPage({
   params,
@@ -17,7 +17,7 @@ export default async function MidAdminAssignmentsPage({
   const [midAdmin, offices, assignments] = await Promise.all([
     db.user.findFirst({
       where: { id: userId, role: "MID_ADMIN" },
-      select: { id: true, displayName: true, username: true, email: true, isActive: true },
+      select: { id: true, displayName: true, username: true, email: true, isActive: true, adminTier: true },
     }),
     db.office.findMany({
       select: {
@@ -53,6 +53,11 @@ export default async function MidAdminAssignmentsPage({
           نام کاربری: {midAdmin.username}
           {midAdmin.email && <> · {midAdmin.email}</>}
         </p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h2 className="text-sm font-semibold mb-4">سطح دسترسی</h2>
+        <EditTierForm adminId={midAdmin.id} currentTier={midAdmin.adminTier} />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5">

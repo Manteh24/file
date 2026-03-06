@@ -34,6 +34,12 @@ enum SubStatus {
   CANCELLED
 }
 
+enum AdminTier {
+  SUPPORT
+  FINANCE
+  FULL_ACCESS
+}
+
 enum TransactionType {
   SALE
   LONG_TERM_RENT
@@ -115,6 +121,8 @@ model User {
   passwordHash String
   displayName  String
   role         Role
+  // Permission tier for MID_ADMIN users. Null = read-only access.
+  adminTier    AdminTier?
   isActive     Boolean       @default(true)
   // avatarUrl will be populated by the image processing pipeline (Feature 14)
   avatarUrl    String?

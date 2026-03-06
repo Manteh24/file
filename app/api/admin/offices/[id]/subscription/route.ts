@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getAccessibleOfficeIds, logAdminAction } from "@/lib/admin"
+import { canAdminDo, getAccessibleOfficeIds, logAdminAction } from "@/lib/admin"
 import { updateSubscriptionSchema } from "@/lib/validations/admin"
 
 export async function PATCH(
@@ -11,6 +11,10 @@ export async function PATCH(
   const session = await auth()
   if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "MID_ADMIN") {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+  }
+
+  if (session.user.role === "MID_ADMIN" && !canAdminDo(session.user, "manageSubscriptions")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 

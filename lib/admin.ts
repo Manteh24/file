@@ -2,11 +2,41 @@ import { format } from "date-fns-jalali"
 import { db } from "@/lib/db"
 import { PLAN_PRICES_TOMAN } from "@/lib/payment"
 import { findActiveReferredOffices } from "@/lib/referral"
-import type { Role } from "@/types"
+import type { AdminTier, Role } from "@/types"
 
 interface SessionUser {
   id: string
   role: Role
+  adminTier?: AdminTier | null
+}
+
+// ─── Tier Permissions ──────────────────────────────────────────────────────────
+
+export type AdminCapability = "manageSubscriptions" | "manageUsers" | "securityActions" | "broadcast"
+
+const TIER_CAPABILITIES: Record<AdminTier, Record<AdminCapability, boolean>> = {
+  SUPPORT:     { manageSubscriptions: false, manageUsers: true,  securityActions: true,  broadcast: true  },
+  FINANCE:     { manageSubscriptions: true,  manageUsers: false, securityActions: false, broadcast: true  },
+  FULL_ACCESS: { manageSubscriptions: true,  manageUsers: true,  securityActions: true,  broadcast: true  },
+}
+
+/**
+ * Returns whether the given admin user has permission to perform a capability.
+ * SUPER_ADMIN always returns true. MID_ADMIN with no tier = read-only (false).
+ */
+export const TIER_LABELS: Record<string, string> = {
+  SUPPORT: "پشتیبانی",
+  FINANCE: "مالی",
+  FULL_ACCESS: "دسترسی کامل",
+}
+
+export function canAdminDo(
+  user: { role: Role; adminTier?: AdminTier | null },
+  capability: AdminCapability
+): boolean {
+  if (user.role === "SUPER_ADMIN") return true
+  if (!user.adminTier) return false
+  return TIER_CAPABILITIES[user.adminTier][capability] ?? false
 }
 
 // Estimated cost per AI description call in Toman (approximate AvalAI pricing).

@@ -5,6 +5,7 @@ import type { DefaultSession } from "next-auth"
 // from the generated Prisma client.
 
 export type Role = "SUPER_ADMIN" | "MID_ADMIN" | "MANAGER" | "AGENT"
+export type AdminTier = "SUPPORT" | "FINANCE" | "FULL_ACCESS"
 export type CustomerType = "BUYER" | "RENTER" | "SELLER" | "LANDLORD"
 export type Plan = "FREE" | "PRO" | "TEAM"
 export type BillingCycle = "MONTHLY" | "ANNUAL"
@@ -193,6 +194,8 @@ declare module "next-auth" {
       officeId: string | null
       role: Role
       sessionId: string
+      // Permission tier for MID_ADMIN users. Null = read-only.
+      adminTier: AdminTier | null
     } & DefaultSession["user"]
   }
 
@@ -201,6 +204,7 @@ declare module "next-auth" {
     officeId: string | null
     role: Role
     sessionId: string
+    adminTier: AdminTier | null
   }
 }
 
@@ -210,6 +214,7 @@ declare module "@auth/core/jwt" {
     officeId: string | null
     role: Role
     sessionId: string
+    adminTier: AdminTier | null
   }
 }
 
@@ -404,6 +409,7 @@ export interface MidAdminSummary {
   displayName: string
   email: string | null
   isActive: boolean
+  adminTier: AdminTier | null
   createdAt: Date
   _count: { adminAssignments: number }
 }

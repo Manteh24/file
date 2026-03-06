@@ -3,7 +3,7 @@ import crypto from "crypto"
 import bcrypt from "bcryptjs"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { getAccessibleOfficeIds, logAdminAction } from "@/lib/admin"
+import { canAdminDo, getAccessibleOfficeIds, logAdminAction } from "@/lib/admin"
 import { sendSms } from "@/lib/sms"
 
 function generateTempPassword(): string {
@@ -22,6 +22,10 @@ export async function POST(
   const session = await auth()
   if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   if (!["SUPER_ADMIN", "MID_ADMIN"].includes(session.user.role)) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+  }
+
+  if (session.user.role === "MID_ADMIN" && !canAdminDo(session.user, "securityActions")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 

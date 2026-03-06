@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { format } from "date-fns-jalali"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { TIER_LABELS } from "@/lib/admin"
 import { CreateMidAdminForm } from "@/components/admin/MidAdminForm"
 import Link from "next/link"
 
@@ -21,6 +22,7 @@ export default async function AdminMidAdminsPage() {
         displayName: true,
         email: true,
         isActive: true,
+        adminTier: true,
         createdAt: true,
         _count: { select: { adminAssignments: true } },
       },
@@ -54,6 +56,7 @@ export default async function AdminMidAdminsPage() {
               <tr className="bg-muted/40 border-b border-border">
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">نام</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">نام کاربری</th>
+                <th className="px-4 py-3 text-start font-medium text-muted-foreground">سطح دسترسی</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">دفاتر</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">تاریخ ثبت</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">وضعیت</th>
@@ -65,6 +68,15 @@ export default async function AdminMidAdminsPage() {
                 <tr key={admin.id} className="hover:bg-muted/20 transition-colors">
                   <td className="px-4 py-3 font-medium">{admin.displayName}</td>
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{admin.username}</td>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      admin.adminTier
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {admin.adminTier ? (TIER_LABELS[admin.adminTier] ?? admin.adminTier) : "فقط مشاهده"}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 tabular-nums">
                     {admin._count.adminAssignments.toLocaleString("fa-IR")} دفتر
                   </td>
