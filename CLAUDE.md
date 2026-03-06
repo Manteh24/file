@@ -443,6 +443,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `lib/maps.ts` | Neshan API calls (geocoding, routing, POI) |
 | `lib/file-helpers.ts` | `logActivity`, `recordPriceChanges`, `buildDiff`, `deactivateShareLinks`, `buildFileWhere`, `buildOrderBy` — shared file query builders used by both the server page and the API route |
 | `lib/subscription.ts` | `resolveSubscription`, `getEffectiveSubscription` (lazy status migration), `requireWriteAccess`, `SubscriptionLockedError` |
+| `lib/admin.ts` | `getAccessibleOfficeIds`, `buildOfficeFilter`, `logAdminAction`, `calculateMrr`, `calculateChurnRate`, `calculateTrialConversionRate`, `calculateAiCostThisMonth`, `AI_UNIT_COST_TOMAN` |
 | `lib/image.ts` | Sharp processing pipeline (compress, watermark, resize) |
 | `lib/storage.ts` | IranServer object storage upload/download/delete |
 | `hooks/useDraft.ts` | Dexie.js IndexedDB draft management for file creation |
@@ -573,7 +574,46 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 - **Data migration:** `scripts/migrate-plans.ts` — converts SMALL→PRO, LARGE→TEAM, TRIAL→PRO(isTrial=true) in a `$transaction`.
 - **Tests updated/added:** `dashboard/page.test.ts`, `lib/subscription.test.ts`, `api/payments.test.ts`, `validations/settings.test.ts`, `api/settings.test.ts`, `lib/payment.test.ts`, `api/agents.test.ts`, `api/files.test.ts`, `api/ai-description.test.ts`, `api/sms.test.ts`, `api/maps.test.ts`, `api/share-links.test.ts`. New: `api/cron.test.ts`.
 
+### Admin Panel Phase 1 (post-feature work)
+- **Scope:** Core operations — KPI dashboard, subscriptions, payments, audit log, office enhancements.
+- **Schema additions:** `AdminActionLog` model (full admin audit trail: adminId, action, targetType, targetId, metadata, createdAt), `OfficeNote` model (admin-internal notes per office, cascade-deleted with office). Migration: `20260305135622_add_admin_action_log_and_office_notes`.
+- **`lib/admin.ts`:** `logAdminAction()` (fire-and-forget audit writer, never throws), `calculateMrr()` (monthly-normalised MRR in Toman using `PLAN_PRICES_TOMAN`), `calculateChurnRate()` ((locked+cancelled)/total paid → Persian ٪), `calculateTrialConversionRate()` (paid non-trial/total PRO+TEAM), `calculateAiCostThisMonth()` (AiUsageLog sum × `AI_UNIT_COST_TOMAN`=80 Toman/call).
+- **Dashboard redesign:** 3-row no-scroll layout. Row 1: Active Offices / MRR / Churn Rate / Trial→Paid Rate. Row 2: New Signups / AI Cost / Paid Offices. Row 3: Payment Failures / LTV / Files This Month / ARPU.
+- **New page `/admin/kpi`:** 6-group KPI page — Growth, Activation & Retention, Referral (N/A — Phase 2), Revenue Quality, Product Usage, Support & Satisfaction.
+- **New page `/admin/subscriptions`:** Filterable list by plan/status/isTrial/expiringSoon/billingCycle, paginated. `SubscriptionsTable` client component handles URL-driven filtering.
+- **New page `/admin/payments`:** Filterable list by status/date range, revenue summary cards, CSV export (UTF-8 BOM for Excel). `PaymentsTable` client component. `GET /api/admin/payments/export` route.
+- **New page `/admin/action-logs`:** Paginated admin audit log (SUPER_ADMIN only). GET-form filters (action/targetType/adminId). `ActionLogTable` server component.
+- **New page `/admin/offices/[id]/view-as`:** Read-only admin view of office data (files, agents, contracts, customers) with prominent red "فقط خواندنی" banner. No session switching — safe admin-side rendering.
+- **Office detail enhancements:** `SuspendReactivateButtons` (amber/green, window.confirm, POSTs to `/suspend` or `/reactivate`). `OfficeNotesPanel` (client, useEffect fetch, textarea submit). "مشاهده به عنوان مدیر ↗" link (opens in new tab).
+- **New API routes:** `GET/POST /api/admin/offices/[id]/notes`, `POST /api/admin/offices/[id]/suspend`, `POST /api/admin/offices/[id]/reactivate`, `GET /api/admin/subscriptions`, `GET /api/admin/payments`, `GET /api/admin/payments/export`, `GET /api/admin/kpi`, `GET /api/admin/action-logs`.
+- **Existing routes updated:** `PATCH subscription`, `PATCH user/active`, `POST mid-admins`, `PUT mid-admin/assignments` — all now write to AdminActionLog.
+- **Sidebar additions:** اشتراک‌ها (CreditCard), پرداخت‌ها (Banknote), شاخص‌ها (BarChart3), گزارش عملکرد (ScrollText — SUPER_ADMIN only).
+- **Tests:** No new test files added (admin UI is manually tested). All 542 existing tests still pass.
+
 ### Current Status
-- **Last completed:** Subscription Tier Redesign (FREE/PRO/TEAM) — all phases complete
+- **Last completed:** Admin Panel Phase 1 (KPI dashboard, subscriptions, payments, audit log, office enhancements)
 - **Up next:** Production deployment (run Prisma migrations + data migration script on VPS)
 - **Total tests:** 542 passing, 0 failing (32 test files)
+
+---
+
+### Admin Panel — Planned Phases
+
+#### Phase 2 — Growth Operations (next sprint)
+| Section | What to Build |
+|---------|--------------|
+| **Referral Program** | `ReferralCode` + `Referral` + `ReferralCommission` models. Admin pages: referrers list, per-referrer detail, pending commissions, mark-as-paid, leaderboard, code generator, disable code. KPI Group 3 metrics become live. |
+| **AI Usage Monitoring** | Dedicated `/admin/ai-usage` page: per-office monthly breakdown, cost trend, FREE-at-limit list, anomaly flagging (office > 2× avg). |
+| **Notifications & Communication** | `AdminBroadcast` model. Send message to one office (via Notification record). Broadcast to all/filtered offices. Message history page. |
+| **Users Management (enhanced)** | User detail page. Force logout (delete UserSession rows). Admin-initiated password reset. Move user between offices. Flag/note on user. |
+| **Settings (partial)** | CAC input field (marketing spend → auto-calculates CAC = spend/new paid offices). Configurable `AI_UNIT_COST_TOMAN`. Trial length config. |
+
+#### Phase 3 — Optimization (at scale)
+| Section | What to Build |
+|---------|--------------|
+| **System Health** | `CronLog` model. Cron job execution log viewer. KaveNegar SMS delivery webhook log. Failed API call log (server-side error collector). |
+| **Content & Files Overview** | Platform-wide files page: total active files, files created per day chart, public link view totals, most-viewed files. |
+| **Settings (full editor)** | Plan limits editor (override `PLAN_LIMITS` at runtime). Feature flags per plan. Zarinpal config (test/live mode toggle). AvalAI model/temperature config. Maintenance mode banner. |
+| **Office Soft Delete** | Add `deletedAt DateTime?` to Office. Update all tenant queries with `where: { deletedAt: null }`. Admin "archive office" button. Restore option. |
+| **NPS Collection** | `NpsResponse` model (officeId, score 0–10, comment, createdAt). Triggered via email/SMS link after 30 days of use. Rolling 90-day NPS in KPI Group 6. |
+| **Admin Login History** | `AdminSession` log model. Show last N logins per admin user with IP/UA in admin user detail. |
