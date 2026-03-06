@@ -514,12 +514,13 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Admin Panel Phase 1 (KPI, subscriptions, payments, audit log) | ✅ | ✅ |
 | — | Admin Panel Phase 2 (referrals, users enhanced, AI usage, broadcast, settings) | ✅ | ✅ |
 | — | Mid-Admin Permission Tiers (SUPPORT / FINANCE / FULL_ACCESS / read-only) | ✅ | ✅ |
+| — | Admin Panel Phase 3 (office soft delete, settings editor, login history) | ✅ | ✅ |
 
 ### Current Status
-- **Last completed:** Mid-Admin Permission Tiers
+- **Last completed:** Admin Panel Phase 3
 - **Up next:** Production deployment (run Prisma migrations on VPS)
-- **Total tests:** 616 passing, 0 failing (41 test files)
+- **Total tests:** 656 passing, 0 failing (46 test files)
 
 ### Reference Docs
 - **Test registry:** `docs/test-registry.md` — full list of test files and what they cover
-- **Roadmap:** `docs/roadmap.md` — Admin Panel Phase 3 plans
+- **Roadmap:** `docs/roadmap.md` — future plans
