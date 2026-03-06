@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createAgentSchema } from "@/lib/validations/agent"
-import { requireWriteAccess, SubscriptionLockedError, getEffectiveSubscription, PLAN_LIMITS, getUserCount } from "@/lib/subscription"
+import { requireWriteAccess, SubscriptionLockedError, getEffectiveSubscription, getEffectivePlanLimits, getUserCount } from "@/lib/subscription"
 
 // ─── GET /api/agents ────────────────────────────────────────────────────────────
 // Returns all agents in the manager's office. Manager-only.
@@ -83,12 +83,12 @@ export async function POST(request: Request) {
   // Enforce per-plan user count limit
   const sub = await getEffectiveSubscription(officeId!)
   if (sub) {
-    const limit = PLAN_LIMITS[sub.plan].maxUsers
-    if (isFinite(limit)) {
+    const limits = await getEffectivePlanLimits(sub.plan)
+    if (isFinite(limits.maxUsers)) {
       const currentCount = await getUserCount(officeId!)
-      if (currentCount >= limit) {
+      if (currentCount >= limits.maxUsers) {
         return NextResponse.json(
-          { success: false, error: `پلن شما حداکثر ${limit} کاربر را پشتیبانی می‌کند` },
+          { success: false, error: `پلن شما حداکثر ${limits.maxUsers} کاربر را پشتیبانی می‌کند` },
           { status: 403 }
         )
       }

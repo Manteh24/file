@@ -29,10 +29,12 @@ export default async function AdminMidAdminsPage() {
       orderBy: { createdAt: "desc" },
     }),
     db.office.findMany({
+      where: { deletedAt: null },
       select: {
         id: true,
         name: true,
         city: true,
+        deletedAt: true,
         createdAt: true,
         subscription: {
           select: { plan: true, status: true, isTrial: true, billingCycle: true, trialEndsAt: true, currentPeriodEnd: true },

@@ -4,7 +4,7 @@ import { generateDescriptionSchema } from "@/lib/validations/ai"
 import { generateDescription } from "@/lib/ai"
 import {
   getEffectiveSubscription,
-  PLAN_LIMITS,
+  getEffectivePlanLimits,
   getAiUsageThisMonth,
   incrementAiUsage,
 } from "@/lib/subscription"
@@ -26,10 +26,10 @@ export async function POST(request: Request) {
   // Check monthly AI usage limit for plans that have one
   const sub = await getEffectiveSubscription(officeId)
   if (sub) {
-    const limit = PLAN_LIMITS[sub.plan].maxAiPerMonth
-    if (isFinite(limit)) {
+    const limits = await getEffectivePlanLimits(sub.plan)
+    if (isFinite(limits.maxAiPerMonth)) {
       const usedThisMonth = await getAiUsageThisMonth(officeId)
-      if (usedThisMonth >= limit) {
+      if (usedThisMonth >= limits.maxAiPerMonth) {
         return NextResponse.json(
           { success: false, error: "محدودیت ماهانه توضیحات هوشمند به پایان رسید" },
           { status: 403 }

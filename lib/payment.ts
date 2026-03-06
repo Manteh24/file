@@ -1,4 +1,5 @@
 import type { BillingCycle } from "@/types"
+import { getZarinpalMode } from "@/lib/platform-settings"
 
 // ─── Plan Constants ────────────────────────────────────────────────────────────
 
@@ -67,14 +68,17 @@ export async function requestPayment(
   }
 
   try {
-    const response = await fetch(
-      "https://api.zarinpal.com/pg/v4/payment/request.json",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }
-    )
+    const mode = await getZarinpalMode()
+    const apiBase =
+      mode === "sandbox"
+        ? "https://sandbox.zarinpal.com/pg/v4/payment"
+        : "https://api.zarinpal.com/pg/v4/payment"
+
+    const response = await fetch(`${apiBase}/request.json`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
 
     if (!response.ok) {
       console.error("[payment] Zarinpal request HTTP error:", response.status)
@@ -96,10 +100,14 @@ export async function requestPayment(
     }
 
     const authority = data.data.authority
+    const startPayBase =
+      mode === "sandbox"
+        ? "https://sandbox.zarinpal.com/pg/StartPay"
+        : "https://www.zarinpal.com/pg/StartPay"
     return {
       success: true,
       authority,
-      payUrl: `https://www.zarinpal.com/pg/StartPay/${authority}`,
+      payUrl: `${startPayBase}/${authority}`,
     }
   } catch (err) {
     console.error("[payment] requestPayment fetch error:", err)
@@ -136,14 +144,17 @@ export async function verifyPayment(
   }
 
   try {
-    const response = await fetch(
-      "https://api.zarinpal.com/pg/v4/payment/verify.json",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }
-    )
+    const mode = await getZarinpalMode()
+    const verifyUrl =
+      mode === "sandbox"
+        ? "https://sandbox.zarinpal.com/pg/v4/payment/verify.json"
+        : "https://api.zarinpal.com/pg/v4/payment/verify.json"
+
+    const response = await fetch(verifyUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
 
     if (!response.ok) {
       console.error("[payment] Zarinpal verify HTTP error:", response.status)

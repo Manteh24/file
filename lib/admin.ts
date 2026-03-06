@@ -196,12 +196,12 @@ export async function calculateReferralKpis(
   officeFilter: { id?: { in: string[] } },
   yearMonth: string
 ): Promise<ReferralKpiData> {
-  // Total offices in scope
-  const totalOffices = await db.office.count({ where: officeFilter })
+  // Total offices in scope (active only — archived offices excluded from KPIs)
+  const totalOffices = await db.office.count({ where: { ...officeFilter, deletedAt: null } })
 
   // Offices that have a non-null referralCode stored
   const officesWithCode = await db.office.count({
-    where: { ...officeFilter, referralCode: { not: null } },
+    where: { ...officeFilter, deletedAt: null, referralCode: { not: null } },
   })
 
   // Participation rate: offices that entered a referral code / total

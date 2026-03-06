@@ -33,8 +33,8 @@ export async function GET() {
     totalAgents,
     inactiveUsers,
   ] = await Promise.all([
-    db.office.count({ where: officeFilter }),
-    db.office.count({ where: { ...officeFilter, createdAt: { gte: startOfMonth } } }),
+    db.office.count({ where: { ...officeFilter, deletedAt: null } }),
+    db.office.count({ where: { ...officeFilter, deletedAt: null, createdAt: { gte: startOfMonth } } }),
     db.subscription.count({ where: { office: officeFilter, plan: "FREE" } }),
     db.subscription.count({ where: { office: officeFilter, plan: "PRO" } }),
     db.subscription.count({ where: { office: officeFilter, plan: "TEAM" } }),

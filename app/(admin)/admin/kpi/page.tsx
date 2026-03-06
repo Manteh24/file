@@ -57,13 +57,13 @@ export default async function AdminKpiPage() {
     db.subscription.count({
       where: { office: officeFilter, plan: { in: ["PRO", "TEAM"] }, isTrial: true, status: { in: ["ACTIVE", "GRACE"] } },
     }),
-    db.office.count({ where: { ...officeFilter, createdAt: { gte: startOfMonth } } }),
+    db.office.count({ where: { ...officeFilter, deletedAt: null, createdAt: { gte: startOfMonth } } }),
     db.subscription.count({ where: { office: officeFilter, plan: "FREE" } }),
     calculateMrr(officeFilter),
     calculateChurnRate(officeFilter),
     calculateTrialConversionRate(officeFilter),
     db.office.findMany({
-      where: { ...officeFilter, createdAt: { gte: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) } },
+      where: { ...officeFilter, deletedAt: null, createdAt: { gte: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000) } },
       select: {
         createdAt: true,
         files: { select: { createdAt: true }, orderBy: { createdAt: "asc" }, take: 1 },
@@ -72,6 +72,7 @@ export default async function AdminKpiPage() {
     db.office.findMany({
       where: {
         ...officeFilter,
+        deletedAt: null,
         createdAt: {
           gte: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
           lte: new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000),

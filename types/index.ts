@@ -336,6 +336,7 @@ export interface AdminOfficeSummary {
   id: string
   name: string
   city: string | null
+  deletedAt: Date | null
   createdAt: Date
   subscription: {
     plan: Plan
@@ -461,6 +462,13 @@ export interface AdminPaymentSummary {
   status: string
   refId: string | null
   createdAt: Date
+}
+
+export interface AdminLoginLogItem {
+  id: string
+  ipAddress: string | null
+  userAgent: string | null
+  loginAt: Date
 }
 
 // KPI data structure for the dedicated /admin/kpi page

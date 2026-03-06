@@ -14,6 +14,24 @@ const patchSchema = z.object({
       return n >= 1 && n <= 365
     }, "باید بین ۱ تا ۳۶۵ روز باشد")
     .optional(),
+  MAINTENANCE_MODE: z.enum(["true", "false"]).optional(),
+  ZARINPAL_MODE: z.enum(["sandbox", "production"]).optional(),
+  AVALAI_MODEL: z.string().min(1, "نام مدل نمی‌تواند خالی باشد").max(100).optional(),
+  FREE_MAX_USERS: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
+    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
+    .optional(),
+  FREE_MAX_FILES: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
+    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
+    .optional(),
+  FREE_MAX_AI_MONTH: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
+    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
+    .optional(),
 })
 
 export async function GET() {

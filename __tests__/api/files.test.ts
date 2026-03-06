@@ -23,6 +23,9 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
     },
     $transaction: vi.fn(),
+    platformSetting: {
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
   },
 }))
 
@@ -43,6 +46,7 @@ const mockDb = db as unknown as {
   activityLog: { create: MockFn }
   subscription: { findUnique: MockFn; update: MockFn }
   $transaction: MockFn
+  platformSetting: { findUnique: MockFn }
 }
 
 const activeSubscription = {

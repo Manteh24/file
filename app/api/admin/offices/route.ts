@@ -14,12 +14,14 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const search = searchParams.get("search")?.trim() ?? ""
   const status = searchParams.get("status") ?? ""
+  const includeArchived = searchParams.get("includeArchived") === "true"
 
   const accessibleIds = await getAccessibleOfficeIds(session.user)
   const baseFilter = buildOfficeFilter(accessibleIds)
 
   const where = {
     ...baseFilter,
+    ...(!includeArchived ? { deletedAt: null } : {}),
     ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
     ...(status ? { subscription: { status: status as "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED" } } : {}),
   }
@@ -31,6 +33,7 @@ export async function GET(request: Request) {
       id: true,
       name: true,
       city: true,
+      deletedAt: true,
       createdAt: true,
       subscription: {
         select: {

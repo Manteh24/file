@@ -47,7 +47,7 @@ export default async function AdminDashboardPage() {
     calculateMrr(officeFilter),
     calculateChurnRate(officeFilter),
     calculateTrialConversionRate(officeFilter),
-    db.office.count({ where: { ...officeFilter, createdAt: { gte: startOfMonth } } }),
+    db.office.count({ where: { ...officeFilter, deletedAt: null, createdAt: { gte: startOfMonth } } }),
     calculateAiCostThisMonth(officeFilter),
     db.subscription.count({ where: { office: officeFilter, plan: "PRO", status: { in: ["ACTIVE", "GRACE"] } } }),
     db.subscription.count({ where: { office: officeFilter, plan: "TEAM", status: { in: ["ACTIVE", "GRACE"] } } }),

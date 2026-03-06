@@ -17,6 +17,9 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    platformSetting: {
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
   },
 }))
 

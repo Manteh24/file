@@ -10,7 +10,7 @@ vi.mock("@/lib/db", () => ({
 }))
 
 import { db } from "@/lib/db"
-import { getSetting, setSetting, getTrialLengthDays } from "@/lib/platform-settings"
+import { getSetting, setSetting, getTrialLengthDays, clearSettingsCache } from "@/lib/platform-settings"
 
 const mockDb = db as unknown as {
   platformSetting: {
@@ -21,6 +21,7 @@ const mockDb = db as unknown as {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  clearSettingsCache()
 })
 
 describe("getSetting", () => {

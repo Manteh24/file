@@ -22,6 +22,7 @@ vi.mock("@/lib/subscription", () => ({
     PRO: { maxUsers: 7, maxActiveFiles: Infinity, maxAiPerMonth: Infinity },
     TEAM: { maxUsers: Infinity, maxActiveFiles: Infinity, maxAiPerMonth: Infinity },
   },
+  getEffectivePlanLimits: vi.fn().mockResolvedValue({ maxUsers: 7, maxActiveFiles: Infinity, maxAiPerMonth: Infinity }),
   getAiUsageThisMonth: vi.fn().mockResolvedValue(0),
   incrementAiUsage: vi.fn().mockResolvedValue(undefined),
 }))
@@ -30,6 +31,7 @@ import { auth } from "@/lib/auth"
 import { generateDescription } from "@/lib/ai"
 import {
   getEffectiveSubscription,
+  getEffectivePlanLimits,
   getAiUsageThisMonth,
   incrementAiUsage,
 } from "@/lib/subscription"
@@ -40,6 +42,7 @@ type MockFn = ReturnType<typeof vi.fn>
 const mockAuth = auth as MockFn
 const mockGenerate = generateDescription as MockFn
 const mockGetEffectiveSub = getEffectiveSubscription as MockFn
+const mockGetEffectivePlanLimits = getEffectivePlanLimits as MockFn
 const mockGetAiUsage = getAiUsageThisMonth as MockFn
 const mockIncrementAiUsage = incrementAiUsage as MockFn
 
@@ -102,6 +105,8 @@ describe("POST /api/ai/description", () => {
     })
     // Reset subscription mocks to PRO defaults each test
     mockGetEffectiveSub.mockResolvedValue(proSub)
+    // PRO plan: unlimited AI per month
+    mockGetEffectivePlanLimits.mockResolvedValue({ maxUsers: 7, maxActiveFiles: Infinity, maxAiPerMonth: Infinity })
     mockGetAiUsage.mockResolvedValue(0)
     mockIncrementAiUsage.mockResolvedValue(undefined)
   })
@@ -238,6 +243,7 @@ describe("POST /api/ai/description", () => {
       isNearExpiry: false,
       graceDaysLeft: 0,
     })
+    mockGetEffectivePlanLimits.mockResolvedValue({ maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10 })
     mockGetAiUsage.mockResolvedValue(10) // at limit
     const req = makePostRequest(minimalPayload)
     const res = await descriptionRoute(req)
@@ -258,6 +264,7 @@ describe("POST /api/ai/description", () => {
       isNearExpiry: false,
       graceDaysLeft: 0,
     })
+    mockGetEffectivePlanLimits.mockResolvedValue({ maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10 })
     mockGetAiUsage.mockResolvedValue(9) // one slot remaining
     const req = makePostRequest(minimalPayload)
     const res = await descriptionRoute(req)

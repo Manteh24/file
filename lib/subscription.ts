@@ -1,5 +1,6 @@
 import { format } from "date-fns-jalali"
 import { db } from "@/lib/db"
+import { getFreePlanLimits } from "@/lib/platform-settings"
 import type { Plan, BillingCycle, SubStatus } from "@/types"
 
 // ─── Plan Feature Definitions ─────────────────────────────────────────────────
@@ -255,6 +256,26 @@ export async function getActiveFileCount(officeId: string): Promise<number> {
   return db.propertyFile.count({
     where: { officeId, status: "ACTIVE" },
   })
+}
+
+// ─── Effective Plan Limits ────────────────────────────────────────────────────
+
+export interface PlanLimits {
+  maxUsers: number
+  maxActiveFiles: number
+  maxAiPerMonth: number
+}
+
+/**
+ * Returns the effective plan limits for the given plan.
+ * PRO and TEAM limits are hardcoded (unlimited for most fields).
+ * FREE limits are overridable at runtime via platform settings.
+ */
+export async function getEffectivePlanLimits(plan: Plan): Promise<PlanLimits> {
+  if (plan !== "FREE") {
+    return PLAN_LIMITS[plan] as PlanLimits
+  }
+  return getFreePlanLimits()
 }
 
 // ─── API Route Guards ─────────────────────────────────────────────────────────

@@ -91,6 +91,8 @@ model Office {
   city         String?
   // Referral code entered at registration — identifies the referrer, not this office.
   referralCode String?
+  // Soft delete — null means active, set means archived. Data is never hard-deleted.
+  deletedAt    DateTime?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -153,6 +155,7 @@ model User {
   adminCreatedCodes   ReferralCode[]   @relation("AdminCreatedReferralCodes")
   adminPaidEarnings   ReferralMonthlyEarning[] @relation("AdminPaidEarnings")
   sentBroadcasts      AdminBroadcast[]
+  adminLoginLogs      AdminLoginLog[]  @relation("AdminLoginLogs")
 
   @@map("users")
 }
@@ -620,6 +623,20 @@ model AdminBroadcast {
   sentByAdmin    User      @relation(fields: [sentByAdminId], references: [id])
 
   @@map("admin_broadcasts")
+}
+
+// Records each admin sign-in with IP and user-agent for security auditing.
+model AdminLoginLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  ipAddress String?
+  userAgent String?
+  loginAt   DateTime @default(now())
+
+  admin     User     @relation("AdminLoginLogs", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@map("admin_login_logs")
 }
 
 // Key-value store for platform-wide settings editable by SUPER_ADMIN.

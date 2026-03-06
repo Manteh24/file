@@ -7,6 +7,7 @@ import { getAccessibleOfficeIds } from "@/lib/admin"
 import { SubscriptionManager } from "@/components/admin/SubscriptionManager"
 import { OfficeNotesPanel } from "@/components/admin/OfficeNotesPanel"
 import { SuspendReactivateButtons } from "@/components/admin/SuspendReactivateButtons"
+import { ArchiveRestoreButtons } from "@/components/admin/ArchiveRestoreButtons"
 import { formatToman } from "@/lib/utils"
 
 const PLAN_LABELS = { FREE: "رایگان", PRO: "حرفه‌ای", TEAM: "تیم" }
@@ -41,6 +42,7 @@ export default async function AdminOfficeDetailPage({
       email: true,
       address: true,
       city: true,
+      deletedAt: true,
       createdAt: true,
       subscription: {
         select: {
@@ -74,11 +76,30 @@ export default async function AdminOfficeDetailPage({
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold">{office.name}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          عضو از {format(new Date(office.createdAt), "yyyy/MM/dd")}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold">{office.name}</h1>
+            {office.deletedAt && (
+              <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                بایگانی شده
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            عضو از {format(new Date(office.createdAt), "yyyy/MM/dd")}
+            {office.deletedAt && (
+              <> · بایگانی در {format(new Date(office.deletedAt), "yyyy/MM/dd")}</>
+            )}
+          </p>
+        </div>
+        {session.user.role === "SUPER_ADMIN" && (
+          <ArchiveRestoreButtons
+            officeId={office.id}
+            officeName={office.name}
+            isArchived={!!office.deletedAt}
+          />
+        )}
       </div>
 
       {/* Profile card */}

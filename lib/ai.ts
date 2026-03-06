@@ -1,4 +1,5 @@
 import type { TransactionType, PropertyType } from "@/types"
+import { getAvalAiModel } from "@/lib/platform-settings"
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -202,7 +203,7 @@ export async function generateDescription(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: await getAvalAiModel(),
         messages: [
           { role: "system", content: SYSTEM_MESSAGE },
           { role: "user", content: buildUserMessage(input, tone) },

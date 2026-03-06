@@ -5,6 +5,22 @@ import { db } from "@/lib/db"
 import { loginSchema } from "@/lib/validations/auth"
 import type { AdminTier, Role } from "@/types"
 
+// ─── Admin Login Logger ────────────────────────────────────────────────────────
+
+/**
+ * Fire-and-forget: records an admin login with IP and user-agent.
+ * Called after successful authentication for SUPER_ADMIN and MID_ADMIN users.
+ */
+function recordAdminLogin(
+  adminId: string,
+  ipAddress: string | null,
+  userAgent: string | null
+): void {
+  db.adminLoginLog
+    .create({ data: { adminId, ipAddress, userAgent } })
+    .catch((err) => console.error("[auth] recordAdminLogin failed:", err))
+}
+
 // Session duration in days. Matches UserSession.expiresAt and JWT maxAge.
 const SESSION_DURATION_DAYS = 30
 const MAX_SESSIONS_PER_USER = 2
@@ -18,7 +34,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
 
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         // 1. Validate input shape with Zod before touching the DB
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
@@ -44,7 +60,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // 5. Enforce 2-session limit and create the new session record
         const sessionId = await enforceSessionLimit(user.id)
 
-        // 6. Return user object — this is passed to the jwt callback
+        // 6. Record admin logins for audit purposes (fire-and-forget)
+        if (user.role === "SUPER_ADMIN" || user.role === "MID_ADMIN") {
+          const req = request as Request | null
+          const ip =
+            req?.headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+            req?.headers?.get("x-real-ip") ??
+            null
+          const ua = req?.headers?.get("user-agent") ?? null
+          recordAdminLogin(user.id, ip, ua)
+        }
+
+        // 7. Return user object — this is passed to the jwt callback
         return {
           id: user.id,
           officeId: user.officeId,

@@ -6,12 +6,13 @@ import { OfficeTable } from "@/components/admin/OfficeTable"
 export default async function AdminOfficesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; status?: string }>
+  searchParams: Promise<{ search?: string; status?: string; includeArchived?: string }>
 }) {
   const session = await auth()
   if (!session) return null
 
-  const { search = "", status = "" } = await searchParams
+  const { search = "", status = "", includeArchived = "" } = await searchParams
+  const showArchived = includeArchived === "true"
 
   const accessibleIds = await getAccessibleOfficeIds(session.user)
   const baseFilter = buildOfficeFilter(accessibleIds)
@@ -19,6 +20,7 @@ export default async function AdminOfficesPage({
   const offices = await db.office.findMany({
     where: {
       ...baseFilter,
+      ...(!showArchived ? { deletedAt: null } : {}),
       ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
       ...(status
         ? { subscription: { status: status as "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED" } }
@@ -29,6 +31,7 @@ export default async function AdminOfficesPage({
       id: true,
       name: true,
       city: true,
+      deletedAt: true,
       createdAt: true,
       subscription: {
         select: { plan: true, status: true, isTrial: true, billingCycle: true, trialEndsAt: true, currentPeriodEnd: true },
@@ -40,7 +43,7 @@ export default async function AdminOfficesPage({
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold">دفاتر ({offices.length.toLocaleString("fa-IR")})</h1>
-      <OfficeTable offices={offices} />
+      <OfficeTable offices={offices} showArchived={showArchived} />
     </div>
   )
 }
