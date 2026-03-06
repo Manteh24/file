@@ -83,6 +83,21 @@ A **Persian-language, RTL, PWA-based SaaS** platform for Iranian real estate off
 │   │   ├── crm/                 # Customer management
 │   │   ├── settings/            # Office profile, billing
 │   │   └── reports/             # Financial reports
+│   ├── (admin)/                 # Admin panel — separate shell, SUPER_ADMIN + MID_ADMIN only
+│   │   └── admin/
+│   │       ├── layout.tsx       # Admin shell (sidebar, role guard)
+│   │       ├── dashboard/       # Admin dashboard with KPI cards
+│   │       ├── kpi/             # Detailed KPI groups
+│   │       ├── offices/         # Office list + detail (soft delete, notes)
+│   │       ├── subscriptions/   # Subscription management
+│   │       ├── payments/        # Payment records
+│   │       ├── users/           # User management (activate/deactivate)
+│   │       ├── mid-admins/      # Mid-admin CRUD + tier + login history
+│   │       ├── referrals/       # Referral program management
+│   │       ├── ai-usage/        # AI usage stats
+│   │       ├── broadcast/       # Platform-wide broadcasts
+│   │       ├── settings/        # PlatformSetting editor (SUPER_ADMIN only)
+│   │       └── audit-log/       # AdminActionLog viewer
 │   ├── (public)/                # No auth required
 │   │   └── p/[token]/           # Public share page (view.appname.ir)
 │   ├── api/                     # API routes (Next.js Route Handlers)
@@ -113,6 +128,10 @@ A **Persian-language, RTL, PWA-based SaaS** platform for Iranian real estate off
 │   ├── maps.ts                  # Neshan API helpers
 │   ├── image.ts                 # Sharp processing helpers
 │   ├── storage.ts               # IranServer object storage helpers
+│   ├── payment.ts               # Zarinpal request/verify + plan price constants
+│   ├── admin.ts                 # Admin helpers (office filter, audit log, KPI calculators, tier capabilities)
+│   ├── platform-settings.ts     # PlatformSetting DB cache + typed getters
+│   ├── referral.ts              # Referral tracking helpers
 │   └── utils.ts                 # General utilities (date formatting, Toman formatting, etc.)
 ├── hooks/                       # Custom React hooks
 │   ├── useFiles.ts
@@ -123,6 +142,8 @@ A **Persian-language, RTL, PWA-based SaaS** platform for Iranian real estate off
 ├── prisma/
 │   ├── schema.prisma
 │   └── migrations/
+├── scripts/
+│   └── seed-admin.ts            # Creates SUPER_ADMIN user. Run: npm run seed:admin
 ├── public/
 │   ├── fonts/                   # Vazirmatn font files
 │   └── manifest.json            # PWA manifest
@@ -155,13 +176,24 @@ Super Admin (platform owner)
 - **Mid Admin** accesses only offices explicitly assigned to them in the admin panel.
 - **Super Admin** has unrestricted cross-tenant access.
 
+### Mid-Admin Tiers (`AdminTier` enum)
+Mid admins have a `adminTier` field controlling what write actions they can perform. Null tier = read-only.
+
+| Tier | Capabilities |
+|------|-------------|
+| `SUPPORT` | `manageSubscriptions` (extend trial, change plan, suspend/reactivate) |
+| `FINANCE` | `manageSubscriptions` + view payments/MRR |
+| `FULL_ACCESS` | All of the above + `manageUsers` (activate/deactivate) + `securityActions` (force-logout, reset-password) + `broadcast` |
+
+Helper: `canAdminDo(user, capability)` in `lib/admin.ts` — use this in every admin API route before any write.
+
 ---
 
 ## 7. Core Data Models (Summary)
 
 ### Key Entities
-- **Office** — tenant root. Every other entity belongs to an office via `officeId`.
-- **User** — manager or agent. Belongs to one office. Has `role: MANAGER | AGENT`.
+- **Office** — tenant root. Every other entity belongs to an office via `officeId`. Has `deletedAt DateTime?` for soft delete — all list/count queries must filter `deletedAt: null`.
+- **User** — manager or agent. Belongs to one office. Has `role: MANAGER | AGENT`. Admin users have `officeId: null` and `role: SUPER_ADMIN | MID_ADMIN`.
 - **File (فایل)** — property listing. Has `transactionType`, `status`, `officeId`, assigned agents.
 - **ShareLink** — each share action creates one. Has `token` (unique), `customPrice`, `viewCount`, `fileId`.
 - **Contract** — finalized deal. Linked to a file. Has commission fields, archive attachments.
@@ -169,7 +201,17 @@ Super Admin (platform owner)
 - **ActivityLog** — immutable log of all file changes. `userId`, `fileId`, `action`, `diff`, `timestamp`.
 - **PriceHistory** — every price change on a file. `fileId`, `oldPrice`, `newPrice`, `changedAt`.
 - **Notification** — per-user notification record. `userId`, `type`, `read`, `createdAt`.
-- **Subscription** — one per office. `plan`, `status`, `trialEndsAt`, `currentPeriodEnd`.
+- **Subscription** — one per office. `plan: FREE | PRO | TEAM`, `isTrial: boolean`, `billingCycle: MONTHLY | ANNUAL`, `status`, `trialEndsAt`, `currentPeriodEnd`.
+- **PaymentRecord** — one per Zarinpal transaction. `authority`, `status: PENDING | VERIFIED | FAILED`, guards against double-verification.
+- **AiUsageLog** — per-office per-Shamsi-month AI call counter. Used for plan limit enforcement.
+- **AdminActionLog** — immutable audit log of all admin write actions. `adminId`, `action`, `targetId`, `metadata`.
+- **OfficeNote** — admin-written notes about an office. `adminId`, `officeId`, `content`.
+- **ReferralCode** — one per office. Used to track referrals at registration.
+- **Referral** — links referrer office to referred office.
+- **AdminBroadcast** — platform-wide messages sent to all offices by admin.
+- **PlatformSetting** — key-value runtime config store. Keys: `MAINTENANCE_MODE`, `ZARINPAL_MODE`, `AVALAI_MODEL`, `FREE_MAX_USERS`, `FREE_MAX_FILES`, `FREE_MAX_AI_MONTH`.
+- **AdminLoginLog** — records each admin login (userId, IP, userAgent, timestamp). Fire-and-forget in auth.ts.
+- **AdminOfficeAssignment** — maps a MID_ADMIN user to the offices they can access.
 
 ### Multi-tenancy Pattern
 Every model that contains tenant data has an `officeId` field.
@@ -217,12 +259,28 @@ After contract finalization: assigned agents get read-only access, all share lin
 
 ### Subscription Lifecycle
 ```
-Register → 1-month full trial (no card required)
+Register → 1-month full trial (isTrial=true, plan=FREE/PRO/TEAM)
 → 7 days before end: renewal reminders start
 → Trial/subscription expires → 7-day grace (full access + banner)
 → After grace: read-only lock
 → Data NEVER deleted automatically
 ```
+Plans: `FREE` (limited users/files/AI), `PRO`, `TEAM`. Limits enforced at API level via `getEffectivePlanLimits(plan)` in `lib/subscription.ts` — reads runtime overrides from `PlatformSetting` DB table (cached 30s).
+
+### Admin Panel — Platform Settings
+Six runtime-configurable keys in `PlatformSetting` table (editable by SUPER_ADMIN only):
+- `MAINTENANCE_MODE` — `"true"` redirects all non-admin traffic in middleware
+- `ZARINPAL_MODE` — `"sandbox"` or `"production"`
+- `AVALAI_MODEL` — overrides the AI model string (default `gpt-4o-mini`)
+- `FREE_MAX_USERS`, `FREE_MAX_FILES`, `FREE_MAX_AI_MONTH` — override FREE plan limits
+
+Settings are cached for 30s in `lib/platform-settings.ts`. Call `clearSettingsCache()` in tests that exercise settings-reading code.
+
+### Office Soft Delete
+`Office.deletedAt` — set to `DateTime` on archive, `null` on restore. Not a hard delete.
+- **All** `office.findMany` / `office.count` queries must include `where: { deletedAt: null }` unless intentionally showing deleted offices.
+- Admin routes: `POST /api/admin/offices/[id]/archive` and `POST /api/admin/offices/[id]/restore`.
+- `ArchiveRestoreButtons` component on office detail page (SUPER_ADMIN only).
 
 ### Photo Processing (Server-side, Sharp)
 1. Client uploads raw image to `/api/upload`
@@ -442,8 +500,11 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `lib/sms.ts` | KaveNegar SMS sending functions |
 | `lib/maps.ts` | Neshan API calls (geocoding, routing, POI) |
 | `lib/file-helpers.ts` | `logActivity`, `recordPriceChanges`, `buildDiff`, `deactivateShareLinks`, `buildFileWhere`, `buildOrderBy` — shared file query builders used by both the server page and the API route |
-| `lib/subscription.ts` | `resolveSubscription`, `getEffectiveSubscription` (lazy status migration), `requireWriteAccess`, `SubscriptionLockedError` |
-| `lib/admin.ts` | `getAccessibleOfficeIds`, `buildOfficeFilter`, `logAdminAction`, `calculateMrr`, `calculateChurnRate`, `calculateTrialConversionRate`, `calculateAiCostThisMonth`, `AI_UNIT_COST_TOMAN` |
+| `lib/subscription.ts` | `resolveSubscription`, `getEffectiveSubscription` (lazy status migration), `requireWriteAccess`, `SubscriptionLockedError`, `getEffectivePlanLimits(plan)` (reads PlatformSetting overrides), `PLAN_LIMITS`, `PLAN_FEATURES` |
+| `lib/admin.ts` | `getAccessibleOfficeIds`, `buildOfficeFilter`, `logAdminAction`, `calculateMrr`, `calculateChurnRate`, `calculateTrialConversionRate`, `calculateAiCostThisMonth`, `calculateReferralKpis`, `AI_UNIT_COST_TOMAN`, `TIER_CAPABILITIES`, `canAdminDo(user, capability)`, `TIER_LABELS` |
+| `lib/payment.ts` | `PLAN_PRICES_TOMAN`, `PLAN_PRICES_RIALS`, `PLAN_LABELS`, `requestPayment()`, `verifyPayment()`, `calculateNewPeriodEnd()` |
+| `lib/platform-settings.ts` | `getSetting(key)`, typed getters (`getMaintenanceMode`, `getZarinpalMode`, `getAvalaiModel`, `getFreePlanLimits`), `clearSettingsCache()` — 30s module-level cache |
+| `lib/referral.ts` | Referral tracking helpers, auto-code generation on register |
 | `lib/image.ts` | Sharp processing pipeline (compress, watermark, resize) |
 | `lib/storage.ts` | IranServer object storage upload/download/delete |
 | `hooks/useDraft.ts` | Dexie.js IndexedDB draft management for file creation |
@@ -469,7 +530,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 
 ---
 
-## 20. Out of Scope (Do Not Build in v1)
+## 21. Out of Scope (Do Not Build in v1)
 
 - Phone number / OTP login
 - Per-office custom subdomains on share pages
@@ -485,7 +546,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 
 ---
 
-## 20. Development Progress
+## 22. Development Progress
 
 > Workflow rule: build one feature at a time, write tests before moving to the next feature.
 
