@@ -181,9 +181,9 @@ Mid admins have a `adminTier` field controlling what write actions they can perf
 
 | Tier | Capabilities |
 |------|-------------|
-| `SUPPORT` | `manageSubscriptions` (extend trial, change plan, suspend/reactivate) |
-| `FINANCE` | `manageSubscriptions` + view payments/MRR |
-| `FULL_ACCESS` | All of the above + `manageUsers` (activate/deactivate) + `securityActions` (force-logout, reset-password) + `broadcast` |
+| `SUPPORT` | `manageUsers` (activate/deactivate) + `securityActions` (force-logout, reset-password) + `broadcast` |
+| `FINANCE` | `manageSubscriptions` (extend trial, change plan, suspend/reactivate) + `broadcast` |
+| `FULL_ACCESS` | All capabilities — `manageSubscriptions` + `manageUsers` + `securityActions` + `broadcast` |
 
 Helper: `canAdminDo(user, capability)` in `lib/admin.ts` — use this in every admin API route before any write.
 

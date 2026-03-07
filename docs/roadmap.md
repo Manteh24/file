@@ -1,22 +1,28 @@
 # Admin Panel Roadmap
 
-## Phase 2 — Growth Operations (next sprint)
+## Phase 2 — Growth Operations ✅ Complete
 
-| Section | What to Build |
-|---------|--------------|
-| **Referral Program** | `ReferralCode` + `Referral` + `ReferralCommission` models. Admin pages: referrers list, per-referrer detail, pending commissions, mark-as-paid, leaderboard, code generator, disable code. KPI Group 3 metrics become live. |
-| **AI Usage Monitoring** | Dedicated `/admin/ai-usage` page: per-office monthly breakdown, cost trend, FREE-at-limit list, anomaly flagging (office > 2× avg). |
-| **Notifications & Communication** | `AdminBroadcast` model. Send message to one office (via Notification record). Broadcast to all/filtered offices. Message history page. |
-| **Users Management (enhanced)** | User detail page. Force logout (delete UserSession rows). Admin-initiated password reset. Move user between offices. Flag/note on user. |
-| **Settings (partial)** | CAC input field (marketing spend → auto-calculates CAC = spend/new paid offices). Configurable `AI_UNIT_COST_TOMAN`. Trial length config. |
+| Section | Status |
+|---------|--------|
+| **Referral Program** | ✅ `ReferralCode`, `Referral`, `ReferralMonthlyEarning` models. Referrers list, per-referrer detail, pending commissions, mark-as-paid. KPI Group 3 live. |
+| **AI Usage Monitoring** | ✅ `/admin/ai-usage` — per-office monthly breakdown, cost trend, anomaly flagging (office > 2× avg). |
+| **Notifications & Communication** | ✅ `AdminBroadcast` model. Broadcast to all/one office. Message history page. |
+| **Users Management (enhanced)** | ✅ User detail page. Force logout, admin-initiated password reset, adminNote field. |
+| **Settings (partial)** | ✅ `PlatformSetting` table. `getSetting`/`setSetting`. Configurable trial length + AI unit cost. |
 
-## Phase 3 — Optimization (at scale)
+## Phase 3 — Optimization ✅ Complete (core items)
 
-| Section | What to Build |
-|---------|--------------|
-| **System Health** | `CronLog` model. Cron job execution log viewer. KaveNegar SMS delivery webhook log. Failed API call log (server-side error collector). |
-| **Content & Files Overview** | Platform-wide files page: total active files, files created per day chart, public link view totals, most-viewed files. |
-| **Settings (full editor)** | Plan limits editor (override `PLAN_LIMITS` at runtime). Feature flags per plan. Zarinpal config (test/live mode toggle). AvalAI model/temperature config. Maintenance mode banner. |
-| **Office Soft Delete** | Add `deletedAt DateTime?` to Office. Update all tenant queries with `where: { deletedAt: null }`. Admin "archive office" button. Restore option. |
-| **NPS Collection** | `NpsResponse` model (officeId, score 0–10, comment, createdAt). Triggered via email/SMS link after 30 days of use. Rolling 90-day NPS in KPI Group 6. |
-| **Admin Login History** | `AdminSession` log model. Show last N logins per admin user with IP/UA in admin user detail. |
+| Section | Status |
+|---------|--------|
+| **Settings (full editor)** | ✅ 6 runtime keys: `MAINTENANCE_MODE`, `ZARINPAL_MODE`, `AVALAI_MODEL`, `FREE_MAX_USERS`, `FREE_MAX_FILES`, `FREE_MAX_AI_MONTH`. 30s cache. Wired into middleware, ai.ts, payment.ts, subscription.ts. |
+| **Office Soft Delete** | ✅ `deletedAt DateTime?` on Office. Archive/restore routes. All list/count queries filtered. `ArchiveRestoreButtons` UI (SUPER_ADMIN only). |
+| **Admin Login History** | ✅ `AdminLoginLog` model. Fire-and-forget on auth.ts login. `GET /api/admin/mid-admins/[id]/login-history`. Table on mid-admin detail page. |
+| **System Health** | ❌ Not built — `CronLog`, SMS delivery webhook log, failed API call log |
+| **Content & Files Overview** | ❌ Not built — platform-wide files page, charts |
+| **NPS Collection** | ❌ Not built — `NpsResponse` model, triggered survey flow |
+
+## Next Steps
+
+- Production deployment (Prisma migrations on VPS)
+- Create PWA icons (`public/icons/icon-192.png`, `icon-512.png`) + configure `next-pwa` in `next.config.ts`
+- Remaining Phase 3 items (System Health, Content Overview, NPS) — deferred to post-launch
