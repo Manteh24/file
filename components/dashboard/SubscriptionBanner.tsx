@@ -4,7 +4,12 @@ import Link from "next/link"
 import { Clock, AlertTriangle, XCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { SubStatus, Role, Plan } from "@/types"
-import { PLAN_LABELS } from "@/lib/payment"
+
+const PLAN_LABELS: Record<"FREE" | "PRO" | "TEAM", string> = {
+  FREE: "رایگان",
+  PRO:  "حرفه‌ای",
+  TEAM: "تیم",
+}
 
 interface SubscriptionBannerProps {
   plan: Plan

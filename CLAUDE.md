@@ -14,7 +14,7 @@ A **Persian-language, RTL, PWA-based SaaS** platform for Iranian real estate off
 - **Core job:** Create, manage, share, and close property listings ("files" / فایل)
 - **Market:** Iran — Farsi only, RTL, Jalali calendar, Iranian third-party services only
 - **Platform:** Progressive Web App (PWA) — no native iOS/Android app in v1
-- **Status:** Greenfield — no existing code
+- **Status:** Active development — all core features complete, preparing for production deployment
 
 ---
 
@@ -24,7 +24,7 @@ A **Persian-language, RTL, PWA-based SaaS** platform for Iranian real estate off
 |-------|-----------|-------|
 | **Framework** | Next.js (App Router) | v14+, React 18, Server Components |
 | **Language** | TypeScript (strict mode) | `.ts` / `.tsx` everywhere. No `.js` files. |
-| **Styling** | Tailwind CSS + shadcn/ui | shadcn components are copied into `/components/ui/`, not a package dependency |
+| **Styling** | Tailwind CSS v4 + shadcn/ui | v4: CSS-based config (`@theme` in `globals.css`), no `tailwind.config.ts`. shadcn components copied into `/components/ui/` |
 | **State** | React Context (auth/user) + SWR or React Query (server data) | No Redux |
 | **Forms** | React Hook Form + Zod | Zod schemas used for both client validation and API input validation |
 | **Auth** | NextAuth.js (Auth.js v5) — credentials provider | Username + password. httpOnly cookies. |
@@ -146,11 +146,11 @@ A **Persian-language, RTL, PWA-based SaaS** platform for Iranian real estate off
 │   └── seed-admin.ts            # Creates SUPER_ADMIN user. Run: npm run seed:admin
 ├── public/
 │   ├── fonts/                   # Vazirmatn font files
-│   └── manifest.json            # PWA manifest
+│   ├── icons/                   # PWA icons (icon-192.png, icon-512.png) — must be created before production
+│   └── manifest.json            # PWA manifest (lang:fa, dir:rtl, theme:#18181b)
 ├── .env.local                   # Git-ignored. Local secrets only.
 ├── .env.example                 # Committed. Shows all required env vars without values.
 ├── next.config.ts
-├── tailwind.config.ts
 ├── tsconfig.json
 ├── eslint.config.mjs
 └── claude.md                    # This file
@@ -578,9 +578,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Admin Panel Phase 3 (office soft delete, settings editor, login history) | ✅ | ✅ |
 
 ### Current Status
-- **Last completed:** Admin Panel Phase 3
-- **Up next:** Production deployment (run Prisma migrations on VPS)
+- **Last completed:** Admin Panel Phase 3 + PWA manifest created (`public/manifest.json`)
+- **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS, create PWA icons (`public/icons/icon-192.png`, `icon-512.png`), configure `next-pwa` in `next.config.ts`
 - **Total tests:** 656 passing, 0 failing (46 test files)
+- **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write
 
 ### Reference Docs
 - **Test registry:** `docs/test-registry.md` — full list of test files and what they cover
