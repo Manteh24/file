@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatToman, formatJalali } from "@/lib/utils"
-import { PLAN_PRICES_TOMAN, PLAN_LABELS } from "@/lib/payment"
+import { PLAN_PRICES_TOMAN, PLAN_LABELS } from "@/lib/plan-constants"
 import type { SubscriptionInfo, BillingCycle } from "@/types"
 
 interface SubscriptionCardProps {

@@ -1,26 +1,7 @@
 import type { BillingCycle } from "@/types"
 import { getZarinpalMode } from "@/lib/platform-settings"
-
-// ─── Plan Constants ────────────────────────────────────────────────────────────
-
-// Monthly and annual prices in Toman for each paid plan.
-// Annual = 10 months price (2 months free).
-export const PLAN_PRICES_TOMAN: Record<"PRO" | "TEAM", Record<BillingCycle, number>> = {
-  PRO:  { MONTHLY: 290_000, ANNUAL: 2_900_000 },
-  TEAM: { MONTHLY: 590_000, ANNUAL: 5_900_000 },
-}
-
-// Zarinpal accepts amounts in Rials. 1 Toman = 10 Rials.
-export const PLAN_PRICES_RIALS: Record<"PRO" | "TEAM", Record<BillingCycle, number>> = {
-  PRO:  { MONTHLY: 2_900_000, ANNUAL: 29_000_000 },
-  TEAM: { MONTHLY: 5_900_000, ANNUAL: 59_000_000 },
-}
-
-export const PLAN_LABELS: Record<"FREE" | "PRO" | "TEAM", string> = {
-  FREE: "رایگان",
-  PRO:  "حرفه‌ای",
-  TEAM: "تیم",
-}
+import { PLAN_PRICES_RIALS, PLAN_LABELS, PLAN_PRICES_TOMAN } from "@/lib/plan-constants"
+export { PLAN_PRICES_TOMAN, PLAN_PRICES_RIALS, PLAN_LABELS }
 
 // ─── Zarinpal API Types ────────────────────────────────────────────────────────
 

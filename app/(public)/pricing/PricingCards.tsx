@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatToman } from "@/lib/utils"
-import { PLAN_PRICES_TOMAN } from "@/lib/payment"
+import { PLAN_PRICES_TOMAN } from "@/lib/plan-constants"
 import type { BillingCycle } from "@/types"
 
 interface PlanCardProps {
