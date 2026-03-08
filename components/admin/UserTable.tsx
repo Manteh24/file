@@ -1,10 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { format } from "date-fns-jalali"
 import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { AdminUserSummary, Role } from "@/types"
+import type { AdminUserSummary } from "@/types"
 
 const ROLE_LABELS: Record<string, string> = {
   MANAGER: "مدیر",
@@ -82,7 +83,11 @@ export function UserTable({ users }: UserTableProps) {
                 const isActive = localActive[user.id] ?? user.isActive
                 return (
                   <tr key={user.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3 font-medium">{user.displayName}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link href={`/admin/users/${user.id}`} className="hover:text-primary hover:underline">
+                        {user.displayName}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{user.username}</td>
                     <td className="px-4 py-3">
                       <span className={cn(
