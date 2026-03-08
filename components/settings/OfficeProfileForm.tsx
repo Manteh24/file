@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
@@ -25,6 +25,7 @@ interface OfficeProfileFormProps {
 export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
   const router = useRouter()
   const [saved, setSaved] = useState(false)
+  const submitRef = useRef<HTMLButtonElement>(null)
 
   const form = useForm<UpdateOfficeProfileInput>({
     resolver: standardSchemaResolver(updateOfficeProfileSchema) as Resolver<UpdateOfficeProfileInput>,
@@ -62,9 +63,11 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
     return () => clearTimeout(timer)
   }, [saved])
 
+  const isSubmitting = form.formState.isSubmitting
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 text-[15px]">
         {form.formState.errors.root && (
           <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
         )}
@@ -77,7 +80,7 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
             <FormItem>
               <FormLabel>نام دفتر *</FormLabel>
               <FormControl>
-                <Input placeholder="دفتر مسکن..." {...field} />
+                <Input className="h-11" placeholder="دفتر مسکن..." {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -93,7 +96,7 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
               <FormItem>
                 <FormLabel>شهر</FormLabel>
                 <FormControl>
-                  <Input placeholder="تهران" {...field} />
+                  <Input className="h-11" placeholder="تهران" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -107,7 +110,7 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
               <FormItem>
                 <FormLabel>تلفن دفتر</FormLabel>
                 <FormControl>
-                  <Input placeholder="021XXXXXXXX" dir="ltr" {...field} />
+                  <Input className="h-11" placeholder="021XXXXXXXX" dir="ltr" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -123,7 +126,7 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
             <FormItem>
               <FormLabel>ایمیل</FormLabel>
               <FormControl>
-                <Input placeholder="office@example.com" dir="ltr" {...field} />
+                <Input className="h-11" placeholder="office@example.com" dir="ltr" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -149,15 +152,38 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
           )}
         />
 
-        <div className="flex items-center gap-4">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "در حال ذخیره..." : "ذخیره تغییرات"}
+        {/* Hidden submit button — triggered by both desktop and mobile bars */}
+        <button type="submit" ref={submitRef} className="hidden" />
+
+        {/* Desktop submit bar */}
+        <div className="hidden md:flex items-center gap-4">
+          <Button
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => submitRef.current?.click()}
+          >
+            {isSubmitting ? "در حال ذخیره..." : "ذخیره تغییرات"}
           </Button>
           {saved && (
             <p className="text-sm text-emerald-600">تغییرات با موفقیت ذخیره شد</p>
           )}
         </div>
       </form>
+
+      {/* Mobile sticky bottom bar */}
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-10 border-t border-border bg-background/95 backdrop-blur px-4 py-3 flex items-center gap-3">
+        <Button
+          type="button"
+          className="h-11 flex-1"
+          disabled={isSubmitting}
+          onClick={() => submitRef.current?.click()}
+        >
+          {isSubmitting ? "در حال ذخیره..." : "ذخیره تغییرات"}
+        </Button>
+        {saved && (
+          <p className="text-sm text-emerald-600 whitespace-nowrap">ذخیره شد ✓</p>
+        )}
+      </div>
     </Form>
   )
 }

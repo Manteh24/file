@@ -3,7 +3,6 @@ import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { OfficeProfileForm } from "@/components/settings/OfficeProfileForm"
 import { SubscriptionCard } from "@/components/settings/SubscriptionCard"
@@ -84,7 +83,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const subscriptionInfo: SubscriptionInfo | null = subscription
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-2xl space-y-10 px-0 md:px-4">
       <PageHeader
         title="تنظیمات"
         description="مدیریت پروفایل دفتر و اشتراک"
@@ -94,25 +93,25 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <PaymentStatusBanner status={params.payment} />
       )}
 
-      {/* Office Profile */}
-      <Card>
-        <CardHeader>
-          <CardTitle>اطلاعات دفتر</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <OfficeProfileForm initialData={officeProfile} />
-        </CardContent>
-      </Card>
+      {/* Section: Office profile */}
+      <section>
+        <div className="mb-4 border-b border-border pb-3">
+          <h2 className="text-[13px] font-medium uppercase tracking-widest text-muted-foreground">
+            اطلاعات دفتر
+          </h2>
+        </div>
+        <OfficeProfileForm initialData={officeProfile} />
+      </section>
 
-      {/* Billing & Subscription */}
-      <Card>
-        <CardHeader>
-          <CardTitle>اشتراک و پرداخت</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SubscriptionCard subscription={subscriptionInfo} />
-        </CardContent>
-      </Card>
+      {/* Section: Subscription */}
+      <section>
+        <div className="mb-4 border-b border-border pb-3">
+          <h2 className="text-[13px] font-medium uppercase tracking-widest text-muted-foreground">
+            اشتراک و پرداخت
+          </h2>
+        </div>
+        <SubscriptionCard subscription={subscriptionInfo} />
+      </section>
     </div>
   )
 }
