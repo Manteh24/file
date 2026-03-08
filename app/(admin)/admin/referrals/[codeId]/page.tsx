@@ -246,7 +246,7 @@ export default function ReferralCodeDetailPage() {
               <tbody className="divide-y divide-border">
                 {data.monthlyEarnings.map((e) => (
                   <tr key={e.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-2 font-mono">{e.yearMonth}</td>
+                    <td className="px-4 py-2 font-mono">{format(new Date(e.yearMonth + "-01"), "yyyy/MM")}</td>
                     <td className="px-4 py-2">{e.activeOfficeCount.toLocaleString("fa-IR")}</td>
                     <td className="px-4 py-2">{e.commissionAmount > 0 ? formatToman(e.commissionAmount) : "—"}</td>
                     <td className="px-4 py-2">
