@@ -62,7 +62,7 @@ export function Sidebar({ role, officeName, isOpen, onClose }: SidebarProps) {
       <aside
         className={cn(
           // Mobile: fixed overlay, slides in from the right (RTL start side)
-          "fixed inset-y-0 end-0 z-30 flex w-64 flex-col bg-sidebar border-e border-border transition-transform duration-200 ease-in-out",
+          "fixed inset-y-0 start-0 z-30 flex w-64 flex-col bg-sidebar border-e border-border transition-transform duration-200 ease-in-out",
           // Desktop: static, always visible, no transform
           "lg:static lg:translate-x-0 lg:transition-none",
           // Mobile toggle

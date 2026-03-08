@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Zap, AlertTriangle } from "lucide-react"
 import { formatToman } from "@/lib/utils"
+import { format } from "date-fns-jalali"
 
 interface AiEntry {
   officeId: string
@@ -27,17 +28,14 @@ interface AiUsageData {
 
 // Build last 4 Shamsi months from current
 function buildMonthOptions(): { label: string; value: string }[] {
-  // Use JS to build 4 month strings in YYYYMM-like format for display
-  // We'll just show current & last 3 as labels; API handles conversion
   const now = new Date()
   const options: { label: string; value: string }[] = []
   for (let i = 0; i < 4; i++) {
+    // Subtract i months (Gregorian subtraction, then format as Jalali)
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    // Format as YYYYMM (Gregorian — close enough for selector label)
-    const yyyymm = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`
     options.push({
-      label: `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}`,
-      value: yyyymm,
+      label: format(d, "MMMM yyyy"),   // e.g. "اسفند ۱۴۰۴"
+      value: format(d, "yyyyMM"),       // e.g. "140412" — Jalali YYYYMM for API
     })
   }
   return options
