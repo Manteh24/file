@@ -131,9 +131,6 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
           <select
             name="status"
             defaultValue={status ?? ""}
-            onChange={(e) => {
-              // handled by form submit — this is a server component, so we link manually
-            }}
             className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
           >
             {STATUS_OPTIONS.map((o) => (
