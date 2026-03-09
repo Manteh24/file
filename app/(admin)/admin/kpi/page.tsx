@@ -13,16 +13,7 @@ import {
 } from "@/lib/admin"
 import { formatToman } from "@/lib/utils"
 import { KpiGroup } from "@/components/admin/KpiGroup"
-import dynamic from "next/dynamic"
-
-const AiUsageChart = dynamic(
-  () => import("@/components/admin/charts/AiUsageChart").then((m) => m.AiUsageChart),
-  { ssr: false }
-)
-const ReferralEarningsChart = dynamic(
-  () => import("@/components/admin/charts/ReferralEarningsChart").then((m) => m.ReferralEarningsChart),
-  { ssr: false }
-)
+import { KpiAiUsageChart, KpiReferralEarningsChart } from "@/components/admin/charts/KpiCharts"
 
 export default async function AdminKpiPage() {
   const session = await auth()
@@ -245,7 +236,7 @@ export default async function AdminKpiPage() {
           { label: "کمیسیون این ماه", value: referralKpis.commissionThisMonth > 0 ? formatToman(referralKpis.commissionThisMonth) : "—", subLabel: "مجموع کمیسیون‌های ماه جاری" },
         ]}
       />
-      <ReferralEarningsChart data={referralChartData} />
+      <KpiReferralEarningsChart data={referralChartData} />
 
       <KpiGroup
         title="گروه ۴ — کیفیت درآمد"
@@ -274,7 +265,7 @@ export default async function AdminKpiPage() {
           },
         ]}
       />
-      <AiUsageChart data={aiChartData} />
+      <KpiAiUsageChart data={aiChartData} />
 
       <KpiGroup
         title="گروه ۶ — پشتیبانی و رضایت"

@@ -11,16 +11,7 @@ import {
 } from "@/lib/admin"
 import { formatToman } from "@/lib/utils"
 import { StatsCard } from "@/components/admin/StatsCard"
-import dynamic from "next/dynamic"
-
-const GrowthTrendChart = dynamic(
-  () => import("@/components/admin/charts/GrowthTrendChart").then((m) => m.GrowthTrendChart),
-  { ssr: false }
-)
-const SubscriptionDonut = dynamic(
-  () => import("@/components/admin/charts/SubscriptionDonut").then((m) => m.SubscriptionDonut),
-  { ssr: false }
-)
+import { DashboardCharts } from "@/components/admin/charts/DashboardCharts"
 
 export default async function AdminDashboardPage() {
   const session = await auth()
@@ -222,14 +213,7 @@ export default async function AdminDashboardPage() {
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           روند و توزیع
         </h2>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2">
-            <GrowthTrendChart data={growthData} />
-          </div>
-          <div>
-            <SubscriptionDonut planData={planData} statusData={statusData} />
-          </div>
-        </div>
+        <DashboardCharts growthData={growthData} planData={planData} statusData={statusData} />
       </section>
     </div>
   )
