@@ -19,13 +19,20 @@ export default async function DashboardLayout({
   if (!session.user.officeId) redirect("/admin/dashboard")
   const officeId = session.user.officeId // narrowed: string
 
-  const [office, subscription] = await Promise.all([
+  const [office, subscription, userRecord] = await Promise.all([
     db.office.findUnique({
       where: { id: officeId },
       select: { name: true },
     }),
     getEffectiveSubscription(officeId),
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: { onboardingCompleted: true },
+    }),
   ])
+
+  const showOnboarding =
+    session.user.role === "MANAGER" && userRecord?.onboardingCompleted === false
 
   return (
     <DashboardShell
@@ -33,6 +40,7 @@ export default async function DashboardLayout({
       officeName={office?.name ?? "دفتر شما"}
       userName={session.user.name ?? "کاربر"}
       subscription={subscription}
+      showOnboarding={showOnboarding}
     >
       {children}
     </DashboardShell>

@@ -142,7 +142,8 @@ model User {
   role         Role
   // Permission tier for MID_ADMIN users. Null = read-only access.
   adminTier    AdminTier?
-  isActive     Boolean       @default(true)
+  isActive              Boolean       @default(true)
+  onboardingCompleted   Boolean       @default(false)
   // avatarUrl will be populated by the image processing pipeline (Feature 14)
   avatarUrl    String?
   // Internal admin note (not visible to the user)

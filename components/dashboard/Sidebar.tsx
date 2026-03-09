@@ -22,13 +22,15 @@ interface NavItem {
   icon: React.ElementType
   // If true, hidden from AGENT role
   managerOnly?: boolean
+  // Used by the onboarding tutorial to spotlight this nav item
+  tutorialId?: string
 }
 
 const navItems: NavItem[] = [
   { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
-  { href: "/files", label: "فایل‌ها", icon: FolderOpen },
+  { href: "/files", label: "فایل‌ها", icon: FolderOpen, tutorialId: "nav-files" },
   { href: "/crm", label: "مشتریان", icon: Users },
-  { href: "/agents", label: "مشاوران", icon: UserCog, managerOnly: true },
+  { href: "/agents", label: "مشاوران", icon: UserCog, managerOnly: true, tutorialId: "nav-agents" },
   { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
   { href: "/reports", label: "گزارش‌ها", icon: BarChart3 },
   { href: "/support", label: "پشتیبانی", icon: LifeBuoy },
@@ -104,6 +106,7 @@ export function Sidebar({ role, officeName, isOpen, onClose }: SidebarProps) {
                   <Link
                     href={item.href}
                     onClick={onClose}
+                    data-tutorial-id={item.tutorialId}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       isActive

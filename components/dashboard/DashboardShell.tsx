@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
 import { SubscriptionBanner } from "./SubscriptionBanner"
+import { OnboardingTutorial } from "./OnboardingTutorial"
 import type { Role } from "@/types"
 import type { ResolvedSubscription } from "@/lib/subscription"
 
@@ -13,6 +14,7 @@ interface DashboardShellProps {
   officeName: string
   userName: string
   subscription: ResolvedSubscription | null
+  showOnboarding: boolean
 }
 
 export function DashboardShell({
@@ -21,8 +23,10 @@ export function DashboardShell({
   officeName,
   userName,
   subscription,
+  showOnboarding,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const openSidebar = useCallback(() => setSidebarOpen(true), [])
 
   return (
     // RTL flex: sidebar (first in DOM) appears on the right, content on the left
@@ -52,6 +56,8 @@ export function DashboardShell({
         )}
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
+
+      {showOnboarding && <OnboardingTutorial onOpenSidebar={openSidebar} />}
     </div>
   )
 }
