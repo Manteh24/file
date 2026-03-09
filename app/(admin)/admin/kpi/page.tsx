@@ -13,6 +13,16 @@ import {
 } from "@/lib/admin"
 import { formatToman } from "@/lib/utils"
 import { KpiGroup } from "@/components/admin/KpiGroup"
+import dynamic from "next/dynamic"
+
+const AiUsageChart = dynamic(
+  () => import("@/components/admin/charts/AiUsageChart").then((m) => m.AiUsageChart),
+  { ssr: false }
+)
+const ReferralEarningsChart = dynamic(
+  () => import("@/components/admin/charts/ReferralEarningsChart").then((m) => m.ReferralEarningsChart),
+  { ssr: false }
+)
 
 export default async function AdminKpiPage() {
   const session = await auth()
@@ -26,6 +36,9 @@ export default async function AdminKpiPage() {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const shamsiMonth = parseInt(format(now, "yyyyMM"), 10)
   const gregorianYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+  const sixMonthsAgoShamsi = parseInt(format(sixMonthsAgo, "yyyyMM"), 10)
+  const sixMonthsAgoYM = `${sixMonthsAgo.getFullYear()}-${String(sixMonthsAgo.getMonth() + 1).padStart(2, "0")}`
 
   const [
     activePayingOffices,
@@ -50,6 +63,8 @@ export default async function AdminKpiPage() {
     paymentFailures30d,
     aiCostToman,
     referralKpis,
+    aiUsageTrend,
+    referralEarningsTrend,
   ] = await Promise.all([
     db.subscription.count({
       where: { office: officeFilter, plan: { in: ["PRO", "TEAM"] }, isTrial: false, status: { in: ["ACTIVE", "GRACE"] } },
@@ -100,6 +115,19 @@ export default async function AdminKpiPage() {
     db.paymentRecord.count({ where: { office: officeFilter, status: "FAILED", createdAt: { gte: thirtyDaysAgo } } }),
     calculateAiCostThisMonth(officeFilter),
     calculateReferralKpis(officeFilter, gregorianYearMonth),
+    // Chart data
+    db.aiUsageLog.groupBy({
+      by: ["shamsiMonth"],
+      where: { office: officeFilter, shamsiMonth: { gte: sixMonthsAgoShamsi } },
+      _sum: { count: true },
+      orderBy: { shamsiMonth: "asc" },
+    }),
+    db.referralMonthlyEarning.groupBy({
+      by: ["yearMonth"],
+      where: { yearMonth: { gte: sixMonthsAgoYM } },
+      _sum: { commissionAmount: true },
+      orderBy: { yearMonth: "asc" },
+    }),
   ])
 
   // Derived calculations
@@ -143,6 +171,28 @@ export default async function AdminKpiPage() {
 
   const totalAiCalls = aiUsageThisMonth._sum.count ?? 0
   const avgAiPerOffice = aiOfficeCount > 0 ? Math.round(totalAiCalls / aiOfficeCount) : 0
+
+  // Jalali month name lookup for chart labels
+  const jalaliMonthNames = ["فرو", "ارد", "خرد", "تیر", "مرد", "شهر", "مهر", "آبا", "آذر", "دی", "بهم", "اسف"]
+
+  // AI usage chart data — map shamsiMonth (e.g. 140312) to label + calls
+  const aiChartData = aiUsageTrend.map((row) => {
+    const monthIndex = (row.shamsiMonth % 100) - 1
+    return {
+      month: jalaliMonthNames[monthIndex] ?? String(row.shamsiMonth),
+      calls: row._sum.count ?? 0,
+    }
+  })
+
+  // Referral earnings chart data — map yearMonth "2026-03" to label + commission
+  const referralChartData = referralEarningsTrend.map((row) => {
+    const [year, month] = row.yearMonth.split("-")
+    const d = new Date(parseInt(year), parseInt(month) - 1, 1)
+    return {
+      month: format(d, "MMM"),
+      commission: Number(row._sum.commissionAmount ?? 0),
+    }
+  })
 
   return (
     <div className="space-y-8">
@@ -195,6 +245,7 @@ export default async function AdminKpiPage() {
           { label: "کمیسیون این ماه", value: referralKpis.commissionThisMonth > 0 ? formatToman(referralKpis.commissionThisMonth) : "—", subLabel: "مجموع کمیسیون‌های ماه جاری" },
         ]}
       />
+      <ReferralEarningsChart data={referralChartData} />
 
       <KpiGroup
         title="گروه ۴ — کیفیت درآمد"
@@ -223,6 +274,7 @@ export default async function AdminKpiPage() {
           },
         ]}
       />
+      <AiUsageChart data={aiChartData} />
 
       <KpiGroup
         title="گروه ۶ — پشتیبانی و رضایت"

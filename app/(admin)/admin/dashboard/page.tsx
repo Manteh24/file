@@ -11,6 +11,16 @@ import {
 } from "@/lib/admin"
 import { formatToman } from "@/lib/utils"
 import { StatsCard } from "@/components/admin/StatsCard"
+import dynamic from "next/dynamic"
+
+const GrowthTrendChart = dynamic(
+  () => import("@/components/admin/charts/GrowthTrendChart").then((m) => m.GrowthTrendChart),
+  { ssr: false }
+)
+const SubscriptionDonut = dynamic(
+  () => import("@/components/admin/charts/SubscriptionDonut").then((m) => m.SubscriptionDonut),
+  { ssr: false }
+)
 
 export default async function AdminDashboardPage() {
   const session = await auth()
@@ -23,6 +33,7 @@ export default async function AdminDashboardPage() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const shamsiMonth = parseInt(format(now, "yyyyMM"), 10)
+  const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
 
   const [
     // Row 1
@@ -41,6 +52,10 @@ export default async function AdminDashboardPage() {
     filesCreatedThisMonth,
     activePayingCount,
     arpu_mrr,
+    // Charts data
+    recentOfficesList,
+    freePlanCount,
+    lockedSubCount,
   ] = await Promise.all([
     // Active offices = ACTIVE or GRACE, any plan
     db.subscription.count({ where: { office: officeFilter, status: { in: ["ACTIVE", "GRACE"] } } }),
@@ -58,11 +73,47 @@ export default async function AdminDashboardPage() {
       where: { office: officeFilter, plan: { in: ["PRO", "TEAM"] }, isTrial: false, status: { in: ["ACTIVE", "GRACE"] } },
     }),
     calculateMrr(officeFilter),
+    // Charts data
+    db.office.findMany({
+      where: { ...officeFilter, deletedAt: null, createdAt: { gte: twelveMonthsAgo } },
+      select: { createdAt: true },
+    }),
+    db.subscription.count({ where: { office: officeFilter, plan: "FREE" } }),
+    db.subscription.count({ where: { office: officeFilter, plan: { in: ["PRO", "TEAM"] }, status: "LOCKED" } }),
   ])
 
   const totalAiCallsCount = totalAiCalls._sum.count ?? 0
   const arr = mrr * 12
   const arpu = activePayingCount > 0 ? Math.round(arpu_mrr / activePayingCount) : 0
+
+  // Build 12-month growth trend for chart
+  const growthData = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
+    return { month: format(d, "MMM"), signups: 0 }
+  })
+  for (const o of recentOfficesList) {
+    const monthsBack =
+      (now.getFullYear() - o.createdAt.getFullYear()) * 12 + (now.getMonth() - o.createdAt.getMonth())
+    if (monthsBack >= 0 && monthsBack <= 11) {
+      growthData[11 - monthsBack].signups++
+    }
+  }
+
+  // Subscription distribution for donuts
+  const graceCount = await db.subscription.count({
+    where: { office: officeFilter, status: "GRACE" },
+  })
+  const planData = [
+    { name: "رایگان", value: freePlanCount, color: "#94a3b8" },
+    { name: "حرفه‌ای", value: proCount, color: "#4ade80" },
+    { name: "تیمی", value: teamCount, color: "#a78bfa" },
+  ].filter((d) => d.value > 0)
+
+  const statusData = [
+    { name: "فعال", value: Math.max(0, activeOfficesCount - graceCount), color: "#4ade80" },
+    { name: "گریس", value: graceCount, color: "#fbbf24" },
+    { name: "قفل", value: lockedSubCount, color: "#f87171" },
+  ].filter((d) => d.value > 0)
 
   // Parse churn for LTV
   const churnPctNum = parseFloat(
@@ -163,6 +214,21 @@ export default async function AdminDashboardPage() {
             value={arpu > 0 ? formatToman(arpu) : "—"}
             subLabel="میانگین درآمد هر دفتر پولی"
           />
+        </div>
+      </section>
+
+      {/* Charts — روند و توزیع */}
+      <section>
+        <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          روند و توزیع
+        </h2>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="col-span-2">
+            <GrowthTrendChart data={growthData} />
+          </div>
+          <div>
+            <SubscriptionDonut planData={planData} statusData={statusData} />
+          </div>
         </div>
       </section>
     </div>
