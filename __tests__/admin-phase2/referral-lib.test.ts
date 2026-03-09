@@ -71,7 +71,7 @@ describe("findActiveReferredOffices", () => {
     expect(result).toEqual([])
   })
 
-  it("returns officeIds of offices with qualifying subscriptions (paid or valid trial)", async () => {
+  it("returns officeIds of offices with active non-trial subscriptions", async () => {
     mockDb.referral.findMany.mockResolvedValue([{ officeId: "off-1" }, { officeId: "off-2" }])
     // Only off-1 has a qualifying subscription (paid or valid trial)
     mockDb.subscription.findMany.mockResolvedValue([{ officeId: "off-1" }])

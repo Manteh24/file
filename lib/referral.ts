@@ -31,10 +31,10 @@ export async function generateReferralCode(officeName: string): Promise<string> 
 /**
  * Returns officeIds of all offices that:
  * - Were referred by this code (have a Referral record)
- * - Have an active subscription: either a paid subscription (isTrial=false, status ACTIVE/GRACE)
- *   or a currently-valid trial (isTrial=true, trialEndsAt in the future, status ACTIVE/GRACE).
+ * - Have an active non-trial subscription (isTrial=false, status ACTIVE/GRACE)
  *
- * The trialEndsAt guard prevents stale expired-trial rows (not yet lazily migrated) from counting.
+ * Trial offices are excluded — commission is only earned once an office has converted
+ * to a paid plan (whether via Zarinpal or manually activated by an admin).
  */
 export async function findActiveReferredOffices(referralCodeId: string): Promise<string[]> {
   const referrals = await db.referral.findMany({
@@ -44,15 +44,11 @@ export async function findActiveReferredOffices(referralCodeId: string): Promise
   const officeIds = referrals.map((r) => r.officeId)
   if (officeIds.length === 0) return []
 
-  const now = new Date()
   const qualifyingSubs = await db.subscription.findMany({
     where: {
       officeId: { in: officeIds },
       status: { in: ["ACTIVE", "GRACE"] },
-      OR: [
-        { isTrial: false },
-        { isTrial: true, trialEndsAt: { gt: now } },
-      ],
+      isTrial: false,
     },
     select: { officeId: true },
   })
