@@ -64,7 +64,13 @@ export async function GET(
         },
       },
       monthlyEarnings: {
-        include: { paidByAdmin: { select: { displayName: true } } },
+        include: {
+          paidByAdmin: { select: { displayName: true } },
+          activeOffices: {
+            include: { office: { select: { id: true, name: true } } },
+            orderBy: { office: { name: "asc" } },
+          },
+        },
         orderBy: { yearMonth: "desc" },
       },
     },
@@ -79,6 +85,8 @@ export async function GET(
     monthlyEarnings: code.monthlyEarnings.map((e) => ({
       ...e,
       commissionAmount: bigIntToNumber(e.commissionAmount),
+      // Flatten to a simple array of { id, name } for the UI
+      activeOffices: e.activeOffices.map((ao) => ao.office),
     })),
     activeOfficeCount: activeOfficeIds.length,
   }

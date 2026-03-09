@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { format } from "date-fns-jalali"
-import { ArrowRight, Check, CreditCard, Building2 } from "lucide-react"
+import { ArrowRight, Check, CreditCard, Building2, ChevronDown, ChevronUp } from "lucide-react"
 import { formatToman } from "@/lib/utils"
 
 interface ReferredOffice {
@@ -22,6 +22,7 @@ interface MonthlyEarning {
   isPaid: boolean
   paidAt: string | null
   paidByAdmin: { displayName: string } | null
+  activeOffices: { id: string; name: string }[]
 }
 
 interface CodeDetail {
@@ -66,6 +67,7 @@ export default function ReferralCodeDetailPage() {
   const [snapshotMonth, setSnapshotMonth] = useState(monthOptions[0].value)
   const [snapshotLoading, setSnapshotLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [expandedEarning, setExpandedEarning] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
 
@@ -300,34 +302,88 @@ export default function ReferralCodeDetailPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {data.monthlyEarnings.map((e) => (
-                  <tr key={e.id} className="hover:bg-muted/30">
-                    <td className="px-4 py-2 font-mono">{format(new Date(e.yearMonth + "-01"), "yyyy/MM")}</td>
-                    <td className="px-4 py-2">{e.activeOfficeCount.toLocaleString("fa-IR")}</td>
-                    <td className="px-4 py-2">{e.commissionAmount > 0 ? formatToman(e.commissionAmount) : "—"}</td>
-                    <td className="px-4 py-2">
-                      {e.isPaid ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <Check className="h-3.5 w-3.5" />
-                          {e.paidAt ? format(new Date(e.paidAt), "yyyy/MM/dd") : "تسویه شده"}
-                        </span>
-                      ) : (
-                        <span className="text-amber-600">معوق</span>
+                {data.monthlyEarnings.map((e) => {
+                  const isExpanded = expandedEarning === e.id
+                  const hasOffices = e.activeOffices.length > 0
+                  return (
+                    <>
+                      <tr
+                        key={e.id}
+                        className={`cursor-pointer hover:bg-muted/30 ${isExpanded ? "bg-muted/20" : ""}`}
+                        onClick={() => setExpandedEarning(isExpanded ? null : e.id)}
+                      >
+                        <td className="px-4 py-2 font-mono">
+                          <span className="flex items-center gap-1.5">
+                            {isExpanded
+                              ? <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                              : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            }
+                            {format(new Date(e.yearMonth + "-01"), "yyyy/MM")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2">
+                          <span className={hasOffices ? "font-medium" : "text-muted-foreground"}>
+                            {e.activeOfficeCount.toLocaleString("fa-IR")}
+                          </span>
+                          {hasOffices && (
+                            <span className="me-1 text-xs text-muted-foreground"> دفتر</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2">{e.commissionAmount > 0 ? formatToman(e.commissionAmount) : "—"}</td>
+                        <td className="px-4 py-2">
+                          {e.isPaid ? (
+                            <span className="flex items-center gap-1 text-green-600">
+                              <Check className="h-3.5 w-3.5" />
+                              {e.paidAt ? format(new Date(e.paidAt), "yyyy/MM/dd") : "تسویه شده"}
+                            </span>
+                          ) : (
+                            <span className="text-amber-600">معوق</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2" onClick={(ev) => ev.stopPropagation()}>
+                          {!e.isPaid && (
+                            <button
+                              onClick={() => markPaid(e.id)}
+                              disabled={actionLoading === e.id}
+                              className="rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-200 disabled:opacity-50"
+                            >
+                              {actionLoading === e.id ? "..." : "تسویه"}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr key={`${e.id}-detail`}>
+                          <td colSpan={5} className="bg-muted/10 px-6 py-3">
+                            {!hasOffices ? (
+                              <p className="text-xs text-muted-foreground">
+                                اطلاعات دفاتر برای این ماه ثبت نشده — برای ذخیره لیست دفاتر، گزارش را مجدداً تولید کنید.
+                              </p>
+                            ) : (
+                              <div className="space-y-1.5">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  دفاتر فعال در این ماه ({e.activeOffices.length.toLocaleString("fa-IR")} دفتر):
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {e.activeOffices.map((office) => (
+                                    <Link
+                                      key={office.id}
+                                      href={`/admin/offices/${office.id}`}
+                                      onClick={(ev) => ev.stopPropagation()}
+                                      className="rounded-md border border-border bg-background px-2 py-1 text-xs hover:bg-muted hover:text-primary"
+                                    >
+                                      {office.name}
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                    <td className="px-4 py-2">
-                      {!e.isPaid && (
-                        <button
-                          onClick={() => markPaid(e.id)}
-                          disabled={actionLoading === e.id}
-                          className="rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-200 disabled:opacity-50"
-                        >
-                          {actionLoading === e.id ? "..." : "تسویه"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                    </>
+                  )
+                })}
               </tbody>
             </table>
           </div>

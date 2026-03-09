@@ -19,6 +19,10 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       upsert: vi.fn(),
     },
+    referralMonthlyEarningOffice: {
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      createMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
   },
 }))
 
@@ -31,6 +35,7 @@ const mockDb = db as unknown as {
   subscription: { findMany: ReturnType<typeof vi.fn> }
   paymentRecord: { findMany: ReturnType<typeof vi.fn> }
   referralMonthlyEarning: { findUnique: ReturnType<typeof vi.fn>; upsert: ReturnType<typeof vi.fn> }
+  referralMonthlyEarningOffice: { deleteMany: ReturnType<typeof vi.fn>; createMany: ReturnType<typeof vi.fn> }
 }
 
 beforeEach(() => {

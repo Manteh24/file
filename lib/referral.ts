@@ -95,6 +95,14 @@ export async function generateMonthlySnapshot(
     update: { activeOfficeCount, commissionAmount },
   })
 
+  // Replace tracked offices: delete old entries, insert current ones
+  await db.referralMonthlyEarningOffice.deleteMany({ where: { earningId: earning.id } })
+  if (activeOfficeIds.length > 0) {
+    await db.referralMonthlyEarningOffice.createMany({
+      data: activeOfficeIds.map((officeId) => ({ earningId: earning.id, officeId })),
+    })
+  }
+
   return {
     id: earning.id,
     activeOfficeCount: earning.activeOfficeCount,

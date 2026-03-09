@@ -131,6 +131,8 @@ model Office {
   // The referral code this office owns and shares with others to earn commissions
   ownReferralCode  ReferralCode?
   supportTickets   SupportTicket[]
+  // Referral earning snapshots that included this office as an active referred office
+  referralEarningSnapshots ReferralMonthlyEarningOffice[]
 
   @@map("offices")
 }
@@ -618,7 +620,7 @@ model ReferralMonthlyEarning {
   referralCode      ReferralCode @relation(fields: [referralCodeId], references: [id])
   yearMonth         String       // "2026-03"
   activeOfficeCount Int
-  // commissionAmount = activeOfficeCount * code.commissionPerOfficePerMonth
+  // commissionAmount = activeOfficeCount * code.commissionPerOfficePerMonth at snapshot time
   commissionAmount  BigInt
   isPaid            Boolean      @default(false)
   paidAt            DateTime?
@@ -626,8 +628,24 @@ model ReferralMonthlyEarning {
   paidByAdmin       User?        @relation("AdminPaidEarnings", fields: [paidByAdminId], references: [id])
   createdAt         DateTime     @default(now())
 
+  // Which offices were counted as active when this snapshot was generated
+  activeOffices     ReferralMonthlyEarningOffice[]
+
   @@unique([referralCodeId, yearMonth])
   @@map("referral_monthly_earnings")
+}
+
+// Records which specific offices were counted in a monthly earning snapshot.
+// Populated/replaced each time the snapshot is (re)generated.
+model ReferralMonthlyEarningOffice {
+  earningId String
+  officeId  String
+
+  earning   ReferralMonthlyEarning @relation(fields: [earningId], references: [id], onDelete: Cascade)
+  office    Office                 @relation(fields: [officeId], references: [id], onDelete: Cascade)
+
+  @@id([earningId, officeId])
+  @@map("referral_monthly_earning_offices")
 }
 
 // Record of admin broadcast messages sent to office managers.
