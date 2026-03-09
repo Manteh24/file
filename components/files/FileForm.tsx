@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useFieldArray, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
-import { Plus, Trash2, Sparkles, MapPin, Wifi, WifiOff } from "lucide-react"
+import { Plus, Trash2, Sparkles, MapPin, Wifi, WifiOff, CheckCircle2 } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { createFileSchema, type CreateFileInput } from "@/lib/validations/file"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,8 +21,9 @@ import { PriceInput } from "@/components/forms/PriceInput"
 import { LocationPicker } from "@/components/files/LocationPicker"
 import { useDraft } from "@/hooks/useDraft"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
-import type { PropertyFileDetail, LocationAnalysis } from "@/types"
+import type { PropertyFileDetail, LocationAnalysis, DivarImportResult } from "@/types"
 import type { DescriptionTone } from "@/lib/ai"
+import { DivarImporter } from "@/components/files/DivarImporter"
 
 interface FileFormProps {
   // When provided, the form is in edit mode
@@ -72,6 +74,10 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
     initialLocationAnalysis ?? null
   )
   const [savedFileId, setSavedFileId] = useState<string | null>(fileId ?? null)
+
+  // ── Divar import state (create mode only) ──────────────────────────────────
+  const [highlightFields, setHighlightFields] = useState<string[]>([])
+  const [importSummary, setImportSummary] = useState<string | null>(null)
 
   // ── Offline / draft state ──────────────────────────────────────────────────
   const [isOnline, setIsOnline] = useState(true)
@@ -167,6 +173,15 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
   const showSalePrice = transactionType === "SALE" || transactionType === "PRE_SALE"
   const showRentFields =
     transactionType === "LONG_TERM_RENT" || transactionType === "SHORT_TERM_RENT"
+
+  function handleImport(result: DivarImportResult) {
+    form.reset({ ...form.getValues(), ...result.fields })
+    setHighlightFields(result.missingRequired)
+    const msg = result.filledCount === 0
+      ? "اطلاعات کافی استخراج نشد"
+      : `${result.filledCount} فیلد پر شد، ${result.missingRequired.length} فیلد نیاز به تکمیل دارند`
+    setImportSummary(msg)
+  }
 
   async function onSubmit(values: CreateFileInput) {
     // Offline: save to draft only, do not call the server
@@ -365,6 +380,26 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
                 بعداً
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Divar importer strip — create mode only */}
+        {!isEdit && <DivarImporter onImport={handleImport} />}
+
+        {/* Import summary banner */}
+        {!isEdit && importSummary && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm dark:border-green-800 dark:bg-green-950/30">
+            <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <p>{importSummary}</p>
+            </div>
+            <button
+              type="button"
+              className="shrink-0 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 text-xs"
+              onClick={() => setImportSummary(null)}
+            >
+              ✕
+            </button>
           </div>
         )}
 
@@ -580,7 +615,11 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
                 <FormItem className="sm:col-span-2">
                   <FormLabel>آدرس <span className="text-destructive">*</span></FormLabel>
                   <FormControl>
-                    <Input placeholder="آدرس کامل ملک را وارد کنید" {...field} />
+                    <Input
+                      placeholder="آدرس کامل ملک را وارد کنید"
+                      className={cn(highlightFields.includes("address") && "ring-2 ring-yellow-400")}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -646,7 +685,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
         </section>
 
         {/* Contacts */}
-        <section className="space-y-4">
+        <section className={cn("space-y-4 rounded-lg transition-shadow", highlightFields.includes("contacts") && "ring-2 ring-yellow-400 p-3")}>
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold">
               مخاطبین <span className="text-destructive">*</span>
