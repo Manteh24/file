@@ -12,9 +12,6 @@ vi.mock("@/lib/db", () => ({
     subscription: {
       findMany: vi.fn(),
     },
-    paymentRecord: {
-      findMany: vi.fn(),
-    },
     referralMonthlyEarning: {
       findUnique: vi.fn(),
       upsert: vi.fn(),
@@ -33,7 +30,6 @@ const mockDb = db as unknown as {
   referralCode: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> }
   referral: { findMany: ReturnType<typeof vi.fn> }
   subscription: { findMany: ReturnType<typeof vi.fn> }
-  paymentRecord: { findMany: ReturnType<typeof vi.fn> }
   referralMonthlyEarning: { findUnique: ReturnType<typeof vi.fn>; upsert: ReturnType<typeof vi.fn> }
   referralMonthlyEarningOffice: { deleteMany: ReturnType<typeof vi.fn>; createMany: ReturnType<typeof vi.fn> }
 }
@@ -75,10 +71,10 @@ describe("findActiveReferredOffices", () => {
     expect(result).toEqual([])
   })
 
-  it("returns officeIds of offices with paid verified subs", async () => {
+  it("returns officeIds of offices with active non-trial subscriptions", async () => {
     mockDb.referral.findMany.mockResolvedValue([{ officeId: "off-1" }, { officeId: "off-2" }])
+    // Only off-1 has a qualifying subscription
     mockDb.subscription.findMany.mockResolvedValue([{ officeId: "off-1" }])
-    mockDb.paymentRecord.findMany.mockResolvedValue([{ officeId: "off-1" }])
     const result = await findActiveReferredOffices("code-1")
     expect(result).toEqual(["off-1"])
   })
@@ -95,7 +91,6 @@ describe("generateMonthlySnapshot", () => {
     mockDb.referralCode.findUnique.mockResolvedValue({ id: "code-1", commissionPerOfficePerMonth: 100 })
     mockDb.referral.findMany.mockResolvedValue([{ officeId: "off-1" }])
     mockDb.subscription.findMany.mockResolvedValue([{ officeId: "off-1" }])
-    mockDb.paymentRecord.findMany.mockResolvedValue([{ officeId: "off-1" }])
     mockDb.referralMonthlyEarning.upsert.mockResolvedValue({
       id: "earn-1",
       activeOfficeCount: 1,

@@ -31,8 +31,10 @@ export async function generateReferralCode(officeName: string): Promise<string> 
 /**
  * Returns officeIds of all offices that:
  * - Were referred by this code (have a Referral record)
- * - Have an active non-trial paid subscription (status IN [ACTIVE, GRACE], isTrial=false)
- * - Have at least one VERIFIED payment record
+ * - Have an active non-trial subscription (status IN [ACTIVE, GRACE], isTrial=false)
+ *
+ * Subscription flags are the authoritative source of truth.
+ * Offices activated by an admin (without a Zarinpal transaction) qualify equally.
  */
 export async function findActiveReferredOffices(referralCodeId: string): Promise<string[]> {
   const referrals = await db.referral.findMany({
@@ -42,7 +44,7 @@ export async function findActiveReferredOffices(referralCodeId: string): Promise
   const officeIds = referrals.map((r) => r.officeId)
   if (officeIds.length === 0) return []
 
-  // Filter to offices with a qualifying paid subscription
+  // Filter to offices with an active non-trial subscription
   const qualifyingSubs = await db.subscription.findMany({
     where: {
       officeId: { in: officeIds },
@@ -51,19 +53,7 @@ export async function findActiveReferredOffices(referralCodeId: string): Promise
     },
     select: { officeId: true },
   })
-  const paidOfficeIds = qualifyingSubs.map((s) => s.officeId)
-  if (paidOfficeIds.length === 0) return []
-
-  // Further filter to offices that have at least one VERIFIED payment
-  const verifiedPayments = await db.paymentRecord.findMany({
-    where: {
-      officeId: { in: paidOfficeIds },
-      status: "VERIFIED",
-    },
-    distinct: ["officeId"],
-    select: { officeId: true },
-  })
-  return verifiedPayments.map((p) => p.officeId)
+  return qualifyingSubs.map((s) => s.officeId)
 }
 
 /**
