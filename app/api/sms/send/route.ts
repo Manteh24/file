@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { sendSms } from "@/lib/sms"
 import { sendSmsSchema } from "@/lib/validations/sms"
 import { getEffectiveSubscription, PLAN_FEATURES } from "@/lib/subscription"
+import { isRateLimited } from "@/lib/rate-limit"
 
 // ─── POST /api/sms/send ───────────────────────────────────────────────────────
 // Sends an SMS via KaveNegar. Requires authentication.
@@ -24,6 +25,15 @@ export async function POST(request: Request) {
         { status: 403 }
       )
     }
+  }
+
+  // Rate limit SMS sends: 10 per minute per office (or per user for admins)
+  const rateLimitKey = `sms:${officeId ?? session.user.id}`
+  if (isRateLimited(rateLimitKey, 10, 60 * 1000)) {
+    return NextResponse.json(
+      { success: false, error: "تعداد درخواست‌ها بیش از حد مجاز است. لطفاً کمی صبر کنید." },
+      { status: 429 }
+    )
   }
 
   let body: unknown

@@ -591,3 +591,18 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 ### Reference Docs
 - **Test registry:** `docs/test-registry.md` — full list of test files and what they cover
 - **Roadmap:** `docs/roadmap.md` — future plans
+
+---
+
+## 23. Security
+
+Pre-deployment hardening pass completed (2026-03-10).
+
+| Control | Implementation |
+|---------|---------------|
+| **Security headers** | Configured in `next.config.ts`: CSP (enforced in prod, report-only in dev), X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy, HSTS (prod only). CSP allowlists: avalai.ir, kavenegar.com, zarinpal.com, *.neshan.org, IranServer storage origin. |
+| **HTTPS redirect** | `next.config.ts` redirects HTTP → HTTPS via `x-forwarded-proto` header check. Production only — no effect on `localhost`. |
+| **Session invalidation** | Middleware performs a DB `isActive` check on every authenticated request. Deactivated/force-logged-out users are rejected immediately without waiting for JWT expiry. API routes get 401 JSON; page routes get redirect to `/login`. |
+| **Rate limiting** | In-memory fixed-window limiter (`lib/rate-limit.ts`). Login: 10 attempts / 15 min / IP. SMS send: 10 / min / office. Skipped entirely in development. Single-VPS only — not suitable for multi-instance. |
+| **Cron protection** | `/api/cron/lock-expired-trials` rejects any request whose `x-forwarded-for` header is not empty or a loopback address. VPS cron must call `http://localhost:3000/...`, not the public domain. Secret header kept as defense-in-depth. |
+| **Password reset** | Stub — pending KaveNegar SMS activation. Not yet implemented. |

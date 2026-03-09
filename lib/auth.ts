@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 import { loginSchema } from "@/lib/validations/auth"
+import { isRateLimited } from "@/lib/rate-limit"
 import type { AdminTier, Role } from "@/types"
 
 // ─── Admin Login Logger ────────────────────────────────────────────────────────
@@ -35,13 +36,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
 
       async authorize(credentials, request) {
-        // 1. Validate input shape with Zod before touching the DB
+        // 1. Rate-limit login attempts: 10 per 15 minutes per IP
+        const req = request as Request | null
+        const ip =
+          req?.headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+          req?.headers?.get("x-real-ip") ??
+          "unknown"
+        if (isRateLimited(`login:${ip}`, 10, 15 * 60 * 1000)) {
+          // Return null — same response as wrong password to avoid leaking rate-limit info
+          return null
+        }
+
+        // 2. Validate input shape with Zod before touching the DB
         const parsed = loginSchema.safeParse(credentials)
         if (!parsed.success) return null
 
         const { identifier, password } = parsed.data
 
-        // 2. Find user by username OR email (both are valid login identifiers)
+        // 3. Find user by username OR email (both are valid login identifiers)
         const user = await db.user.findFirst({
           where: {
             OR: [{ username: identifier }, { email: identifier }],
@@ -50,28 +62,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user) return null
 
-        // 3. Block deactivated users from signing in
+        // 4. Block deactivated users from signing in
         if (!user.isActive) return null
 
-        // 4. Verify password — compare against bcrypt hash
+        // 5. Verify password — compare against bcrypt hash
         const passwordValid = await bcrypt.compare(password, user.passwordHash)
         if (!passwordValid) return null
 
-        // 5. Enforce 2-session limit and create the new session record
+        // 6. Enforce 2-session limit and create the new session record
         const sessionId = await enforceSessionLimit(user.id)
 
-        // 6. Record admin logins for audit purposes (fire-and-forget)
+        // 7. Record admin logins for audit purposes (fire-and-forget)
         if (user.role === "SUPER_ADMIN" || user.role === "MID_ADMIN") {
-          const req = request as Request | null
-          const ip =
-            req?.headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-            req?.headers?.get("x-real-ip") ??
-            null
           const ua = req?.headers?.get("user-agent") ?? null
-          recordAdminLogin(user.id, ip, ua)
+          recordAdminLogin(user.id, ip === "unknown" ? null : ip, ua)
         }
 
-        // 7. Return user object — this is passed to the jwt callback
+        // 8. Return user object — this is passed to the jwt callback
         return {
           id: user.id,
           officeId: user.officeId,

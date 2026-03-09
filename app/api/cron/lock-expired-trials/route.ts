@@ -5,10 +5,26 @@ import { db } from "@/lib/db"
 // Nightly cron: finds PRO/TEAM trial subscriptions whose trialEndsAt has passed
 // and deactivates users beyond the first 2 (manager + 1 agent).
 //
-// VPS cron entry:
-//   0 1 * * * curl -s -X POST -H "x-cron-secret: $CRON_SECRET" https://[domain]/api/cron/lock-expired-trials
+// VPS cron entry (must call via localhost — external calls are rejected):
+//   0 1 * * * curl -s -X POST -H "x-cron-secret: $CRON_SECRET" http://localhost:3000/api/cron/lock-expired-trials
 
 export async function POST(request: Request) {
+  // Only allow requests originating from the VPS itself.
+  // x-forwarded-for is absent when curl calls localhost directly (no nginx proxying).
+  // An external caller routed through nginx would always have a non-loopback x-forwarded-for.
+  const forwardedFor = request.headers.get("x-forwarded-for") ?? ""
+  const remoteIp = forwardedFor.split(",")[0].trim()
+  const isLocalhost =
+    remoteIp === "" ||
+    remoteIp === "127.0.0.1" ||
+    remoteIp === "::1" ||
+    remoteIp === "::ffff:127.0.0.1"
+
+  if (!isLocalhost) {
+    return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+  }
+
+  // Secondary check: verify the cron secret as defense-in-depth
   const secret = request.headers.get("x-cron-secret")
   if (!secret || secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })

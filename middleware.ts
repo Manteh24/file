@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
 import { isMaintenanceModeEnabled } from "@/lib/platform-settings"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
@@ -24,7 +25,9 @@ const AUTH_ONLY_ROUTES = ["/login", "/register", "/forgot-password"]
 export default auth(async (req: NextRequest & { auth: { user?: unknown } | null }) => {
   const { pathname } = req.nextUrl
   const isAuthenticated = !!req.auth?.user
-  const user = req.auth?.user as { officeId?: string | null; role?: string } | undefined
+  const user = req.auth?.user as
+    | { id?: string; officeId?: string | null; role?: string }
+    | undefined
 
   // Maintenance mode: redirect non-admin, non-API routes to /maintenance
   // Admin routes (/admin/*) and API routes stay accessible so admins can turn it off
@@ -42,12 +45,31 @@ export default auth(async (req: NextRequest & { auth: { user?: unknown } | null 
     }
   }
 
-  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-    pathname.startsWith(prefix)
-  )
-  const isAuthRoute = AUTH_ONLY_ROUTES.some((route) =>
-    pathname.startsWith(route)
-  )
+  // ─── Session isActive guard ────────────────────────────────────────────────
+  // For every authenticated request, verify the user is still active in the DB.
+  // This enforces force-logout and deactivation without waiting for JWT expiry (30 days).
+  // Skips NextAuth's own /api/auth/* routes so sign-out still works when deactivated.
+  if (isAuthenticated && user?.id && !pathname.startsWith("/api/auth/")) {
+    const dbUser = await db.user.findUnique({
+      where: { id: user.id },
+      select: { isActive: true },
+    })
+
+    if (!dbUser?.isActive) {
+      // API routes: return 401 JSON so clients handle it gracefully
+      if (pathname.startsWith("/api/")) {
+        return new NextResponse(
+          JSON.stringify({ success: false, error: "احراز هویت الزامی است" }),
+          { status: 401, headers: { "content-type": "application/json" } }
+        )
+      }
+      // Page routes: redirect to login
+      return NextResponse.redirect(new URL("/login", req.url))
+    }
+  }
+
+  const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  const isAuthRoute = AUTH_ONLY_ROUTES.some((route) => pathname.startsWith(route))
 
   // Redirect unauthenticated users away from protected routes
   if (isProtected && !isAuthenticated) {
