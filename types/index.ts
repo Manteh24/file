@@ -25,34 +25,6 @@ export type PropertyType =
 export type FileStatus = "ACTIVE" | "ARCHIVED" | "SOLD" | "RENTED" | "EXPIRED"
 export type ContactType = "OWNER" | "TENANT" | "LANDLORD" | "BUYER"
 
-// ─── Divar Import Types ────────────────────────────────────────────────────────
-
-export interface DivarImportResult {
-  fields: {
-    transactionType?: "SALE" | "LONG_TERM_RENT" | "SHORT_TERM_RENT"
-    propertyType?: "APARTMENT" | "HOUSE" | "VILLA" | "LAND" | "COMMERCIAL" | "OFFICE"
-    area?: number
-    floorNumber?: number
-    totalFloors?: number
-    buildingAge?: number
-    salePrice?: number
-    depositAmount?: number
-    rentAmount?: number
-    address?: string
-    neighborhood?: string
-    description?: string
-    notes?: string
-    hasParking?: boolean
-    hasElevator?: boolean
-    hasStorage?: boolean
-    hasBalcony?: boolean
-    hasSecurity?: boolean
-  }
-  photoUrls: string[]
-  filledCount: number
-  missingRequired: string[]
-}
-
 // ─── File Domain Types ─────────────────────────────────────────────────────────
 
 export interface FileContact {
