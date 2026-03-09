@@ -10,9 +10,10 @@ interface AdminSettingsFormProps {
   freeMaxUsers: string
   freeMaxFiles: string
   freeMaxAiMonth: string
+  defaultReferralCommission: string
 }
 
-type SectionKey = "system" | "payment" | "ai" | "freeLimits" | "trial"
+type SectionKey = "system" | "payment" | "ai" | "freeLimits" | "trial" | "referral"
 
 export function AdminSettingsForm(props: AdminSettingsFormProps) {
   const [maintenanceMode, setMaintenanceMode] = useState(props.maintenanceMode === "true")
@@ -24,6 +25,9 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
   const [freeMaxFiles, setFreeMaxFiles] = useState(props.freeMaxFiles)
   const [freeMaxAiMonth, setFreeMaxAiMonth] = useState(props.freeMaxAiMonth)
   const [days, setDays] = useState(props.trialLengthDays)
+  const [defaultReferralCommission, setDefaultReferralCommission] = useState(
+    props.defaultReferralCommission
+  )
 
   const [loadingSection, setLoadingSection] = useState<SectionKey | null>(null)
   const [savedSection, setSavedSection] = useState<SectionKey | null>(null)
@@ -248,11 +252,6 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           </div>
         </div>
 
-        <div className="rounded-md bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <strong>نرخ‌های کمیسیون:</strong> برای هر کد ارجاع به صورت جداگانه از صفحه{" "}
-          <a href="/admin/referrals" className="text-primary hover:underline">مدیریت ارجاع‌ها</a> تنظیم می‌شود.
-        </div>
-
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -269,6 +268,48 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             {loadingSection === "trial" ? "در حال ذخیره..." : "ذخیره"}
           </button>
           {savedSection === "trial" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+        </div>
+      </section>
+
+      {/* Section 6 — Default Referral Commission */}
+      <section className="rounded-lg border border-border p-5 space-y-4">
+        <h2 className="text-sm font-semibold">کمیسیون پیش‌فرض معرفی</h2>
+        <div className="space-y-2">
+          <label className="text-sm font-medium">مبلغ کمیسیون (تومان / دفتر فعال / ماه)</label>
+          <p className="text-xs text-muted-foreground">
+            مقدار پیش‌فرضی که هنگام ثبت‌نام دفاتر جدید به کد معرفی آن‌ها اختصاص می‌یابد.
+            تغییر این مقدار بلافاصله روی <strong>تمام کدهای معرفی خودکار دفاتر</strong> اعمال می‌شود.
+            کدهای شریک که دستی توسط ادمین ساخته شده‌اند تغییر نمی‌کنند.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              value={defaultReferralCommission}
+              onChange={(e) => { setDefaultReferralCommission(e.target.value); setSavedSection(null) }}
+              min="0"
+              step="1000"
+              className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <span className="text-sm text-muted-foreground">تومان</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const n = parseInt(defaultReferralCommission, 10)
+              if (isNaN(n) || n < 0) {
+                setError("مبلغ کمیسیون باید ۰ یا بیشتر باشد")
+                return
+              }
+              saveSection("referral", { DEFAULT_REFERRAL_COMMISSION: String(n) })
+            }}
+            disabled={loadingSection === "referral"}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {loadingSection === "referral" ? "در حال ذخیره..." : "ذخیره"}
+          </button>
+          {savedSection === "referral" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
         </div>
       </section>
     </div>

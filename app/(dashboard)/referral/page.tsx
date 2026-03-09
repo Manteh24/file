@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { findActiveReferredOffices } from "@/lib/referral"
 import { bigIntToNumber } from "@/lib/utils"
+import { getDefaultReferralCommission } from "@/lib/platform-settings"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { ReferralDashboard } from "@/components/referral/ReferralDashboard"
 
@@ -14,7 +15,7 @@ export default async function ReferralPage() {
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 
-  const [referralCode, office] = await Promise.all([
+  const [referralCode, office, defaultCommission] = await Promise.all([
     db.referralCode.findUnique({
       where: { officeId },
       include: {
@@ -28,6 +29,7 @@ export default async function ReferralPage() {
       where: { id: officeId },
       select: { cardNumber: true, shebaNumber: true, cardHolderName: true },
     }),
+    getDefaultReferralCommission(),
   ])
 
   const activeOfficeCount = referralCode
@@ -70,7 +72,7 @@ export default async function ReferralPage() {
         title="کد معرفی"
         description="درآمد از معرفی دفاتر جدید به سامانه"
       />
-      <ReferralDashboard initialData={initialData} />
+      <ReferralDashboard initialData={initialData} defaultCommission={defaultCommission} />
     </div>
   )
 }

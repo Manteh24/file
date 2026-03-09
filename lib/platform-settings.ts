@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   FREE_MAX_USERS: "1",
   FREE_MAX_FILES: "10",
   FREE_MAX_AI_MONTH: "10",
+  DEFAULT_REFERRAL_COMMISSION: "50000",
 }
 
 // ─── 30-Second In-Process Cache ───────────────────────────────────────────────
@@ -103,6 +104,16 @@ export async function getZarinpalMode(): Promise<"sandbox" | "production"> {
  */
 export async function getAvalAiModel(): Promise<string> {
   return getSetting("AVALAI_MODEL", "gpt-4o-mini")
+}
+
+/**
+ * Returns the default referral commission per office per month in Toman (default 50,000).
+ * Applied to all auto-generated office codes. Admin-created partner codes are unaffected.
+ */
+export async function getDefaultReferralCommission(): Promise<number> {
+  const raw = await getSetting("DEFAULT_REFERRAL_COMMISSION", "50000")
+  const parsed = parseInt(raw, 10)
+  return isNaN(parsed) || parsed < 0 ? 50000 : parsed
 }
 
 /**

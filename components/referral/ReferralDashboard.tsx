@@ -33,9 +33,10 @@ interface ReferralData {
 
 interface ReferralDashboardProps {
   initialData: ReferralData
+  defaultCommission: number
 }
 
-export function ReferralDashboard({ initialData }: ReferralDashboardProps) {
+export function ReferralDashboard({ initialData, defaultCommission }: ReferralDashboardProps) {
   const [data] = useState(initialData)
   const [copied, setCopied] = useState(false)
   const [cardNumber, setCardNumber] = useState(initialData.bankDetails.cardNumber ?? "")
@@ -72,7 +73,7 @@ export function ReferralDashboard({ initialData }: ReferralDashboardProps) {
   }
 
   const commissionRate =
-    data.referralCode?.commissionPerOfficePerMonth ?? 50000
+    data.referralCode?.commissionPerOfficePerMonth ?? defaultCommission
 
   return (
     <div className="space-y-10">
