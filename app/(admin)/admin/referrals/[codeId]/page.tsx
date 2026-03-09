@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { format } from "date-fns-jalali"
@@ -306,9 +306,8 @@ export default function ReferralCodeDetailPage() {
                   const isExpanded = expandedEarning === e.id
                   const hasOffices = e.activeOffices.length > 0
                   return (
-                    <>
+                    <React.Fragment key={e.id}>
                       <tr
-                        key={e.id}
                         className={`cursor-pointer hover:bg-muted/30 ${isExpanded ? "bg-muted/20" : ""}`}
                         onClick={() => setExpandedEarning(isExpanded ? null : e.id)}
                       >
@@ -353,7 +352,7 @@ export default function ReferralCodeDetailPage() {
                         </td>
                       </tr>
                       {isExpanded && (
-                        <tr key={`${e.id}-detail`}>
+                        <tr>
                           <td colSpan={5} className="bg-muted/10 px-6 py-3">
                             {!hasOffices ? (
                               <p className="text-xs text-muted-foreground">
@@ -381,7 +380,7 @@ export default function ReferralCodeDetailPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   )
                 })}
               </tbody>
