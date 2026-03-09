@@ -1,10 +1,37 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import Link from "next/link"
-import { format } from "date-fns-jalali"
+import { format, parse } from "date-fns-jalali"
 import { formatToman } from "@/lib/utils"
 import type { AdminPaymentSummary, Plan, BillingCycle } from "@/types"
+
+/** Converts a Gregorian "YYYY-MM-DD" string → Jalali "yyyy/MM/dd" display string. */
+function toJalali(gregorianStr: string): string {
+  if (!gregorianStr) return ""
+  try {
+    return format(new Date(gregorianStr), "yyyy/MM/dd")
+  } catch {
+    return ""
+  }
+}
+
+/** Converts a Jalali "yyyy/MM/dd" string → Gregorian "YYYY-MM-DD" for URL params. */
+function toGregorian(jalaliStr: string): string {
+  const trimmed = jalaliStr.trim()
+  if (!trimmed) return ""
+  try {
+    const date = parse(trimmed, "yyyy/MM/dd", new Date())
+    if (isNaN(date.getTime())) return ""
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, "0")
+    const d = String(date.getDate()).padStart(2, "0")
+    return `${y}-${m}-${d}`
+  } catch {
+    return ""
+  }
+}
 
 const PLAN_LABELS: Record<Plan, string> = { FREE: "رایگان", PRO: "حرفه‌ای", TEAM: "تیم" }
 const CYCLE_LABELS: Record<BillingCycle, string> = { MONTHLY: "ماهانه", ANNUAL: "سالانه" }
@@ -48,6 +75,18 @@ export function PaymentsTable({ payments, total, page, limit, summary }: Payment
   const currentDateTo = searchParams.get("dateTo") ?? ""
   const totalPages = Math.ceil(total / limit)
 
+  // Local state holds the Jalali text the user is typing; syncs from URL params.
+  const [jalaliFrom, setJalaliFrom] = useState(() => toJalali(currentDateFrom))
+  const [jalaliTo, setJalaliTo] = useState(() => toJalali(currentDateTo))
+
+  useEffect(() => { setJalaliFrom(toJalali(currentDateFrom)) }, [currentDateFrom])
+  useEffect(() => { setJalaliTo(toJalali(currentDateTo)) }, [currentDateTo])
+
+  function applyDate(jalaliStr: string, paramName: string) {
+    const gregorian = toGregorian(jalaliStr)
+    updateParam(paramName, gregorian || null)
+  }
+
   function buildExportUrl() {
     const params = new URLSearchParams(searchParams.toString())
     params.delete("page")
@@ -87,21 +126,29 @@ export function PaymentsTable({ payments, total, page, limit, summary }: Payment
           <option value="FAILED">ناموفق</option>
         </select>
 
-        {/* Date range */}
+        {/* Date range — Jalali text inputs (e.g. 1404/01/15); applied on blur or Enter */}
         <div className="flex items-center gap-2 text-sm">
           <label className="text-muted-foreground text-xs">از:</label>
           <input
-            type="date"
-            value={currentDateFrom}
-            onChange={(e) => updateParam("dateFrom", e.target.value || null)}
-            className="rounded-lg border border-input bg-background px-3 py-1 text-sm focus:outline-none"
+            type="text"
+            dir="ltr"
+            placeholder="۱۴۰۴/۰۱/۰۱"
+            value={jalaliFrom}
+            onChange={(e) => setJalaliFrom(e.target.value)}
+            onBlur={() => applyDate(jalaliFrom, "dateFrom")}
+            onKeyDown={(e) => { if (e.key === "Enter") applyDate(jalaliFrom, "dateFrom") }}
+            className="w-28 rounded-lg border border-input bg-background px-3 py-1 text-sm focus:outline-none"
           />
           <label className="text-muted-foreground text-xs">تا:</label>
           <input
-            type="date"
-            value={currentDateTo}
-            onChange={(e) => updateParam("dateTo", e.target.value || null)}
-            className="rounded-lg border border-input bg-background px-3 py-1 text-sm focus:outline-none"
+            type="text"
+            dir="ltr"
+            placeholder="۱۴۰۴/۱۲/۲۹"
+            value={jalaliTo}
+            onChange={(e) => setJalaliTo(e.target.value)}
+            onBlur={() => applyDate(jalaliTo, "dateTo")}
+            onKeyDown={(e) => { if (e.key === "Enter") applyDate(jalaliTo, "dateTo") }}
+            className="w-28 rounded-lg border border-input bg-background px-3 py-1 text-sm focus:outline-none"
           />
         </div>
 
