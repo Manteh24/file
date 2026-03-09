@@ -69,9 +69,14 @@ export async function registerAction(
 
   const trimmedReferralCode = referralCode?.trim() || null
 
-  let newOfficeId: string | null = null
-
   try {
+    // Generate referral code before opening the transaction (uses global db for uniqueness checks).
+    // Resolved values are captured in the closure and passed into the transaction.
+    const [autoCode, commission] = await Promise.all([
+      generateReferralCode(officeName),
+      getDefaultReferralCommission(),
+    ])
+
     await db.$transaction(async (tx) => {
       const office = await tx.office.create({
         data: {
@@ -80,7 +85,6 @@ export async function registerAction(
           city: city?.trim() || null,
         },
       })
-      newOfficeId = office.id
 
       await tx.user.create({
         data: {
@@ -115,22 +119,15 @@ export async function registerAction(
           })
         }
       }
+
+      // Auto-generate a referral code for this office — inside the transaction so it's atomic
+      await tx.referralCode.create({
+        data: { code: autoCode, officeId: office.id, commissionPerOfficePerMonth: commission },
+      })
     })
   } catch {
     // Do not expose internal DB errors to the client
     return { success: false, error: "خطا در ثبت‌نام. لطفاً دوباره تلاش کنید." }
-  }
-
-  // Auto-generate a referral code for the new office (fire-and-forget)
-  if (newOfficeId) {
-    const officeIdForCode = newOfficeId
-    Promise.all([generateReferralCode(officeName), getDefaultReferralCommission()])
-      .then(([code, commission]) =>
-        db.referralCode.create({
-          data: { code, officeId: officeIdForCode, commissionPerOfficePerMonth: commission },
-        })
-      )
-      .catch((err) => console.error("[register] auto-code generation failed:", err))
   }
 
   // 6. Redirect to login — redirect() throws internally (NEXT_REDIRECT error)
