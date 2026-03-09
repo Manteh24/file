@@ -576,9 +576,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Admin Panel Phase 2 (referrals, users enhanced, AI usage, broadcast, settings) | ✅ | ✅ |
 | — | Mid-Admin Permission Tiers (SUPPORT / FINANCE / FULL_ACCESS / read-only) | ✅ | ✅ |
 | — | Admin Panel Phase 3 (office soft delete, settings editor, login history) | ✅ | ✅ |
+| — | Support Ticketing (thread-based tickets, admin reply, notifications, attachments) | ✅ | ✅ |
 
 ### Current Status
-- **Last completed:** Admin Panel Phase 3 + PWA manifest created (`public/manifest.json`)
+- **Last completed:** Support Ticketing System
 - **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS, create PWA icons (`public/icons/icon-192.png`, `icon-512.png`), configure `next-pwa` in `next.config.ts`
 - **Total tests:** 656 passing, 0 failing (46 test files)
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write
