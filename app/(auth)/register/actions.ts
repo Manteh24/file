@@ -126,7 +126,7 @@ export async function registerAction(
     generateReferralCode(officeName)
       .then((code) =>
         db.referralCode.create({
-          data: { code, officeId: officeIdForCode, commissionPerOfficePerMonth: 0 },
+          data: { code, officeId: officeIdForCode, commissionPerOfficePerMonth: 50000 },
         })
       )
       .catch((err) => console.error("[register] auto-code generation failed:", err))

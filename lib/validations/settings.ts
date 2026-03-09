@@ -32,6 +32,31 @@ export const updateOfficeProfileSchema = z.object({
 
 export type UpdateOfficeProfileInput = z.infer<typeof updateOfficeProfileSchema>
 
+// Iranian bank card: 16 digits
+const cardNumberRegex = /^\d{16}$/
+// IBAN: IR followed by 24 digits
+const shebaRegex = /^IR\d{24}$/
+
+export const updateBankDetailsSchema = z.object({
+  cardNumber: z
+    .string()
+    .regex(cardNumberRegex, "شماره کارت باید ۱۶ رقم عددی باشد")
+    .optional()
+    .or(z.literal("")),
+  shebaNumber: z
+    .string()
+    .regex(shebaRegex, "شماره شبا باید با IR شروع شده و ۲۶ کاراکتر باشد (مثال: IR123456789012345678901234)")
+    .optional()
+    .or(z.literal("")),
+  cardHolderName: z
+    .string()
+    .max(100, "نام نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد")
+    .optional()
+    .or(z.literal("")),
+})
+
+export type UpdateBankDetailsInput = z.infer<typeof updateBankDetailsSchema>
+
 // Only PRO and TEAM are purchasable — FREE is always free, trial is granted at registration
 export const requestPaymentSchema = z.object({
   plan: z.enum(["PRO", "TEAM"], {

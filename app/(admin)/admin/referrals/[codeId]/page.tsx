@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { format } from "date-fns-jalali"
-import { ArrowRight, Check } from "lucide-react"
+import { ArrowRight, Check, CreditCard, Building2 } from "lucide-react"
 import { formatToman } from "@/lib/utils"
 
 interface ReferredOffice {
@@ -28,7 +28,13 @@ interface CodeDetail {
   id: string
   code: string
   label: string | null
-  office: { id: string; name: string } | null
+  office: {
+    id: string
+    name: string
+    cardNumber: string | null
+    shebaNumber: string | null
+    cardHolderName: string | null
+  } | null
   commissionPerOfficePerMonth: number
   isActive: boolean
   activeOfficeCount: number
@@ -175,6 +181,42 @@ export default function ReferralCodeDetailPage() {
         <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-900/20">
           {msg}
         </p>
+      )}
+
+      {/* Bank details (only shown when code belongs to an office) */}
+      {data.office && (
+        <section className="space-y-3">
+          <h2 className="font-semibold">اطلاعات بانکی دفتر</h2>
+          <div className="rounded-lg border border-border p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm">
+              <CreditCard className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-muted-foreground">شماره کارت:</span>
+              {data.office.cardNumber ? (
+                <span className="font-mono tracking-widest">{data.office.cardNumber}</span>
+              ) : (
+                <span className="text-muted-foreground/60 italic">ثبت نشده</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-muted-foreground">شماره شبا:</span>
+              {data.office.shebaNumber ? (
+                <span className="font-mono tracking-wider">{data.office.shebaNumber}</span>
+              ) : (
+                <span className="text-muted-foreground/60 italic">ثبت نشده</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="h-4 w-4 shrink-0" />
+              <span className="text-muted-foreground">نام صاحب حساب:</span>
+              {data.office.cardHolderName ? (
+                <span className="font-medium">{data.office.cardHolderName}</span>
+              ) : (
+                <span className="text-muted-foreground/60 italic">ثبت نشده</span>
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Referred Offices */}

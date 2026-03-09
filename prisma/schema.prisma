@@ -105,6 +105,10 @@ model Office {
   email        String?
   address      String?
   city         String?
+  // Bank details for referral commission payouts — filled in by the office manager
+  cardNumber     String?
+  shebaNumber    String?
+  cardHolderName String?
   // Referral code entered at registration — identifies the referrer, not this office.
   referralCode String?
   // Soft delete — null means active, set means archived. Data is never hard-deleted.

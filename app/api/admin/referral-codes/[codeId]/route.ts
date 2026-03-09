@@ -42,7 +42,15 @@ export async function GET(
   const code = await db.referralCode.findUnique({
     where: { id: codeId },
     include: {
-      office: { select: { id: true, name: true } },
+      office: {
+        select: {
+          id: true,
+          name: true,
+          cardNumber: true,
+          shebaNumber: true,
+          cardHolderName: true,
+        },
+      },
       referrals: {
         include: {
           office: {

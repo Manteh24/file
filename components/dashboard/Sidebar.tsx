@@ -11,6 +11,7 @@ import {
   BarChart3,
   Settings,
   LifeBuoy,
+  Gift,
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
   { href: "/reports", label: "گزارش‌ها", icon: BarChart3 },
   { href: "/support", label: "پشتیبانی", icon: LifeBuoy },
+  { href: "/referral", label: "کد معرفی", icon: Gift, managerOnly: true },
   { href: "/settings", label: "تنظیمات", icon: Settings },
 ]
 
