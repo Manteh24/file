@@ -61,3 +61,12 @@ export function generatePhotoKey(officeId: string, fileId: string): string {
   const random = Math.random().toString(36).slice(2, 10)
   return `photos/${officeId}/${fileId}/${Date.now()}-${random}.jpg`
 }
+
+/**
+ * Generates a unique storage key for a ticket attachment.
+ * Format: `ticket-attachments/{officeId}/{ticketId}/{timestamp}-{random}.jpg`
+ */
+export function generateTicketAttachmentKey(officeId: string, ticketId: string): string {
+  const random = Math.random().toString(36).slice(2, 10)
+  return `ticket-attachments/${officeId}/${ticketId}/${Date.now()}-${random}.jpg`
+}

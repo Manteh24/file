@@ -26,6 +26,12 @@ export const updateMidAdminTierSchema = z.object({
   tier: z.enum(ADMIN_TIERS).nullable(),
 })
 
+export const updateMidAdminProfileSchema = z.object({
+  displayName: z.string().min(2, "نام نمایشی الزامی است").max(64),
+  email: z.string().email("ایمیل نامعتبر").optional().or(z.literal("")),
+  newPassword: z.string().min(8, "رمز عبور حداقل ۸ کاراکتر").optional().or(z.literal("")),
+})
+
 export const setAssignmentsSchema = z.object({
   officeIds: z.array(z.string().cuid()).max(100),
 })

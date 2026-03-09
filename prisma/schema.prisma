@@ -40,6 +40,22 @@ enum AdminTier {
   FULL_ACCESS
 }
 
+enum TicketCategory {
+  BILLING
+  TECHNICAL
+  ACCOUNT
+  FEATURE_REQUEST
+  BUG_REPORT
+  OTHER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
 enum TransactionType {
   SALE
   LONG_TERM_RENT
@@ -110,6 +126,7 @@ model Office {
   referral         Referral?
   // The referral code this office owns and shares with others to earn commissions
   ownReferralCode  ReferralCode?
+  supportTickets   SupportTicket[]
 
   @@map("offices")
 }
@@ -156,6 +173,8 @@ model User {
   adminPaidEarnings   ReferralMonthlyEarning[] @relation("AdminPaidEarnings")
   sentBroadcasts      AdminBroadcast[]
   adminLoginLogs      AdminLoginLog[]  @relation("AdminLoginLogs")
+  createdTickets      SupportTicket[]  @relation("TicketCreator")
+  ticketMessages      TicketMessage[]
 
   @@map("users")
 }
@@ -647,4 +666,42 @@ model PlatformSetting {
   updatedByAdminId String?
 
   @@map("platform_settings")
+}
+
+// A support ticket submitted by a manager or agent.
+model SupportTicket {
+  id         String         @id @default(cuid())
+  officeId   String
+  createdBy  String
+  subject    String
+  category   TicketCategory
+  status     TicketStatus   @default(OPEN)
+  closedAt   DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  office     Office         @relation(fields: [officeId], references: [id])
+  creator    User           @relation("TicketCreator", fields: [createdBy], references: [id])
+  messages   TicketMessage[]
+
+  @@index([officeId])
+  @@index([officeId, status])
+  @@map("support_tickets")
+}
+
+// A message in a support ticket thread (user reply or admin reply).
+model TicketMessage {
+  id            String        @id @default(cuid())
+  ticketId      String
+  authorId      String
+  isAdminReply  Boolean       @default(false)
+  body          String
+  attachmentUrl String?
+  createdAt     DateTime      @default(now())
+
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author        User          @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_messages")
 }

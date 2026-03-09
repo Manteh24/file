@@ -233,6 +233,95 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
   )
 }
 
+// ─── Edit profile for an existing MID_ADMIN ──────────────────────────────────
+
+interface EditProfileFormProps {
+  adminId: string
+  currentDisplayName: string
+  currentEmail: string | null
+}
+
+export function EditProfileForm({ adminId, currentDisplayName, currentEmail }: EditProfileFormProps) {
+  const router = useRouter()
+  const [displayName, setDisplayName] = useState(currentDisplayName)
+  const [email, setEmail] = useState(currentEmail ?? "")
+  const [newPassword, setNewPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setSaved(false)
+    setError("")
+    try {
+      const res = await fetch(`/api/admin/mid-admins/${adminId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName, email, newPassword }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error ?? "خطا در ذخیره")
+        return
+      }
+      setSaved(true)
+      setNewPassword("")
+      router.refresh()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSave} className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">نام نمایشی</label>
+          <input
+            required
+            value={displayName}
+            onChange={(e) => { setDisplayName(e.target.value); setSaved(false) }}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">ایمیل (اختیاری)</label>
+          <input
+            type="email"
+            dir="ltr"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setSaved(false) }}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-xs text-muted-foreground mb-1">
+            رمز عبور جدید <span className="text-muted-foreground/60">(خالی = بدون تغییر)</span>
+          </label>
+          <input
+            type="password"
+            dir="ltr"
+            value={newPassword}
+            onChange={(e) => { setNewPassword(e.target.value); setSaved(false) }}
+            placeholder="حداقل ۸ کاراکتر"
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Button type="submit" disabled={loading} size="sm">
+          {loading ? "در حال ذخیره..." : "ذخیره اطلاعات"}
+        </Button>
+        {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
+        {error && <span className="text-xs text-red-600">{error}</span>}
+      </div>
+    </form>
+  )
+}
+
 // ─── Edit tier for an existing MID_ADMIN ─────────────────────────────────────
 
 interface EditTierFormProps {

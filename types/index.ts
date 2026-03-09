@@ -10,6 +10,8 @@ export type CustomerType = "BUYER" | "RENTER" | "SELLER" | "LANDLORD"
 export type Plan = "FREE" | "PRO" | "TEAM"
 export type BillingCycle = "MONTHLY" | "ANNUAL"
 export type SubStatus = "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED"
+export type TicketCategory = "BILLING" | "TECHNICAL" | "ACCOUNT" | "FEATURE_REQUEST" | "BUG_REPORT" | "OTHER"
+export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED"
 
 export type TransactionType = "SALE" | "LONG_TERM_RENT" | "SHORT_TERM_RENT" | "PRE_SALE"
 export type PropertyType =
@@ -469,6 +471,46 @@ export interface AdminLoginLogItem {
   ipAddress: string | null
   userAgent: string | null
   loginAt: Date
+}
+
+// ─── Support Ticket Types ─────────────────────────────────────────────────────
+
+export interface TicketSummary {
+  id: string
+  subject: string
+  category: TicketCategory
+  status: TicketStatus
+  createdAt: Date
+  updatedAt: Date
+  _count: { messages: number }
+}
+
+export interface AdminTicketSummary extends TicketSummary {
+  office: { id: string; name: string }
+  creator: { displayName: string }
+}
+
+export interface TicketMessageItem {
+  id: string
+  ticketId: string
+  authorId: string
+  isAdminReply: boolean
+  body: string
+  attachmentUrl: string | null
+  createdAt: Date
+  author: { displayName: string; role: Role }
+}
+
+export interface TicketDetail {
+  id: string
+  subject: string
+  category: TicketCategory
+  status: TicketStatus
+  closedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
+  creator: { displayName: string; role: Role }
+  messages: TicketMessageItem[]
 }
 
 // KPI data structure for the dedicated /admin/kpi page

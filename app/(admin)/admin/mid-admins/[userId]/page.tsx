@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import { format } from "date-fns-jalali"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { EditAssignmentsForm, EditTierForm } from "@/components/admin/MidAdminForm"
+import { EditAssignmentsForm, EditTierForm, EditProfileForm } from "@/components/admin/MidAdminForm"
 
 export default async function MidAdminAssignmentsPage({
   params,
@@ -62,6 +62,15 @@ export default async function MidAdminAssignmentsPage({
           نام کاربری: {midAdmin.username}
           {midAdmin.email && <> · {midAdmin.email}</>}
         </p>
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h2 className="text-sm font-semibold mb-4">اطلاعات حساب</h2>
+        <EditProfileForm
+          adminId={midAdmin.id}
+          currentDisplayName={midAdmin.displayName}
+          currentEmail={midAdmin.email ?? null}
+        />
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5">

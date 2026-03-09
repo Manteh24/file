@@ -312,6 +312,7 @@ describe("PATCH /api/admin/mid-admins/[id] — tier update", () => {
 
   it("invalid tier value → 400", async () => {
     mockAuth.mockResolvedValue({ user: { id: "super1", role: "SUPER_ADMIN", adminTier: null } })
+    mockDb.user.findFirst.mockResolvedValue({ id: "midadmin-001", adminTier: null, email: null })
 
     const res = await patchTier(makeTierReq("INVALID_TIER"), { params: midAdminParams })
     expect(res.status).toBe(400)

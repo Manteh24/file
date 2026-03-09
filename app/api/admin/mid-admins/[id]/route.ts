@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { logAdminAction } from "@/lib/admin"
-import { updateMidAdminTierSchema } from "@/lib/validations/admin"
+import { updateMidAdminTierSchema, updateMidAdminProfileSchema } from "@/lib/validations/admin"
+import bcrypt from "bcryptjs"
 
 export async function PATCH(
   request: Request,
@@ -15,20 +16,59 @@ export async function PATCH(
   }
 
   const { id } = await params
+  const body = await request.json()
 
-  const parsed = updateMidAdminTierSchema.safeParse(await request.json())
+  const target = await db.user.findFirst({
+    where: { id, role: "MID_ADMIN" },
+    select: { id: true, adminTier: true, email: true },
+  })
+  if (!target) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 })
+
+  // Tier update
+  if ("tier" in body) {
+    const parsed = updateMidAdminTierSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ success: false, error: parsed.error.issues[0]?.message }, { status: 400 })
+    }
+
+    await db.user.update({ where: { id }, data: { adminTier: parsed.data.tier } })
+
+    await logAdminAction(session.user.id, "UPDATE_MID_ADMIN_TIER", "MID_ADMIN", id, {
+      previousTier: target.adminTier,
+      newTier: parsed.data.tier,
+    })
+
+    return NextResponse.json({ success: true })
+  }
+
+  // Profile update (displayName, email, newPassword)
+  const parsed = updateMidAdminProfileSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json({ success: false, error: parsed.error.issues[0]?.message }, { status: 400 })
   }
 
-  const target = await db.user.findFirst({ where: { id, role: "MID_ADMIN" }, select: { id: true, adminTier: true } })
-  if (!target) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 })
+  const { displayName, email, newPassword } = parsed.data
 
-  await db.user.update({ where: { id }, data: { adminTier: parsed.data.tier } })
+  // Check email uniqueness if changed
+  const normalizedEmail = email || null
+  if (normalizedEmail && normalizedEmail !== target.email) {
+    const conflict = await db.user.findFirst({ where: { email: normalizedEmail, NOT: { id } } })
+    if (conflict) {
+      return NextResponse.json({ success: false, error: "این ایمیل قبلاً استفاده شده" }, { status: 409 })
+    }
+  }
 
-  await logAdminAction(session.user.id, "UPDATE_MID_ADMIN_TIER", "MID_ADMIN", id, {
-    previousTier: target.adminTier,
-    newTier: parsed.data.tier,
+  const updateData: Record<string, unknown> = { displayName, email: normalizedEmail }
+  if (newPassword) {
+    updateData.passwordHash = await bcrypt.hash(newPassword, 12)
+  }
+
+  await db.user.update({ where: { id }, data: updateData })
+
+  await logAdminAction(session.user.id, "UPDATE_MID_ADMIN_PROFILE", "MID_ADMIN", id, {
+    displayName,
+    emailChanged: normalizedEmail !== target.email,
+    passwordChanged: !!newPassword,
   })
 
   return NextResponse.json({ success: true })

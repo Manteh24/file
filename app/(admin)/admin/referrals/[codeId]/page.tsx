@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import { format } from "date-fns-jalali"
 import { ArrowRight, Check } from "lucide-react"
@@ -36,14 +36,28 @@ interface CodeDetail {
   monthlyEarnings: MonthlyEarning[]
 }
 
+// Build last 6 months: Jalali label, Gregorian YYYY-MM value (API format)
+function buildMonthOptions(): { label: string; value: string }[] {
+  const now = new Date()
+  const options: { label: string; value: string }[] = []
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    options.push({
+      label: format(d, "MMMM yyyy"), // e.g. "اسفند ۱۴۰۴"
+      value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+    })
+  }
+  return options
+}
+
 export default function ReferralCodeDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const codeId = params.codeId as string
 
+  const monthOptions = buildMonthOptions()
   const [data, setData] = useState<CodeDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [snapshotMonth, setSnapshotMonth] = useState("")
+  const [snapshotMonth, setSnapshotMonth] = useState(monthOptions[0].value)
   const [snapshotLoading, setSnapshotLoading] = useState(false)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -108,9 +122,6 @@ export default function ReferralCodeDetailPage() {
 
   if (loading) return <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>
   if (!data) return <p className="text-sm text-red-600">یافت نشد</p>
-
-  // Default snapshot month to current Gregorian YYYY-MM
-  const currentYM = new Date().toISOString().slice(0, 7)
 
   return (
     <div className="space-y-8">
@@ -212,13 +223,16 @@ export default function ReferralCodeDetailPage() {
         {/* Generate snapshot */}
         <div className="flex items-end gap-3 rounded-lg border border-dashed border-border p-4">
           <div className="space-y-1">
-            <label className="text-xs font-medium">ماه (YYYY-MM)</label>
-            <input
-              type="month"
-              value={snapshotMonth || currentYM}
+            <label className="text-xs font-medium">ماه</label>
+            <select
+              value={snapshotMonth}
               onChange={(e) => setSnapshotMonth(e.target.value)}
               className="rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            >
+              {monthOptions.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
           </div>
           <button
             onClick={generateSnapshot}

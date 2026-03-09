@@ -10,6 +10,7 @@ import {
   FileText,
   BarChart3,
   Settings,
+  LifeBuoy,
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -30,6 +31,7 @@ const navItems: NavItem[] = [
   { href: "/agents", label: "مشاوران", icon: UserCog, managerOnly: true },
   { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
   { href: "/reports", label: "گزارش‌ها", icon: BarChart3 },
+  { href: "/support", label: "پشتیبانی", icon: LifeBuoy },
   { href: "/settings", label: "تنظیمات", icon: Settings },
 ]
 
