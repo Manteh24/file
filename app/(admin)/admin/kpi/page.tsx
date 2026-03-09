@@ -13,7 +13,7 @@ import {
 } from "@/lib/admin"
 import { formatToman } from "@/lib/utils"
 import { KpiGroup } from "@/components/admin/KpiGroup"
-import { KpiAiUsageChart, KpiReferralEarningsChart } from "@/components/admin/charts/KpiCharts"
+import { KpiAiUsageChart, KpiReferralEarningsChart, BillingCycleDonut } from "@/components/admin/charts/KpiCharts"
 
 export default async function AdminKpiPage() {
   const session = await auth()
@@ -248,6 +248,7 @@ export default async function AdminKpiPage() {
           { label: "LTV:CAC", value: "—", subLabel: "نیاز به تنظیم هزینه جذب" },
         ]}
       />
+      <BillingCycleDonut annual={annualCount} monthly={monthlyCount} />
 
       <KpiGroup
         title="گروه ۵ — استفاده از محصول"

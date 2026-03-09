@@ -11,6 +11,7 @@ import {
 } from "@/lib/admin"
 import { formatToman } from "@/lib/utils"
 import { StatsCard } from "@/components/admin/StatsCard"
+import { SparklineStatsCard } from "@/components/admin/SparklineStatsCard"
 import { DashboardCharts } from "@/components/admin/charts/DashboardCharts"
 
 export default async function AdminDashboardPage() {
@@ -25,6 +26,7 @@ export default async function AdminDashboardPage() {
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const shamsiMonth = parseInt(format(now, "yyyyMM"), 10)
   const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1)
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
 
   const [
     // Row 1
@@ -47,6 +49,8 @@ export default async function AdminDashboardPage() {
     recentOfficesList,
     freePlanCount,
     lockedSubCount,
+    mrrPaymentsTrend,
+    filesTrend6mo,
   ] = await Promise.all([
     // Active offices = ACTIVE or GRACE, any plan
     db.subscription.count({ where: { office: officeFilter, status: { in: ["ACTIVE", "GRACE"] } } }),
@@ -71,6 +75,14 @@ export default async function AdminDashboardPage() {
     }),
     db.subscription.count({ where: { office: officeFilter, plan: "FREE" } }),
     db.subscription.count({ where: { office: officeFilter, plan: { in: ["PRO", "TEAM"] }, status: "LOCKED" } }),
+    db.paymentRecord.findMany({
+      where: { office: officeFilter, status: "VERIFIED", createdAt: { gte: sixMonthsAgo } },
+      select: { amount: true, createdAt: true },
+    }),
+    db.propertyFile.findMany({
+      where: { office: officeFilter, createdAt: { gte: sixMonthsAgo } },
+      select: { createdAt: true },
+    }),
   ])
 
   const totalAiCallsCount = totalAiCalls._sum.count ?? 0
@@ -106,6 +118,23 @@ export default async function AdminDashboardPage() {
     { name: "قفل", value: lockedSubCount, color: "#f87171" },
   ].filter((d) => d.value > 0)
 
+  // Build 6-month sparkline arrays
+  const mrrSparkline = Array.from({ length: 6 }, (_, i) => {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() - (5 - i) + 1, 1)
+    return mrrPaymentsTrend
+      .filter((p) => p.createdAt >= monthStart && p.createdAt < monthEnd)
+      .reduce((sum, p) => sum + Math.round(p.amount / 10), 0)
+  })
+
+  const signupsSparkline = growthData.slice(6).map((d) => d.signups)
+
+  const filesSparkline = Array.from({ length: 6 }, (_, i) => {
+    const monthStart = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() - (5 - i) + 1, 1)
+    return filesTrend6mo.filter((f) => f.createdAt >= monthStart && f.createdAt < monthEnd).length
+  })
+
   // Parse churn for LTV
   const churnPctNum = parseFloat(
     churnRate.replace("٪", "").replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 1776))
@@ -131,11 +160,12 @@ export default async function AdminDashboardPage() {
             subLabel={`${proCount.toLocaleString("fa-IR")} حرفه‌ای · ${teamCount.toLocaleString("fa-IR")} تیم`}
             accent="green"
           />
-          <StatsCard
+          <SparklineStatsCard
             label="MRR"
             value={formatToman(mrr)}
             subLabel={`ARR: ${formatToman(arr)}`}
             accent="green"
+            sparkline={mrrSparkline}
           />
           <StatsCard
             label="نرخ ریزش"
@@ -158,11 +188,12 @@ export default async function AdminDashboardPage() {
           نبض رشد
         </h2>
         <div className="grid grid-cols-3 gap-4">
-          <StatsCard
+          <SparklineStatsCard
             label="ثبت‌نام‌های این ماه"
             value={newSignupsThisMonth.toLocaleString("fa-IR")}
             subLabel="دفاتر جدید"
             accent="green"
+            sparkline={signupsSparkline}
           />
           <StatsCard
             label="هزینه هوش مصنوعی این ماه"
@@ -195,10 +226,11 @@ export default async function AdminDashboardPage() {
             value={ltvEstimate}
             subLabel="ARPU / نرخ ریزش"
           />
-          <StatsCard
+          <SparklineStatsCard
             label="فایل‌های جدید این ماه"
             value={filesCreatedThisMonth.toLocaleString("fa-IR")}
             accent="green"
+            sparkline={filesSparkline}
           />
           <StatsCard
             label="ARPU"
