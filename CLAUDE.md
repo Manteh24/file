@@ -503,7 +503,8 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `lib/subscription.ts` | `resolveSubscription`, `getEffectiveSubscription` (lazy status migration), `requireWriteAccess`, `SubscriptionLockedError`, `getEffectivePlanLimits(plan)` (reads PlatformSetting overrides), `PLAN_LIMITS`, `PLAN_FEATURES` |
 | `lib/admin.ts` | `getAccessibleOfficeIds`, `buildOfficeFilter`, `logAdminAction`, `calculateMrr`, `calculateChurnRate`, `calculateTrialConversionRate`, `calculateAiCostThisMonth`, `calculateReferralKpis`, `AI_UNIT_COST_TOMAN`, `TIER_CAPABILITIES`, `canAdminDo(user, capability)`, `TIER_LABELS` |
 | `lib/payment.ts` | `PLAN_PRICES_TOMAN`, `PLAN_PRICES_RIALS`, `PLAN_LABELS`, `requestPayment()`, `verifyPayment()`, `calculateNewPeriodEnd()` |
-| `lib/platform-settings.ts` | `getSetting(key)`, typed getters (`getMaintenanceMode`, `getZarinpalMode`, `getAvalaiModel`, `getFreePlanLimits`), `clearSettingsCache()` — 30s module-level cache |
+| `lib/cities.ts` | Static list of 62 major Iranian cities — imported by city `<select>` dropdowns in registration, office settings, and admin filters |
+| `lib/platform-settings.ts` | `getSetting(key)`, typed getters (`getMaintenanceMode`, `getZarinpalMode`, `getAvalaiModel`, `getFreePlanLimits`, `getDefaultReferralCommission`), `clearSettingsCache()` — 30s module-level cache |
 | `lib/referral.ts` | Referral tracking helpers, auto-code generation on register |
 | `lib/image.ts` | Sharp processing pipeline (compress, watermark, resize) |
 | `lib/storage.ts` | IranServer object storage upload/download/delete |
@@ -577,9 +578,12 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Mid-Admin Permission Tiers (SUPPORT / FINANCE / FULL_ACCESS / read-only) | ✅ | ✅ |
 | — | Admin Panel Phase 3 (office soft delete, settings editor, login history) | ✅ | ✅ |
 | — | Support Ticketing (thread-based tickets, admin reply, notifications, attachments) | ✅ | ✅ |
+| — | Configurable default referral commission (`DEFAULT_REFERRAL_COMMISSION` PlatformSetting, propagates to auto-generated office codes, live in manager referral panel) | ✅ | ✅ |
+| — | City selection (Iranian cities dropdown on registration + office profile; city filter on admin offices, users, broadcast, support pages) | ✅ | ✅ |
+| — | Jalali calendar for admin payments date range filter (replaces native Gregorian `<input type="date">`) | ✅ | ✅ |
 
 ### Current Status
-- **Last completed:** Support Ticketing System
+- **Last completed:** Jalali payments date filter + city selection + configurable referral commission
 - **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS, create PWA icons (`public/icons/icon-192.png`, `icon-512.png`), configure `next-pwa` in `next.config.ts`
 - **Total tests:** 656 passing, 0 failing (46 test files)
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write
