@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   let raw: unknown
   try {
-    raw = await fetchDivarListing(token)
+    raw = await fetchDivarListing(parsed.data.url)
   } catch (err) {
     // Surface a friendlier message for 404 (deleted listing)
     const message = err instanceof Error && err.message.includes("404")

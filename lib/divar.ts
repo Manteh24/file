@@ -45,24 +45,42 @@ export function extractDivarToken(url: string): string | null {
 // ─── Divar API call ────────────────────────────────────────────────────────────
 
 /**
- * Fetches a Divar listing by token from the public Divar v8 API.
- * Throws on non-2xx responses.
+ * Fetches a Divar listing by scraping the public listing page.
+ * Extracts the embedded __NEXT_DATA__ JSON — no API key required.
+ * Throws on non-2xx HTTP responses or if post data cannot be extracted.
  */
-export async function fetchDivarListing(token: string): Promise<unknown> {
-  const response = await fetch(`https://api.divar.ir/v8/posts/${token}`, {
+export async function fetchDivarListing(listingUrl: string): Promise<unknown> {
+  const response = await fetch(listingUrl, {
     headers: {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-      "Accept": "application/json",
-      "x-render-type": "CSR",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      "Accept-Language": "fa-IR,fa;q=0.9,en;q=0.8",
     },
     signal: AbortSignal.timeout(8000),
   })
 
   if (!response.ok) {
-    throw new Error(`Divar API returned ${response.status}`)
+    throw new Error(`Divar returned ${response.status}`)
   }
 
-  return response.json()
+  const html = await response.text()
+
+  // Divar is a Next.js app — post data is embedded in the __NEXT_DATA__ script tag
+  const match = html.match(/<script[^>]+id="__NEXT_DATA__"[^>]*>([^<]+)<\/script>/)
+  if (!match?.[1]) {
+    throw new Error("Could not extract listing data from page")
+  }
+
+  const nextData = JSON.parse(match[1]) as Record<string, unknown>
+  // Post data lives at props.pageProps — contains a `post` key with the listing
+  const props = nextData["props"]
+  if (props !== null && typeof props === "object" && !Array.isArray(props)) {
+    const pp = (props as Record<string, unknown>)["pageProps"]
+    if (pp !== null && typeof pp === "object" && !Array.isArray(pp)) {
+      return pp
+    }
+  }
+  return nextData
 }
 
 // ─── Persian numeral helper ────────────────────────────────────────────────────
@@ -165,10 +183,16 @@ export function mapDivarToFileData(raw: unknown): DivarImportResult {
     return { fields, photoUrls, filledCount: 0, missingRequired: ["contacts", "address"] }
   }
 
+  // Normalise roots:
+  //   post  — where category/title/city/images live (data["post"] or data itself)
+  //   nodes — where sections/widgets live; with HTML scraping this is inside post,
+  //           but some structures put sections at the top-level data root
+  const post = asObj(data["post"]) ?? data
+  const nodes = (asArray(post["sections"]) ? post : data) as Obj
+
   // ── Category → transactionType + propertyType ───────────────────────────────
   try {
-    const post = asObj(data["post"])
-    const category = asObj(post?.["category"])
+    const category = asObj(post["category"])
     const slug = asString(category?.["slug"])
     if (slug && DIVAR_CATEGORY_MAP[slug]) {
       const mapped = DIVAR_CATEGORY_MAP[slug]
@@ -179,15 +203,13 @@ export function mapDivarToFileData(raw: unknown): DivarImportResult {
 
   // ── Address / neighborhood ──────────────────────────────────────────────────
   try {
-    const post = asObj(data["post"])
-    const district = asString(asObj(post?.["districts"])?.[0] ?? asArray(post?.["districts"])?.[0])
-    const city = asString(asObj(post?.["city"])?.["name"])
-    const cityDistrict = asString(asObj(post?.["city_district"])?.["name"])
+    const district = asString(asObj(post["districts"])?.[0] ?? asArray(post["districts"])?.[0])
+    const city = asString(asObj(post["city"])?.["name"])
+    const cityDistrict = asString(asObj(post["city_district"])?.["name"])
 
     let addr: string | undefined
-    // Try location text from header or breadcrumb
-    const header = asObj(findWidget(data, "UNEXPANDABLE_ROW"))
-    const breadcrumb = asArray(data["breadcrumb"])
+    // Try breadcrumb (present on some Divar page structures)
+    const breadcrumb = asArray(data["breadcrumb"]) ?? asArray(post["breadcrumb"])
     if (breadcrumb && breadcrumb.length > 0) {
       const parts = breadcrumb
         .map((b) => asString(asObj(b)?.["title"]))
@@ -210,13 +232,13 @@ export function mapDivarToFileData(raw: unknown): DivarImportResult {
 
   // ── Description ─────────────────────────────────────────────────────────────
   try {
-    const descWidget = findWidget(data, "DESCRIPTION_ROW")
+    const descWidget = findWidget(nodes, "DESCRIPTION_ROW")
     const desc = asString(asObj(descWidget?.["data"])?.["text"])
     if (desc) { fields.description = desc; filledCount++ }
   } catch { /* ignore */ }
 
   // ── Info rows (متراژ، طبقه، کل طبقات، سن بنا، تعداد اتاق) ─────────────────
-  const infoItems = getInfoItems(data)
+  const infoItems = getInfoItems(nodes)
 
   try {
     const areaStr = findInfoValue(infoItems, /متراژ/)
@@ -253,8 +275,7 @@ export function mapDivarToFileData(raw: unknown): DivarImportResult {
   // ── Title → notes ────────────────────────────────────────────────────────────
   let titleNote: string | undefined
   try {
-    const post = asObj(data["post"])
-    const title = asString(post?.["title"])
+    const title = asString(post["title"])
     if (title) titleNote = `عنوان دیوار: ${title}`
   } catch { /* ignore */ }
 
@@ -263,7 +284,7 @@ export function mapDivarToFileData(raw: unknown): DivarImportResult {
 
   // ── Price fields ─────────────────────────────────────────────────────────────
   try {
-    const priceWidget = findWidget(data, "BARGAIN_ROW")
+    const priceWidget = findWidget(nodes, "BARGAIN_ROW")
     const priceData = asObj(priceWidget?.["data"])
 
     // Sale price
@@ -300,7 +321,7 @@ export function mapDivarToFileData(raw: unknown): DivarImportResult {
 
   // ── Amenities (boolean toggles) ──────────────────────────────────────────────
   try {
-    const amenityWidget = findWidget(data, "FEATURE_ROW")
+    const amenityWidget = findWidget(nodes, "FEATURE_ROW")
     const amenities = asArray(asObj(amenityWidget?.["data"])?.["items"]) ?? []
     for (const item of amenities) {
       const label = asString(asObj(item)?.["title"]) ?? ""
@@ -314,8 +335,7 @@ export function mapDivarToFileData(raw: unknown): DivarImportResult {
 
   // ── Photos ────────────────────────────────────────────────────────────────────
   try {
-    const post = asObj(data["post"])
-    const images = asArray(post?.["images"])
+    const images = asArray(post["images"])
     if (images) {
       for (const img of images) {
         const url = asString(asObj(img)?.["url"]) ?? asString(img)
