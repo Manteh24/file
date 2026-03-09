@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { updateOfficeProfileSchema, type UpdateOfficeProfileInput } from "@/lib/validations/settings"
+import { IRANIAN_CITIES } from "@/lib/cities"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -96,7 +97,15 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
               <FormItem>
                 <FormLabel>شهر</FormLabel>
                 <FormControl>
-                  <Input className="h-11" placeholder="تهران" {...field} />
+                  <select
+                    {...field}
+                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">انتخاب شهر...</option>
+                    {IRANIAN_CITIES.map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
                 </FormControl>
                 <FormMessage />
               </FormItem>

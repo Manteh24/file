@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { registerSchema } from "@/lib/validations/auth"
-import { getTrialLengthDays } from "@/lib/platform-settings"
+import { getTrialLengthDays, getDefaultReferralCommission } from "@/lib/platform-settings"
 import { generateReferralCode } from "@/lib/referral"
 import type { ApiResponse, Plan } from "@/types"
 
@@ -32,7 +32,7 @@ export async function registerAction(
     return { success: false, error: firstError }
   }
 
-  const { displayName, officeName, email, password, referralCode, plan } = parsed.data
+  const { displayName, officeName, city, email, password, referralCode, plan } = parsed.data
 
   // 2. Check for duplicate email
   const existingUser = await db.user.findUnique({ where: { email } })
@@ -77,6 +77,7 @@ export async function registerAction(
         data: {
           name: officeName,
           referralCode: trimmedReferralCode,
+          city: city?.trim() || null,
         },
       })
       newOfficeId = office.id
@@ -123,10 +124,10 @@ export async function registerAction(
   // Auto-generate a referral code for the new office (fire-and-forget)
   if (newOfficeId) {
     const officeIdForCode = newOfficeId
-    generateReferralCode(officeName)
-      .then((code) =>
+    Promise.all([generateReferralCode(officeName), getDefaultReferralCommission()])
+      .then(([code, commission]) =>
         db.referralCode.create({
-          data: { code, officeId: officeIdForCode, commissionPerOfficePerMonth: 50000 },
+          data: { code, officeId: officeIdForCode, commissionPerOfficePerMonth: commission },
         })
       )
       .catch((err) => console.error("[register] auto-code generation failed:", err))

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Send } from "lucide-react"
+import { IRANIAN_CITIES } from "@/lib/cities"
 
 interface Office {
   id: string
@@ -16,6 +17,7 @@ export default function BroadcastPage() {
   const [targetOfficeId, setTargetOfficeId] = useState("")
   const [filterPlan, setFilterPlan] = useState("")
   const [filterStatus, setFilterStatus] = useState("")
+  const [filterCity, setFilterCity] = useState("")
   const [doSms, setDoSms] = useState(false)
   const [offices, setOffices] = useState<Office[]>([])
   const [officesLoading, setOfficesLoading] = useState(false)
@@ -50,6 +52,7 @@ export default function BroadcastPage() {
       const filter: Record<string, unknown> = {}
       if (filterPlan) filter.plan = filterPlan
       if (filterStatus) filter.status = filterStatus
+      if (filterCity) filter.city = filterCity
       payload.targetFilter = filter
     }
 
@@ -140,7 +143,7 @@ export default function BroadcastPage() {
 
         {/* Filter options */}
         {targetType === "FILTERED" && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="space-y-1">
               <label className="text-sm font-medium">پلن</label>
               <select
@@ -165,6 +168,19 @@ export default function BroadcastPage() {
                 <option value="ACTIVE">فعال</option>
                 <option value="GRACE">مهلت</option>
                 <option value="LOCKED">قفل</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">شهر</label>
+              <select
+                value={filterCity}
+                onChange={(e) => setFilterCity(e.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">همه شهرها</option>
+                {IRANIAN_CITIES.map((city) => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
               </select>
             </div>
           </div>

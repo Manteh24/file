@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { IRANIAN_CITIES } from "@/lib/cities"
 import type { Plan } from "@/types"
 
 const PLAN_DESCRIPTIONS: Record<Plan, string> = {
@@ -45,6 +46,7 @@ export function RegisterForm({ initialPlan }: RegisterFormProps) {
     defaultValues: {
       displayName: "",
       officeName: "",
+      city: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -107,6 +109,28 @@ export function RegisterForm({ initialPlan }: RegisterFormProps) {
                   <FormLabel>نام دفتر</FormLabel>
                   <FormControl>
                     <Input placeholder="دفتر مشاور املاک شما" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              name="city"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>شهر دفتر</FormLabel>
+                  <FormControl>
+                    <select
+                      {...field}
+                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="">انتخاب شهر...</option>
+                      {IRANIAN_CITIES.map((city) => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                    </select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

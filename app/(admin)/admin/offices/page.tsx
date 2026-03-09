@@ -6,12 +6,12 @@ import { OfficeTable } from "@/components/admin/OfficeTable"
 export default async function AdminOfficesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; status?: string; includeArchived?: string }>
+  searchParams: Promise<{ search?: string; status?: string; includeArchived?: string; city?: string }>
 }) {
   const session = await auth()
   if (!session) return null
 
-  const { search = "", status = "", includeArchived = "" } = await searchParams
+  const { search = "", status = "", includeArchived = "", city = "" } = await searchParams
   const showArchived = includeArchived === "true"
 
   const accessibleIds = await getAccessibleOfficeIds(session.user)
@@ -25,6 +25,7 @@ export default async function AdminOfficesPage({
       ...(status
         ? { subscription: { status: status as "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED" } }
         : {}),
+      ...(city ? { city } : {}),
     },
     orderBy: { createdAt: "desc" },
     select: {
@@ -43,7 +44,7 @@ export default async function AdminOfficesPage({
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold">دفاتر ({offices.length.toLocaleString("fa-IR")})</h1>
-      <OfficeTable offices={offices} showArchived={showArchived} />
+      <OfficeTable offices={offices} showArchived={showArchived} currentCity={city} />
     </div>
   )
 }

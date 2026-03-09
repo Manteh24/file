@@ -17,6 +17,7 @@ const broadcastSchema = z.object({
       plan: z.string().optional(),
       status: z.string().optional(),
       isTrial: z.boolean().optional(),
+      city: z.string().max(100).optional(),
     })
     .optional(),
   sendSms: z.boolean().default(false),
@@ -83,7 +84,11 @@ export async function POST(request: Request) {
       where: {
         role: "MANAGER",
         isActive: true,
-        office: { ...officeFilter, ...subFilter },
+        office: {
+          ...officeFilter,
+          ...subFilter,
+          ...(targetFilter?.city ? { city: targetFilter.city } : {}),
+        },
       },
       select: { id: true, office: { select: { phone: true } } },
     })

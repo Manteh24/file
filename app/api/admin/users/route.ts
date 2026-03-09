@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       role: true,
       isActive: true,
       createdAt: true,
-      office: { select: { id: true, name: true } },
+      office: { select: { id: true, name: true, city: true } },
     },
     orderBy: { createdAt: "desc" },
   })

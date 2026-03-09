@@ -10,6 +10,11 @@ export const registerSchema = z
       .string()
       .min(2, "نام دفتر باید حداقل ۲ کاراکتر باشد")
       .max(100, "نام دفتر نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد"),
+    city: z
+      .string()
+      .max(100, "نام شهر نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد")
+      .optional()
+      .or(z.literal("")),
     email: z.string().email("ایمیل معتبر وارد کنید"),
     password: z
       .string()

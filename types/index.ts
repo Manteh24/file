@@ -403,7 +403,7 @@ export interface AdminUserSummary {
   role: Role
   isActive: boolean
   createdAt: Date
-  office: { id: string; name: string } | null
+  office: { id: string; name: string; city: string | null } | null
 }
 
 export interface MidAdminSummary {

@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { format } from "date-fns-jalali"
 import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { IRANIAN_CITIES } from "@/lib/cities"
 import type { AdminUserSummary } from "@/types"
 
 const ROLE_LABELS: Record<string, string> = {
@@ -19,19 +21,33 @@ const ROLE_CLASSES: Record<string, string> = {
 
 interface UserTableProps {
   users: AdminUserSummary[]
+  currentCity?: string
 }
 
-export function UserTable({ users }: UserTableProps) {
+export function UserTable({ users, currentCity = "" }: UserTableProps) {
   const [search, setSearch] = useState("")
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [localActive, setLocalActive] = useState<Record<string, boolean>>({})
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const filtered = users.filter(
     (u) =>
       u.displayName.toLowerCase().includes(search.toLowerCase()) ||
       u.username.toLowerCase().includes(search.toLowerCase()) ||
-      (u.office?.name ?? "").toLowerCase().includes(search.toLowerCase())
+      (u.office?.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (u.office?.city ?? "").toLowerCase().includes(search.toLowerCase())
   )
+
+  function changeCity(city: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (city) {
+      params.set("city", city)
+    } else {
+      params.delete("city")
+    }
+    router.push(`/admin/users?${params.toString()}`)
+  }
 
   async function toggleActive(user: AdminUserSummary) {
     const newActive = !(localActive[user.id] ?? user.isActive)
@@ -52,15 +68,27 @@ export function UserTable({ users }: UserTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="جستجوی نام، نام کاربری یا دفتر..."
-          className="w-full rounded-lg border border-border bg-background px-4 py-2 pe-9 text-sm outline-none focus:ring-2 focus:ring-ring"
-        />
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="جستجوی نام، نام کاربری، دفتر یا شهر..."
+            className="w-full rounded-lg border border-border bg-background px-4 py-2 pe-9 text-sm outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <select
+          value={currentCity}
+          onChange={(e) => changeCity(e.target.value)}
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">همه شهرها</option>
+          {IRANIAN_CITIES.map((city) => (
+            <option key={city} value={city}>{city}</option>
+          ))}
+        </select>
       </div>
 
       {filtered.length === 0 ? (
@@ -74,6 +102,7 @@ export function UserTable({ users }: UserTableProps) {
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">نام کاربری</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">نقش</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">دفتر</th>
+                <th className="px-4 py-3 text-start font-medium text-muted-foreground">شهر</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">تاریخ ثبت</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">وضعیت</th>
               </tr>
@@ -98,6 +127,7 @@ export function UserTable({ users }: UserTableProps) {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{user.office?.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{user.office?.city ?? "—"}</td>
                     <td className="px-4 py-3 text-muted-foreground tabular-nums">
                       {format(new Date(user.createdAt), "yyyy/MM/dd")}
                     </td>

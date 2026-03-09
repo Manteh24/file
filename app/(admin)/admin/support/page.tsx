@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { getAccessibleOfficeIds } from "@/lib/admin"
+import { IRANIAN_CITIES } from "@/lib/cities"
 import { format } from "date-fns-jalali"
 import Link from "next/link"
 import { LifeBuoy } from "lucide-react"
@@ -48,7 +49,7 @@ const CATEGORY_OPTIONS = [
 ]
 
 interface PageProps {
-  searchParams: Promise<{ status?: string; category?: string; officeId?: string; page?: string }>
+  searchParams: Promise<{ status?: string; category?: string; officeId?: string; city?: string; page?: string }>
 }
 
 export default async function AdminSupportPage({ searchParams }: PageProps) {
@@ -56,7 +57,7 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
   if (!session) redirect("/login")
   if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "MID_ADMIN") redirect("/login")
 
-  const { status, category, officeId, page: pageParam } = await searchParams
+  const { status, category, officeId, city, page: pageParam } = await searchParams
   const page = Math.max(1, parseInt(pageParam ?? "1", 10))
   const PAGE_SIZE = 30
 
@@ -75,7 +76,7 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
     ...(officeFilter ? { officeId: { in: officeFilter } } : {}),
     ...(status ? { status: status as never } : {}),
     ...(category ? { category: category as never } : {}),
-    office: { deletedAt: null },
+    office: { deletedAt: null, ...(city ? { city } : {}) },
   }
 
   const [tickets, total] = await Promise.all([
@@ -108,7 +109,7 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
 
   function buildLink(overrides: Record<string, string | undefined>) {
     const p = new URLSearchParams()
-    const merged = { status, category, officeId, page: String(page), ...overrides }
+    const merged = { status, category, officeId, city, page: String(page), ...overrides }
     for (const [k, v] of Object.entries(merged)) {
       if (v) p.set(k, v)
     }
@@ -150,13 +151,23 @@ export default async function AdminSupportPage({ searchParams }: PageProps) {
               </option>
             ))}
           </select>
+          <select
+            name="city"
+            defaultValue={city ?? ""}
+            className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+          >
+            <option value="">همه شهرها</option>
+            {IRANIAN_CITIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
           <button
             type="submit"
             className="rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
           >
             اعمال فیلتر
           </button>
-          {(status || category) && (
+          {(status || category || city) && (
             <Link
               href="/admin/support"
               className="rounded-md border border-input px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"

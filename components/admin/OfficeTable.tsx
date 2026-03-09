@@ -6,6 +6,7 @@ import Link from "next/link"
 import { format } from "date-fns-jalali"
 import { Search, Archive } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { IRANIAN_CITIES } from "@/lib/cities"
 import type { AdminOfficeSummary, Plan, SubStatus } from "@/types"
 
 const PLAN_LABELS: Record<Plan, string> = {
@@ -31,9 +32,10 @@ const STATUS_CLASSES: Record<SubStatus, string> = {
 interface OfficeTableProps {
   offices: AdminOfficeSummary[]
   showArchived?: boolean
+  currentCity?: string
 }
 
-export function OfficeTable({ offices, showArchived = false }: OfficeTableProps) {
+export function OfficeTable({ offices, showArchived = false, currentCity = "" }: OfficeTableProps) {
   const [search, setSearch] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -53,11 +55,22 @@ export function OfficeTable({ offices, showArchived = false }: OfficeTableProps)
     router.push(`/admin/offices?${params.toString()}`)
   }
 
+  function changeCity(city: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (city) {
+      params.set("city", city)
+    } else {
+      params.delete("city")
+    }
+    params.delete("page")
+    router.push(`/admin/offices?${params.toString()}`)
+  }
+
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-48">
           <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
@@ -67,6 +80,16 @@ export function OfficeTable({ offices, showArchived = false }: OfficeTableProps)
             className="w-full rounded-lg border border-border bg-background px-4 py-2 pe-9 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
+        <select
+          value={currentCity}
+          onChange={(e) => changeCity(e.target.value)}
+          className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">همه شهرها</option>
+          {IRANIAN_CITIES.map((city) => (
+            <option key={city} value={city}>{city}</option>
+          ))}
+        </select>
         <button
           onClick={toggleArchived}
           className={cn(

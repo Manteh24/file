@@ -3,9 +3,15 @@ import { db } from "@/lib/db"
 import { getAccessibleOfficeIds } from "@/lib/admin"
 import { UserTable } from "@/components/admin/UserTable"
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ city?: string }>
+}) {
   const session = await auth()
   if (!session) return null
+
+  const { city = "" } = await searchParams
 
   const accessibleIds = await getAccessibleOfficeIds(session.user)
   const officeIdFilter = accessibleIds !== null ? { in: accessibleIds } : undefined
@@ -14,6 +20,7 @@ export default async function AdminUsersPage() {
     where: {
       role: { in: ["MANAGER", "AGENT"] },
       ...(officeIdFilter ? { officeId: officeIdFilter } : {}),
+      ...(city ? { office: { city } } : {}),
     },
     select: {
       id: true,
@@ -23,7 +30,7 @@ export default async function AdminUsersPage() {
       role: true,
       isActive: true,
       createdAt: true,
-      office: { select: { id: true, name: true } },
+      office: { select: { id: true, name: true, city: true } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -31,7 +38,7 @@ export default async function AdminUsersPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold">کاربران ({users.length.toLocaleString("fa-IR")})</h1>
-      <UserTable users={users} />
+      <UserTable users={users} currentCity={city} />
     </div>
   )
 }
