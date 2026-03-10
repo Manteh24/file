@@ -76,6 +76,10 @@ function buildCsp(): string {
 }
 
 const nextConfig: NextConfig = {
+  // Silence the "webpack config present but no turbopack config" error in dev.
+  // next-pwa injects webpack config but is disabled in dev anyway.
+  turbopack: {},
+
   async headers() {
     const headers = [
       // Prevent MIME-type sniffing
