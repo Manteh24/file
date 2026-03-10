@@ -1,6 +1,6 @@
 "use client"
 
-import { Menu } from "lucide-react"
+import { Menu, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { signOutAction } from "@/app/(dashboard)/actions"
 import type { Role } from "@/types"
@@ -13,10 +13,12 @@ const ROLE_LABELS: Record<string, string> = {
 interface AdminTopbarProps {
   userName: string
   role: Role
+  isDark: boolean
   onMenuClick: () => void
+  onToggleDark: () => void
 }
 
-export function AdminTopbar({ userName, role, onMenuClick }: AdminTopbarProps) {
+export function AdminTopbar({ userName, role, isDark, onMenuClick, onToggleDark }: AdminTopbarProps) {
   const initial = userName.charAt(0)
 
   return (
@@ -34,6 +36,15 @@ export function AdminTopbar({ userName, role, onMenuClick }: AdminTopbarProps) {
         <span className="hidden sm:inline-flex text-[11px] font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
           {ROLE_LABELS[role] ?? role}
         </span>
+
+        {/* Dark mode toggle */}
+        <button
+          onClick={onToggleDark}
+          className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          aria-label={isDark ? "تغییر به حالت روشن" : "تغییر به حالت تاریک"}
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
 
         {/* User avatar */}
         <div

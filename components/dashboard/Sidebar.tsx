@@ -77,7 +77,10 @@ export function Sidebar({ role, officeName, isOpen, onClose }: SidebarProps) {
       >
         {/* Brand */}
         <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-border">
-          <span className="text-lg font-bold tracking-tight">املاکبین</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg shrink-0" />
+            <span className="text-lg font-bold tracking-tight">املاکبین</span>
+          </div>
           <button
             onClick={onClose}
             className="lg:hidden rounded-md p-1 text-muted-foreground hover:text-foreground"

@@ -78,11 +78,12 @@ export function AdminSidebar({ role, isOpen, onClose }: AdminSidebarProps) {
       >
         {/* Brand */}
         <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-border">
-          <div>
-            <span className="text-lg font-bold tracking-tight">املاکبین</span>
-            <span className="me-2 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-              پنل مدیریت
-            </span>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg shrink-0" />
+            <div className="flex flex-col leading-tight">
+              <span className="text-base font-bold tracking-tight">املاکبین</span>
+              <span className="text-[10px] text-muted-foreground">پنل مدیریت</span>
+            </div>
           </div>
           <button
             onClick={onClose}
