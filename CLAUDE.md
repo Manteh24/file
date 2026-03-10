@@ -143,7 +143,13 @@ A **Persian-language, RTL, PWA-based SaaS** platform for Iranian real estate off
 │   ├── schema.prisma
 │   └── migrations/
 ├── scripts/
-│   └── seed-admin.ts            # Creates SUPER_ADMIN user. Run: npm run seed:admin
+│   ├── seed-admin.ts            # Creates SUPER_ADMIN user. Run: npm run seed:admin
+│   ├── env-validate.ts          # Validates all required env vars are set. Run: npm run env:validate
+│   ├── health-check.ts          # Checks all 6 external services (DB, storage, AvalAI, KaveNegar, Neshan, Zarinpal). Run: npm run health
+│   ├── db-audit.ts              # Audits DB for orphaned / inconsistent records. Run: npm run db:audit
+│   ├── storage-audit.ts         # Cross-references storage bucket vs DB URLs; flags orphaned objects and broken references. Run: npm run storage:audit
+│   ├── generate-report.ts       # Generates weekly operational snapshot (JSON + Markdown) to scripts/reports/. Run: npm run report:weekly
+│   └── migrate-check.ts         # Pre-deploy gate: exits 1 if unapplied migrations exist. Run: npm run migrate:check
 ├── public/
 │   ├── fonts/                   # Vazirmatn font files
 │   ├── icons/                   # PWA icons (icon-192.png, icon-512.png) — must be created before production
@@ -441,6 +447,15 @@ Never render incomplete UI that assumes data is always present.
 4. Merge to main
 5. Deploy
 
+### Pre-Deploy Checklist (production VPS)
+```
+npm run migrate:check        # exits 1 if unapplied migrations — run npx prisma migrate deploy first
+npm run env:validate         # confirms all required env vars are set
+npm run health               # checks all 6 external services are reachable
+npx prisma migrate deploy    # apply pending migrations (if migrate:check reported any)
+npm start                    # or pm2 restart
+```
+
 ### Automated Tests
 Write automated tests **only** for:
 - Authentication flow (login, logout, session, password reset)
@@ -513,6 +528,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `types/index.ts` | Shared TypeScript types and interfaces |
 | `prd.md` | Full Product Requirements Document |
 | `generalideas.md` | Original product brainstorm and ideation notes |
+| `scripts/storage-audit.ts` | Bucket vs DB cross-reference: surfaces orphaned storage objects and broken DB URLs. Writes timestamped JSON report to `scripts/reports/`. |
+| `scripts/generate-report.ts` | Weekly operational snapshot: queries all key metrics and writes JSON + Markdown to `scripts/reports/`. Uses Jalali date arithmetic to derive grace/locked counts fresh (not from cached status column). |
+| `scripts/migrate-check.ts` | Pre-deploy migration gate — **run this first in every deploy**. Exits 0 if schema is up to date, exits 1 with migration names if not. |
+| `app/api/admin/system-status/route.ts` | SUPER_ADMIN-only live system status: 5 parallel service checks (DB, storage, AvalAI, KaveNegar, Neshan) with 5 s timeouts + DB stats (active offices, subscription breakdown, stuck payments, last admin action) + live platform settings. Always returns 200 per-service; returns 500 only if DB is unreachable. |
 
 ---
 
