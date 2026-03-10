@@ -14,7 +14,9 @@
     "generate:icons": "node scripts/generate-pwa-icons.mjs",
     "env:validate": "npx tsx scripts/env-validate.ts",
     "health": "npx tsx scripts/health-check.ts",
-    "db:audit": "npx tsx scripts/db-audit.ts"
+    "db:audit": "npx tsx scripts/db-audit.ts",
+    "storage:audit": "npx tsx scripts/storage-audit.ts",
+    "report:weekly": "npx tsx scripts/generate-report.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.997.0",
