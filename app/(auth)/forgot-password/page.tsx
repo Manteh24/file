@@ -1,10 +1,7 @@
 "use client"
 
-import { useState, useTransition } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
+import { useState } from "react"
 import Link from "next/link"
-import { forgotPasswordSchema, type ForgotPasswordInput } from "@/lib/validations/auth"
 import {
   Card,
   CardContent,
@@ -15,50 +12,185 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
+import { Label } from "@/components/ui/label"
+
+type Screen = "phone" | "reset" | "done"
 
 export default function ForgotPasswordPage() {
-  const [submitted, setSubmitted] = useState(false)
-  const [isPending, startTransition] = useTransition()
+  const [screen, setScreen] = useState<Screen>("phone")
+  const [phone, setPhone] = useState("")
+  const [otp, setOtp] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  const form = useForm<ForgotPasswordInput>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: { email: "" },
-  })
-
-  function onSubmit(values: ForgotPasswordInput) {
-    startTransition(async () => {
-      // TODO: Call POST /api/auth/password-reset with values.email
-      // Always show the success message regardless of whether the email exists
-      // to prevent email enumeration attacks.
-      console.log("TODO: Send password reset email to", values.email)
-      setSubmitted(true)
-    })
+  async function handleRequestOtp(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (!phone.match(/^0?9\d{9}$/)) {
+      setError("شماره موبایل معتبر نیست")
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch("/api/auth/password-reset/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone }),
+      })
+      const data = (await res.json()) as { success: boolean; error?: string }
+      if (res.status === 429) {
+        setError("تعداد درخواست‌ها زیاد است. لطفاً چند دقیقه صبر کنید.")
+        return
+      }
+      if (!data.success) {
+        setError(data.error ?? "خطایی رخ داد")
+        return
+      }
+      setScreen("reset")
+    } catch {
+      setError("خطا در اتصال به سرور")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (submitted) {
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (otp.length !== 6) {
+      setError("کد تأیید باید ۶ رقم باشد")
+      return
+    }
+    if (password.length < 8) {
+      setError("رمز عبور باید حداقل ۸ کاراکتر باشد")
+      return
+    }
+    if (password !== confirmPassword) {
+      setError("رمز عبور و تکرار آن یکسان نیستند")
+      return
+    }
+    setLoading(true)
+    try {
+      const res = await fetch("/api/auth/password-reset/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, otp, password, confirmPassword }),
+      })
+      const data = (await res.json()) as { success: boolean; error?: string }
+      if (res.status === 429) {
+        setError("تعداد تلاش‌ها زیاد است. لطفاً بعداً امتحان کنید.")
+        return
+      }
+      if (!data.success) {
+        setError(data.error ?? "خطایی رخ داد")
+        return
+      }
+      setScreen("done")
+    } catch {
+      setError("خطا در اتصال به سرور")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (screen === "done") {
     return (
       <Card>
-        <CardContent className="pt-6 space-y-4">
-          <Alert>
+        <CardHeader>
+          <CardTitle>رمز عبور تغییر یافت</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800">
             <AlertDescription>
-              اگر این ایمیل در سیستم ثبت شده باشد، لینک بازنشانی رمز عبور برای
-              شما ارسال خواهد شد.
+              رمز عبور شما با موفقیت تغییر یافت.
             </AlertDescription>
           </Alert>
-          <Link
-            href="/login"
-            className="block text-center text-sm text-primary underline underline-offset-4"
-          >
-            بازگشت به صفحه ورود
+          <p className="text-sm text-muted-foreground">
+            تمام نشست‌های فعال شما پایان یافت. لطفاً با رمز عبور جدید وارد شوید.
+          </p>
+          <Link href="/login">
+            <Button className="w-full">ورود به حساب</Button>
           </Link>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (screen === "reset") {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>ورود کد و رمز جدید</CardTitle>
+          <CardDescription>
+            کد ۶ رقمی ارسال‌شده به {phone} را به همراه رمز عبور جدید وارد کنید
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleReset} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="otp">کد تأیید</Label>
+              <Input
+                id="otp"
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="______"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                className="tracking-widest text-center text-lg"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password">رمز عبور جدید</Label>
+              <Input
+                id="password"
+                type="password"
+                dir="ltr"
+                placeholder="حداقل ۸ کاراکتر"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword">تکرار رمز عبور</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                dir="ltr"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "در حال ذخیره..." : "تغییر رمز عبور"}
+            </Button>
+          </form>
+
+          <button
+            type="button"
+            onClick={() => {
+              setScreen("phone")
+              setOtp("")
+              setPassword("")
+              setConfirmPassword("")
+              setError(null)
+            }}
+            className="block text-center text-sm text-primary underline underline-offset-4 mt-4 w-full"
+          >
+            ارسال مجدد کد
+          </button>
         </CardContent>
       </Card>
     )
@@ -67,39 +199,36 @@ export default function ForgotPasswordPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>فراموشی رمز عبور</CardTitle>
+        <CardTitle>بازنشانی رمز عبور</CardTitle>
         <CardDescription>
-          ایمیل خود را وارد کنید. لینک بازنشانی رمز عبور برای شما ارسال
-          می‌شود.
+          شماره موبایل ثبت‌شده خود را وارد کنید
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              name="email"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ایمیل</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="you@example.com"
-                      dir="ltr"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <form onSubmit={handleRequestOtp} className="space-y-4">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? "در حال ارسال..." : "ارسال لینک بازنشانی"}
-            </Button>
-          </form>
-        </Form>
+          <div className="space-y-1.5">
+            <Label htmlFor="phone">شماره موبایل</Label>
+            <Input
+              id="phone"
+              type="tel"
+              dir="ltr"
+              inputMode="numeric"
+              placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? "در حال ارسال..." : "دریافت کد تأیید"}
+          </Button>
+        </form>
 
         <Link
           href="/login"

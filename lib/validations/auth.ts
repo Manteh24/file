@@ -50,3 +50,26 @@ export const forgotPasswordSchema = z.object({
 })
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+
+export const requestOtpSchema = z.object({
+  phone: z.string().regex(/^0?9\d{9}$/, "شماره موبایل معتبر نیست"),
+})
+
+export type RequestOtpInput = z.infer<typeof requestOtpSchema>
+
+export const resetPasswordSchema = z
+  .object({
+    phone: z.string().regex(/^0?9\d{9}$/, "شماره موبایل معتبر نیست"),
+    otp: z.string().length(6, "کد تأیید باید ۶ رقم باشد"),
+    password: z
+      .string()
+      .min(8, "رمز عبور باید حداقل ۸ کاراکتر باشد")
+      .max(72, "رمز عبور نمی‌تواند بیشتر از ۷۲ کاراکتر باشد"),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "رمز عبور و تکرار آن یکسان نیستند",
+    path: ["confirmPassword"],
+  })
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>

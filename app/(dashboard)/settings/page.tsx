@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { OfficeProfileForm } from "@/components/settings/OfficeProfileForm"
 import { SubscriptionCard } from "@/components/settings/SubscriptionCard"
+import { UserPhoneForm } from "@/components/settings/UserPhoneForm"
 import type { OfficeProfile, SubscriptionInfo } from "@/types"
 
 interface SettingsPageProps {
@@ -66,7 +67,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   if (!officeId) redirect("/admin/dashboard")
   const params = await searchParams
 
-  const [office, subscription] = await Promise.all([
+  const [office, subscription, currentUser] = await Promise.all([
     db.office.findUnique({
       where: { id: officeId },
       select: { id: true, name: true, phone: true, email: true, address: true, city: true },
@@ -74,6 +75,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
     db.subscription.findUnique({
       where: { officeId },
       select: { plan: true, status: true, isTrial: true, billingCycle: true, trialEndsAt: true, currentPeriodEnd: true },
+    }),
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: { phone: true },
     }),
   ])
 
@@ -101,6 +106,16 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </h2>
         </div>
         <OfficeProfileForm initialData={officeProfile} />
+      </section>
+
+      {/* Section: User profile (phone for password reset) */}
+      <section>
+        <div className="mb-4 border-b border-border pb-3">
+          <h2 className="text-[13px] font-medium uppercase tracking-widest text-muted-foreground">
+            پروفایل کاربری
+          </h2>
+        </div>
+        <UserPhoneForm initialPhone={currentUser?.phone ?? null} />
       </section>
 
       {/* Section: Subscription */}

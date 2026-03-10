@@ -37,6 +37,10 @@ export function buildRentFollowupMessage(vars: RentFollowupVars): string {
   return `${greeting}قرارداد اجاره‌ی شما به زودی به پایان می‌رسد. برای تمدید یا جستجوی ملک جدید با ما در تماس باشید.\nدفتر ${vars.officeName}`
 }
 
+export function buildPasswordResetMessage(otp: string): string {
+  return `کد بازنشانی رمز عبور شما در سامانه املاکبین:\n\n${otp}\n\nاین کد ۵ دقیقه اعتبار دارد و یک‌بار مصرف است.`
+}
+
 // ─── KaveNegar API Call ───────────────────────────────────────────────────────
 
 interface SendResult {

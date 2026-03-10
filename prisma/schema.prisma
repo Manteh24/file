@@ -143,6 +143,8 @@ model User {
   username     String        @unique
   // email is optional — agents may have no email. Nullable unique allows multiple NULLs in PostgreSQL.
   email        String?       @unique
+  // phone used for SMS-based password reset. Nullable unique allows multiple NULLs.
+  phone        String?       @unique
   passwordHash String
   displayName  String
   role         Role
@@ -182,6 +184,7 @@ model User {
   adminLoginLogs      AdminLoginLog[]  @relation("AdminLoginLogs")
   createdTickets      SupportTicket[]  @relation("TicketCreator")
   ticketMessages      TicketMessage[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
@@ -679,6 +682,22 @@ model AdminLoginLog {
 
   @@index([adminId])
   @@map("admin_login_logs")
+}
+
+// OTP token for SMS-based password reset. Stored as SHA-256 hash — never plaintext.
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // SHA-256 hex of the raw 6-digit OTP — the raw OTP is sent by SMS and never stored.
+  tokenHash String   @unique
+  expiresAt DateTime
+  // Marked true after the token is used — prevents reuse even before expiry.
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 // Key-value store for platform-wide settings editable by SUPER_ADMIN.
