@@ -44,7 +44,8 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json({ success: true, data: customers })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/crm] db error:", { officeId }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت مشتریان" },
       { status: 500 }
@@ -83,6 +84,7 @@ export async function POST(request: Request) {
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[POST /api/crm] requireWriteAccess unexpected error:", { officeId }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
@@ -100,7 +102,8 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ success: true, data: { id: customer.id } }, { status: 201 })
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/crm] create customer error:", { officeId }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ایجاد مشتری" },
       { status: 500 }

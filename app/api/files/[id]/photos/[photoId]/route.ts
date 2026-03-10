@@ -32,8 +32,8 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   // Delete from object storage — non-fatal if it fails (DB record is the source of truth)
   try {
     await deleteFile(photo.url)
-  } catch {
-    // Storage deletion failure is logged but does not block the DB cleanup
+  } catch (err) {
+    console.error("[DELETE /api/files/[id]/photos/[photoId]] storage delete error:", { fileId, photoId }, err)
   }
 
   await db.filePhoto.delete({ where: { id: photoId } })

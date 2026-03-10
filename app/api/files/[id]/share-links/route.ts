@@ -82,6 +82,7 @@ export async function POST(
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[POST /api/files/[id]/share-links] requireWriteAccess unexpected error:", { fileId }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 

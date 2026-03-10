@@ -40,7 +40,8 @@ export async function GET(request: Request) {
       where: { authority },
       select: { id: true, officeId: true, plan: true, billingCycle: true, amount: true, status: true },
     }) as typeof record
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/payments/verify] db lookup error:", { authority }, err)
     return NextResponse.redirect(settingsUrl("error"))
   }
 
@@ -97,7 +98,8 @@ export async function GET(request: Request) {
         },
       }),
     ])
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/payments/verify] transaction error:", { authority, officeId: record.officeId }, err)
     return NextResponse.redirect(settingsUrl("error"))
   }
 

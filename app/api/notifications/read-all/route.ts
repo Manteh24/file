@@ -18,7 +18,8 @@ export async function PATCH() {
     })
 
     return NextResponse.json({ success: true, data: { ok: true } })
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/notifications/read-all] db error:", { userId: session.user.id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در به‌روزرسانی اعلان‌ها" },
       { status: 500 }

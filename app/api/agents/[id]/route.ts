@@ -52,7 +52,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
     }
 
     return NextResponse.json({ success: true, data: agent })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/agents/[id]] db error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت مشاور" },
       { status: 500 }
@@ -82,6 +83,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[PATCH /api/agents/[id]] requireWriteAccess unexpected error:", { id }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
@@ -127,7 +129,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     })
 
     return NextResponse.json({ success: true, data: { id } })
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/agents/[id]] update agent error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ویرایش مشاور" },
       { status: 500 }
@@ -156,6 +159,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[DELETE /api/agents/[id]] requireWriteAccess unexpected error:", { id }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
@@ -174,7 +178,8 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     })
 
     return NextResponse.json({ success: true, data: { id } })
-  } catch {
+  } catch (err) {
+    console.error("[DELETE /api/agents/[id]] deactivate agent error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در غیرفعال‌سازی مشاور" },
       { status: 500 }

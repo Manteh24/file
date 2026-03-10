@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
   let processedBuffer: Buffer
   try {
     processedBuffer = await processPropertyPhoto(rawBuffer, propertyFile.office.name)
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/upload] image processing error:", { fileId, officeId }, err)
     return NextResponse.json({ success: false, error: "خطا در پردازش تصویر" }, { status: 500 })
   }
 
@@ -76,7 +77,8 @@ export async function POST(request: NextRequest) {
   let url: string
   try {
     url = await uploadFile(key, processedBuffer, "image/jpeg")
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/upload] storage upload error:", { fileId, officeId, key }, err)
     return NextResponse.json({ success: false, error: "خطا در بارگذاری تصویر" }, { status: 500 })
   }
 

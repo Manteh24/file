@@ -80,7 +80,8 @@ export async function PATCH(
     })
 
     return NextResponse.json({ success: true, data: { id, status } })
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/files/[id]/status] error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در تغییر وضعیت فایل" },
       { status: 500 }

@@ -44,7 +44,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
     })
 
     return NextResponse.json({ success: true, data: notes })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/crm/[id]/notes] db error:", { customerId: id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت یادداشت‌ها" },
       { status: 500 }
@@ -94,7 +95,8 @@ export async function POST(request: Request, { params }: RouteContext) {
     })
 
     return NextResponse.json({ success: true, data: { id: note.id } }, { status: 201 })
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/crm/[id]/notes] db create error:", { customerId: id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ثبت یادداشت" },
       { status: 500 }

@@ -33,7 +33,8 @@ export async function PATCH(
     })
 
     return NextResponse.json({ success: true, data: { id } })
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/notifications/[id]] db error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در به‌روزرسانی اعلان" },
       { status: 500 }

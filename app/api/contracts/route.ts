@@ -45,7 +45,8 @@ export async function GET() {
     })
 
     return NextResponse.json({ success: true, data: bigIntToNumber(contracts) })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/contracts] db error:", { officeId }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت قراردادها" },
       { status: 500 }
@@ -88,6 +89,7 @@ export async function POST(request: Request) {
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[POST /api/contracts] requireWriteAccess unexpected error:", { officeId }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 

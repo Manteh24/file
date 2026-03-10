@@ -60,7 +60,8 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: bigIntToNumber(contract) })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/contracts/[id]] db error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت قرارداد" },
       { status: 500 }

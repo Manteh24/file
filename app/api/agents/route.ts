@@ -35,7 +35,8 @@ export async function GET() {
     })
 
     return NextResponse.json({ success: true, data: agents })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/agents] db error:", err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت مشاوران" },
       { status: 500 }
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[POST /api/agents] requireWriteAccess unexpected error:", err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
@@ -130,7 +132,8 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ success: true, data: { id: agent.id } }, { status: 201 })
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/agents] create agent error:", { officeId }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ایجاد مشاور" },
       { status: 500 }

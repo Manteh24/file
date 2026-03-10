@@ -67,7 +67,8 @@ export async function GET(request: Request) {
     })
 
     return NextResponse.json({ success: true, data: bigIntToNumber(files) })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/files] db error:", { officeId }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت فایل‌ها" },
       { status: 500 }
@@ -107,6 +108,7 @@ export async function POST(request: Request) {
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[POST /api/files] requireWriteAccess unexpected error:", { officeId }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
@@ -161,7 +163,8 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ success: true, data: { id: file.id } }, { status: 201 })
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/files] create file error:", { officeId }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ایجاد فایل" },
       { status: 500 }

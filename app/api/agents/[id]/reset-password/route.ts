@@ -53,7 +53,8 @@ export async function POST(request: Request, { params }: RouteContext) {
     })
 
     return NextResponse.json({ success: true, data: null })
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/agents/[id]/reset-password] error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در بازنشانی رمز عبور" },
       { status: 500 }

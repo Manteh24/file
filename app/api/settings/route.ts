@@ -41,7 +41,8 @@ export async function GET() {
     }
 
     return NextResponse.json({ success: true, data: { office, subscription } })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/settings] db error:", { officeId }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت اطلاعات تنظیمات" },
       { status: 500 }
@@ -102,7 +103,8 @@ export async function PATCH(request: Request) {
     })
 
     return NextResponse.json({ success: true, data: { id: office.id } })
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/settings] db update error:", { officeId }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ذخیره اطلاعات دفتر" },
       { status: 500 }

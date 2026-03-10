@@ -64,7 +64,8 @@ export async function POST(request: Request) {
         status: "PENDING",
       },
     })
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/payments/request] db create error:", { officeId, authority: result.authority }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ثبت اطلاعات پرداخت" },
       { status: 500 }

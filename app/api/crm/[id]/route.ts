@@ -53,7 +53,8 @@ export async function GET(_request: Request, { params }: RouteContext) {
     }
 
     return NextResponse.json({ success: true, data: customer })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/crm/[id]] db error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت مشتری" },
       { status: 500 }
@@ -80,6 +81,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[PATCH /api/crm/[id]] requireWriteAccess unexpected error:", { id }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
@@ -114,7 +116,8 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     })
 
     return NextResponse.json({ success: true, data: { id } })
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/crm/[id]] update customer error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ویرایش مشتری" },
       { status: 500 }
@@ -141,6 +144,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[DELETE /api/crm/[id]] requireWriteAccess unexpected error:", { id }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
@@ -152,7 +156,8 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   try {
     await db.customer.delete({ where: { id } })
     return NextResponse.json({ success: true, data: null })
-  } catch {
+  } catch (err) {
+    console.error("[DELETE /api/crm/[id]] delete customer error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در حذف مشتری" },
       { status: 500 }

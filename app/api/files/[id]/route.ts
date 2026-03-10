@@ -61,7 +61,8 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: bigIntToNumber(file) })
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/files/[id]] db error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در دریافت فایل" },
       { status: 500 }
@@ -93,6 +94,7 @@ export async function PATCH(
     if (err instanceof SubscriptionLockedError) {
       return NextResponse.json({ success: false, error: "اشتراک شما منقضی شده است" }, { status: 403 })
     }
+    console.error("[PATCH /api/files/[id]] requireWriteAccess unexpected error:", { id }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
@@ -211,7 +213,8 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true, data: { id } })
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/files/[id]] update file error:", { id }, err)
     return NextResponse.json(
       { success: false, error: "خطا در ویرایش فایل" },
       { status: 500 }
