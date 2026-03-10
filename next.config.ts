@@ -1,4 +1,5 @@
 import type { NextConfig } from "next"
+import withPWA from "@ducanh2912/next-pwa"
 
 const isDev = process.env.NODE_ENV === "development"
 
@@ -128,4 +129,13 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+// Service worker is generated into public/ during `next build`.
+// Disabled in development so hot-reload is not disrupted.
+export default withPWA({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,         // injects SW registration script automatically
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+})(nextConfig)

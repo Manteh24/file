@@ -10,10 +10,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "seed:admin": "npx tsx scripts/seed-admin.ts"
+    "seed:admin": "npx tsx scripts/seed-admin.ts",
+    "generate:icons": "node scripts/generate-pwa-icons.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.997.0",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@hookform/resolvers": "^5.2.2",
     "@neshan-maps-platform/mapbox-gl": "^1.1.5",
     "@neshan-maps-platform/mapbox-gl-react": "^1.0.6",

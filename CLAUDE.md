@@ -584,7 +584,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 
 ### Current Status
 - **Last completed:** Jalali payments date filter + city selection + configurable referral commission
-- **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS, create PWA icons (`public/icons/icon-192.png`, `icon-512.png`), configure `next-pwa` in `next.config.ts`
+- **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS
 - **Total tests:** 656 passing, 0 failing (46 test files)
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write
 
