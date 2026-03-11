@@ -60,6 +60,22 @@ export function formatJalali(date: Date, fmt = "yyyy/MM/dd"): string {
 }
 
 /**
+ * Formats a Toman amount for chart Y-axis ticks — compact, Persian-numeral.
+ * Tiers: 0 → ۰ | <1M → locale string | ≥1M → N م | ≥1B → N م‌م
+ * Example: 5_500_000 → "۵.۵ م"
+ */
+export function formatTomanAxis(value: number): string {
+  if (value === 0) return "۰"
+  if (value >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} م‌م`
+  }
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toLocaleString("fa-IR", { maximumFractionDigits: 1 })} م`
+  }
+  return value.toLocaleString("fa-IR")
+}
+
+/**
  * Converts a number to its Farsi-digit string representation.
  * Example: 120 → "۱۲۰"
  */

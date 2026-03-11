@@ -6,6 +6,7 @@ import {
   Users,
   Activity,
 } from "lucide-react"
+import { format } from "date-fns-jalali"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
@@ -14,6 +15,7 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { CommissionChart, type MonthlyDataPoint } from "@/components/reports/CommissionChart"
 import {
   normalisePeriod,
   getDateFilter,
@@ -23,6 +25,12 @@ import {
   type ReportPeriod,
 } from "./helpers"
 import type { TransactionType } from "@/types"
+
+// Short Jalali month labels (index 1–12)
+const JALALI_MONTH_SHORT = [
+  "", "فرو", "ارد", "خرد", "تیر", "مرد", "شهر",
+  "مهر", "آبا", "آذر", "دی", "بهم", "اسف",
+]
 
 interface ReportsPageProps {
   searchParams: Promise<{ period?: string }>
@@ -152,6 +160,24 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     (a, b) => b.deals - a.deals
   )
 
+  // ─── Monthly chart data ───────────────────────────────────────────────────
+  // Group contracts by Jalali year/month for the commission trend chart.
+  const monthlyMap = new Map<string, MonthlyDataPoint>()
+  for (const contract of contracts) {
+    const key = format(contract.finalizedAt, "yyyy/MM") // Jalali sort key
+    const monthNum = parseInt(format(contract.finalizedAt, "M"), 10)
+    const label = JALALI_MONTH_SHORT[monthNum] ?? String(monthNum)
+    if (!monthlyMap.has(key)) {
+      monthlyMap.set(key, { label, commission: 0, deals: 0 })
+    }
+    const entry = monthlyMap.get(key)!
+    entry.commission += Number(contract.commissionAmount)
+    entry.deals += 1
+  }
+  const monthlyData: MonthlyDataPoint[] = Array.from(monthlyMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([, v]) => v)
+
   const recentContracts = contracts.slice(0, 15)
 
   return (
@@ -209,6 +235,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           icon={<Users className="h-4 w-4" />}
         />
       </div>
+
+      {/* Commission trend chart */}
+      <CommissionChart data={monthlyData} />
 
       {/* Type breakdown + Agent performance side-by-side on desktop */}
       <div className="grid gap-4 lg:grid-cols-2">
