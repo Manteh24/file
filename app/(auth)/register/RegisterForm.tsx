@@ -35,9 +35,10 @@ const PLAN_DESCRIPTIONS: Record<Plan, string> = {
 
 interface RegisterFormProps {
   initialPlan: Plan
+  initialRef?: string
 }
 
-export function RegisterForm({ initialPlan }: RegisterFormProps) {
+export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -50,7 +51,7 @@ export function RegisterForm({ initialPlan }: RegisterFormProps) {
       email: "",
       password: "",
       confirmPassword: "",
-      referralCode: "",
+      referralCode: initialRef ?? "",
       plan: initialPlan,
     },
   })

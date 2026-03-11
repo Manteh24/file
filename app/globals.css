@@ -65,7 +65,7 @@ html:root {
   --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.48 0.13 190);
+  --primary: oklch(0.7045 0.1404 182.56);   /* #14B8A6 teal */
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -76,7 +76,7 @@ html:root {
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.6 0.1 190);
+  --ring: oklch(0.7045 0.1404 182.56);      /* teal focus ring */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -84,8 +84,8 @@ html:root {
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.7045 0.1404 182.56); /* teal active items */
+  --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.967 0.001 286.375);
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
@@ -99,8 +99,8 @@ html.dark {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.21 0.006 285.885);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
+  --primary: oklch(0.7045 0.1404 182.56);   /* #14B8A6 teal */
+  --primary-foreground: oklch(1 0 0);        /* white text on teal */
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.274 0.006 286.033);
@@ -110,7 +110,7 @@ html.dark {
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
+  --ring: oklch(0.7045 0.1404 182.56);      /* teal focus ring */
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -118,8 +118,8 @@ html.dark {
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.7045 0.1404 182.56); /* teal active items */
+  --sidebar-primary-foreground: oklch(1 0 0);
   --sidebar-accent: oklch(0.274 0.006 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
@@ -133,4 +133,35 @@ html.dark {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ─── Landing page micro-interaction utilities ──────────────────────────────── */
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0    rgba(20, 184, 166, 0.55); }
+  70%  { box-shadow: 0 0 0 14px rgba(20, 184, 166, 0); }
+  100% { box-shadow: 0 0 0 0    rgba(20, 184, 166, 0); }
+}
+
+.pulse-ring-btn {
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+/* RTL nav link underline sweeps in from the right (reading-start side) */
+.nav-link-sweep {
+  position: relative;
+  padding-bottom: 2px;
+}
+.nav-link-sweep::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  height: 1.5px;
+  width: 0;
+  background: #14B8A6;
+  transition: width 0.25s ease;
+}
+.nav-link-sweep:hover::after {
+  width: 100%;
 }

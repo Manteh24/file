@@ -2,7 +2,7 @@ import { RegisterForm } from "./RegisterForm"
 import type { Plan } from "@/types"
 
 interface RegisterPageProps {
-  searchParams: Promise<{ plan?: string }>
+  searchParams: Promise<{ plan?: string; ref?: string }>
 }
 
 const VALID_PLANS: Plan[] = ["FREE", "PRO", "TEAM"]
@@ -14,8 +14,8 @@ function parsePlan(raw: string | undefined): Plan {
 }
 
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
-  const { plan: planParam } = await searchParams
+  const { plan: planParam, ref } = await searchParams
   const initialPlan = parsePlan(planParam)
 
-  return <RegisterForm initialPlan={initialPlan} />
+  return <RegisterForm initialPlan={initialPlan} initialRef={ref} />
 }

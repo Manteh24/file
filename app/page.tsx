@@ -1,7 +1,21 @@
-import { redirect } from "next/navigation"
+import { LandingNav } from "@/components/marketing/LandingNav"
+import { HeroSection } from "@/components/marketing/HeroSection"
+import { FeaturesSection } from "@/components/marketing/FeaturesSection"
+import { PricingSection } from "@/components/marketing/PricingSection"
+import { TrustStrip } from "@/components/marketing/TrustStrip"
+import { LandingFooter } from "@/components/marketing/LandingFooter"
 
-// Root path redirects to login. The middleware handles auth-gating,
-// but this provides an explicit fallback.
-export default function RootPage() {
-  redirect("/login")
+export default function HomePage() {
+  return (
+    <div className="min-h-screen flex flex-col bg-[#0F1923]" dir="rtl">
+      <LandingNav />
+      <main>
+        <HeroSection />
+        <FeaturesSection />
+        <PricingSection />
+        <TrustStrip />
+      </main>
+      <LandingFooter />
+    </div>
+  )
 }
