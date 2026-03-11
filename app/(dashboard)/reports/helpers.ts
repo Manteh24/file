@@ -3,10 +3,10 @@ import type { TransactionType } from "@/types"
 export type ReportPeriod = "this_month" | "last_3_months" | "this_year" | "all"
 
 export const PERIOD_OPTIONS: { value: ReportPeriod; label: string }[] = [
-  { value: "this_year", label: "امسال" },
-  { value: "last_3_months", label: "۳ ماه گذشته" },
-  { value: "this_month", label: "این ماه" },
-  { value: "all", label: "همه زمان‌ها" },
+  { value: "this_month", label: "یک ماه" },
+  { value: "last_3_months", label: "سه ماه" },
+  { value: "this_year", label: "یک سال" },
+  { value: "all", label: "از آغاز" },
 ]
 
 const VALID_PERIODS: ReportPeriod[] = [

@@ -602,7 +602,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Jalali calendar for admin payments date range filter (replaces native Gregorian `<input type="date">`) | ✅ | ✅ |
 
 ### Current Status
-- **Last completed:** Jalali payments date filter + city selection + configurable referral commission
+- **Last completed:** Reports page period filter labels/order updated (یک ماه → سه ماه → یک سال → از آغاز)
 - **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS
 - **Total tests:** 656 passing, 0 failing (46 test files)
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write
