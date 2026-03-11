@@ -27,10 +27,10 @@ export const createFileSchema = z.object({
     .optional(),
 
   // Physical details
-  area: z.coerce.number().int().positive().optional(),
-  floorNumber: z.coerce.number().int().min(0).optional(),
-  totalFloors: z.coerce.number().int().positive().optional(),
-  buildingAge: z.coerce.number().int().min(0).max(150).optional(),
+  area: z.coerce.number().int().positive("متراژ باید بیشتر از صفر باشد").optional(),
+  floorNumber: z.coerce.number().int().min(1, "شماره طبقه باید حداقل ۱ باشد").optional(),
+  totalFloors: z.coerce.number().int().positive("تعداد طبقات باید بیشتر از صفر باشد").optional(),
+  buildingAge: z.coerce.number().int().min(0, "سن بنا نمی‌تواند منفی باشد").max(150, "سن بنا نمی‌تواند بیشتر از ۱۵۰ سال باشد").optional(),
 
   // Price — which fields are relevant depends on transactionType
   salePrice: z.coerce.number().int().positive().optional(),

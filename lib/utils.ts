@@ -58,3 +58,28 @@ export function formatJalali(date: Date, fmt = "yyyy/MM/dd"): string {
     String.fromCharCode(c.charCodeAt(0) + 0x06f0 - 0x30)
   )
 }
+
+/**
+ * Converts a number to its Farsi-digit string representation.
+ * Example: 120 → "۱۲۰"
+ */
+export function toFarsiDigits(n: number): string {
+  return n.toString().replace(/\d/g, (d) =>
+    String.fromCharCode(d.charCodeAt(0) + 0x06f0 - 0x30)
+  )
+}
+
+/**
+ * Parses a string containing Farsi or Latin digits into an integer.
+ * Returns undefined if the string is empty or not a valid integer.
+ * Example: "۱۲۰" → 120, "120" → 120, "" → undefined
+ */
+export function parseFarsiNumber(v: string): number | undefined {
+  if (!v.trim()) return undefined
+  // Convert Farsi/Extended Arabic-Indic digits (U+06F0–U+06F9) to ASCII
+  const latin = v.replace(/[\u06F0-\u06F9]/g, (c) =>
+    String(c.charCodeAt(0) - 0x06f0)
+  )
+  const n = parseInt(latin, 10)
+  return isNaN(n) ? undefined : n
+}

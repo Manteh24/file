@@ -19,6 +19,7 @@ import {
 import { PriceInput } from "@/components/forms/PriceInput"
 import { LocationPicker } from "@/components/files/LocationPicker"
 import { useDraft } from "@/hooks/useDraft"
+import { toFarsiDigits, parseFarsiNumber } from "@/lib/utils"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
 import type { PropertyFileDetail, LocationAnalysis } from "@/types"
 import type { DescriptionTone } from "@/lib/ai"
@@ -29,6 +30,8 @@ interface FileFormProps {
   fileId?: string
   // Pre-loaded location analysis from DB (edit mode only)
   initialLocationAnalysis?: LocationAnalysis | null
+  // Used to scope the IndexedDB draft to this user so different users on the same browser don't share drafts
+  userId?: string
 }
 
 const TRANSACTION_TYPE_OPTIONS = [
@@ -61,7 +64,7 @@ const TONE_OPTIONS: { value: DescriptionTone; label: string }[] = [
   { value: "compelling", label: "جذاب" },
 ]
 
-export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileFormProps) {
+export function FileForm({ initialData, fileId, initialLocationAnalysis, userId }: FileFormProps) {
   const router = useRouter()
   const isEdit = !!fileId
 
@@ -80,7 +83,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasDraftRef = useRef(false)
 
-  const { draft, isLoading: draftLoading, hasDraft, saveDraft, clearDraft } = useDraft()
+  const { draft, isLoading: draftLoading, hasDraft, saveDraft, clearDraft } = useDraft(userId)
 
   // Keep ref in sync so the online event handler always sees the latest value
   hasDraftRef.current = hasDraft
@@ -141,11 +144,14 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
     },
   })
 
-  // Auto-save form changes to IndexedDB draft (create mode only, 1.5 s debounce)
+  // Auto-save form changes to IndexedDB draft (create mode only, 1.5 s debounce).
+  // Only saves when the user has actually changed something (isDirty) to avoid
+  // persisting the initial default values and showing a false draft-restore banner.
   useEffect(() => {
     if (isEdit) return
 
     const subscription = form.watch((values) => {
+      if (!form.formState.isDirty) return
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
       draftTimerRef.current = setTimeout(() => {
         void saveDraft(values as CreateFileInput)
@@ -436,7 +442,17 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
                 <FormItem>
                   <FormLabel>متراژ (متر)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="مثال: ۱۲۰" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="مثال: ۱۲۰"
+                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
+                        field.onChange(parseFarsiNumber(v))
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -450,7 +466,17 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
                 <FormItem>
                   <FormLabel>طبقه</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="مثال: ۳" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="مثال: ۳"
+                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
+                        field.onChange(parseFarsiNumber(v))
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -464,7 +490,17 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
                 <FormItem>
                   <FormLabel>کل طبقات</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="مثال: ۵" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="مثال: ۵"
+                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
+                        field.onChange(parseFarsiNumber(v))
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -478,7 +514,17 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis }: FileF
                 <FormItem>
                   <FormLabel>سن بنا (سال)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="مثال: ۵" {...field} value={field.value ?? ""} onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)} />
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="مثال: ۵"
+                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
+                        field.onChange(parseFarsiNumber(v))
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

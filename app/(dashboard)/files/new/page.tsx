@@ -13,7 +13,7 @@ export default async function NewFilePage() {
         title="ثبت فایل جدید"
         description="حداقل اطلاعات مورد نیاز: نوع معامله، آدرس، و یک مخاطب"
       />
-      <FileForm />
+      <FileForm userId={session.user.id} />
     </div>
   )
 }
