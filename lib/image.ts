@@ -3,6 +3,7 @@ import sharp from "sharp"
 const MAX_WIDTH = 1200
 const MAX_HEIGHT = 900
 const JPEG_QUALITY = 82
+const AVATAR_SIZE = 300
 
 /**
  * Escapes XML special characters for safe embedding in SVG text elements.
@@ -56,5 +57,24 @@ export async function processPropertyPhoto(
   return base
     .composite([{ input: watermark, gravity: "southeast" }])
     .jpeg({ quality: JPEG_QUALITY, progressive: true })
+    .toBuffer()
+}
+
+/**
+ * Processes a user or office avatar/logo:
+ *   1. Auto-rotate from EXIF orientation
+ *   2. Crop to a centered square, resize to AVATAR_SIZE × AVATAR_SIZE
+ *   3. Output as compressed JPEG (no watermark)
+ */
+export async function processAvatar(buffer: Buffer): Promise<Buffer> {
+  return sharp(buffer)
+    .rotate()
+    .resize({
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      fit: "cover",
+      position: "center",
+    })
+    .jpeg({ quality: 85, progressive: true })
     .toBuffer()
 }

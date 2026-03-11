@@ -13,6 +13,7 @@ interface DashboardShellProps {
   role: Role
   officeName: string
   userName: string
+  avatarUrl?: string | null
   subscription: ResolvedSubscription | null
   showOnboarding: boolean
 }
@@ -22,6 +23,7 @@ export function DashboardShell({
   role,
   officeName,
   userName,
+  avatarUrl,
   subscription,
   showOnboarding,
 }: DashboardShellProps) {
@@ -58,6 +60,7 @@ export function DashboardShell({
       <div className="flex flex-1 flex-col min-w-0">
         <Topbar
           userName={userName}
+          avatarUrl={avatarUrl}
           isDark={isDark}
           onMenuClick={() => setSidebarOpen(true)}
           onToggleDark={toggleDark}

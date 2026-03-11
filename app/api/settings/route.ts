@@ -86,7 +86,7 @@ export async function PATCH(request: Request) {
     )
   }
 
-  const { name, phone, email, address, city } = parsed.data
+  const { name, phone, email, address, city, officeBio } = parsed.data
 
   try {
     const office = await db.office.update({
@@ -98,6 +98,7 @@ export async function PATCH(request: Request) {
         email: email || null,
         address: address || null,
         city: city || null,
+        officeBio: officeBio || null,
       },
       select: { id: true },
     })

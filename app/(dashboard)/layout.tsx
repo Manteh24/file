@@ -27,7 +27,7 @@ export default async function DashboardLayout({
     getEffectiveSubscription(officeId),
     db.user.findUnique({
       where: { id: session.user.id },
-      select: { onboardingCompleted: true },
+      select: { onboardingCompleted: true, avatarUrl: true },
     }),
   ])
 
@@ -39,6 +39,7 @@ export default async function DashboardLayout({
       role={session.user.role}
       officeName={office?.name ?? "دفتر شما"}
       userName={session.user.name ?? "کاربر"}
+      avatarUrl={userRecord?.avatarUrl}
       subscription={subscription}
       showOnboarding={showOnboarding}
     >

@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { Menu, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationBell } from "@/components/dashboard/NotificationBell"
@@ -7,13 +8,13 @@ import { signOutAction } from "@/app/(dashboard)/actions"
 
 interface TopbarProps {
   userName: string
+  avatarUrl?: string | null
   isDark: boolean
   onMenuClick: () => void
   onToggleDark: () => void
 }
 
-export function Topbar({ userName, isDark, onMenuClick, onToggleDark }: TopbarProps) {
-  // Take the first character as the avatar initial
+export function Topbar({ userName, avatarUrl, isDark, onMenuClick, onToggleDark }: TopbarProps) {
   const initial = userName.charAt(0)
 
   return (
@@ -39,13 +40,18 @@ export function Topbar({ userName, isDark, onMenuClick, onToggleDark }: TopbarPr
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
 
-        {/* User avatar */}
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
-          aria-hidden
+        {/* User avatar — tappable, links to profile page */}
+        <Link
+          href="/profile"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground overflow-hidden hover:ring-2 hover:ring-primary/50 transition-all"
+          aria-label="پروفایل من"
         >
-          <span className="text-xs font-bold">{initial}</span>
-        </div>
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-xs font-bold">{initial}</span>
+          )}
+        </Link>
 
         {/* Name — hidden on very small screens */}
         <span className="hidden sm:block text-sm font-medium">{userName}</span>

@@ -33,10 +33,10 @@ const navItems: NavItem[] = [
   { href: "/crm", label: "مشتریان", icon: Users },
   { href: "/agents", label: "مشاوران", icon: UserCog, managerOnly: true, tutorialId: "nav-agents" },
   { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
-  { href: "/reports", label: "گزارش‌ها", icon: BarChart3 },
+  { href: "/reports", label: "گزارش‌ها", icon: BarChart3, managerOnly: true },
   { href: "/support", label: "پشتیبانی", icon: LifeBuoy },
   { href: "/referral", label: "کد معرفی", icon: Gift, managerOnly: true },
-  { href: "/settings", label: "تنظیمات", icon: Settings },
+  { href: "/settings", label: "تنظیمات", icon: Settings, managerOnly: true },
 ]
 
 interface SidebarProps {

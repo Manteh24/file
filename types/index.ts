@@ -271,6 +271,7 @@ export interface OfficeProfile {
   email: string | null
   address: string | null
   city: string | null
+  officeBio: string | null
 }
 
 export interface SubscriptionInfo {

@@ -70,7 +70,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const [office, subscription, currentUser] = await Promise.all([
     db.office.findUnique({
       where: { id: officeId },
-      select: { id: true, name: true, phone: true, email: true, address: true, city: true },
+      select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true },
     }),
     db.subscription.findUnique({
       where: { officeId },

@@ -36,6 +36,7 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
       email: initialData.email ?? "",
       address: initialData.address ?? "",
       city: initialData.city ?? "",
+      officeBio: initialData.officeBio ?? "",
     },
   })
 
@@ -157,6 +158,26 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
                 />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Office bio */}
+        <FormField
+          control={form.control}
+          name="officeBio"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>معرفی دفتر</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="توضیح کوتاهی درباره دفتر مسکن خود..."
+                  rows={3}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+              <p className="text-xs text-muted-foreground">در صفحه اشتراک‌گذاری ملک نمایش داده می‌شود</p>
             </FormItem>
           )}
         />

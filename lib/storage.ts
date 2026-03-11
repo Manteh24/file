@@ -70,3 +70,20 @@ export function generateTicketAttachmentKey(officeId: string, ticketId: string):
   const random = Math.random().toString(36).slice(2, 10)
   return `ticket-attachments/${officeId}/${ticketId}/${Date.now()}-${random}.jpg`
 }
+
+/**
+ * Generates a stable storage key for a user avatar.
+ * Overwrites previous avatar on each upload (no versioning needed).
+ * Format: `avatars/{userId}.jpg`
+ */
+export function generateAvatarKey(userId: string): string {
+  return `avatars/${userId}.jpg`
+}
+
+/**
+ * Generates a stable storage key for an office logo.
+ * Format: `office-logos/{officeId}.jpg`
+ */
+export function generateOfficeLogoKey(officeId: string): string {
+  return `office-logos/${officeId}.jpg`
+}

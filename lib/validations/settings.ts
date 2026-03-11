@@ -28,6 +28,11 @@ export const updateOfficeProfileSchema = z.object({
     .max(100, "نام شهر نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد")
     .optional()
     .or(z.literal("")),
+  officeBio: z
+    .string()
+    .max(400, "توضیحات دفتر نمی‌تواند بیشتر از ۴۰۰ کاراکتر باشد")
+    .optional()
+    .or(z.literal("")),
 })
 
 export type UpdateOfficeProfileInput = z.infer<typeof updateOfficeProfileSchema>

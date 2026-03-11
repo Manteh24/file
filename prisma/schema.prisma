@@ -105,6 +105,9 @@ model Office {
   email        String?
   address      String?
   city         String?
+  // Office logo and bio — shown on public share pages
+  logoUrl        String?
+  officeBio      String?
   // Bank details for referral commission payouts — filled in by the office manager
   cardNumber     String?
   shebaNumber    String?
@@ -154,6 +157,8 @@ model User {
   onboardingCompleted   Boolean       @default(false)
   // avatarUrl will be populated by the image processing pipeline (Feature 14)
   avatarUrl    String?
+  // Short bio — shown on public share pages
+  bio          String?
   // Internal admin note (not visible to the user)
   adminNote    String?
   // Nullable: SUPER_ADMIN and MID_ADMIN users have no tenant office (officeId = null)
