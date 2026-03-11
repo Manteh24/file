@@ -1,3 +1,7 @@
+// Force dynamic rendering so office phone/bio updates are always reflected immediately.
+// Without this, Next.js Full Route Cache may serve a stale cached HTML render.
+export const dynamic = "force-dynamic"
+
 import { MapPin, Home, Building2, AlertTriangle, Phone, MessageSquare } from "lucide-react"
 import { db } from "@/lib/db"
 import { formatToman } from "@/lib/utils"

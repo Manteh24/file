@@ -113,7 +113,15 @@ const nextConfig: NextConfig = {
       })
     }
 
-    return [{ source: "/:path*", headers }]
+    return [
+      { source: "/:path*", headers },
+      // Share pages are dynamically server-rendered and must never be served from
+      // browser cache or the PWA service worker cache — office data can change anytime.
+      {
+        source: "/p/:token*",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+    ]
   },
 
   async redirects() {
