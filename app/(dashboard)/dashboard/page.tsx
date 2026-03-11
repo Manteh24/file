@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import Link from "next/link"
+import { startOfMonth } from "date-fns-jalali"
 import {
   Card,
   CardContent,
@@ -10,7 +11,8 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { formatJalali } from "@/lib/utils"
+import { formatJalali, formatToman } from "@/lib/utils"
+import { FileStatusRing } from "@/components/dashboard/FileStatusRing"
 import type { Plan, SubStatus } from "@/types"
 
 const planLabels: Record<Plan, string> = {
@@ -33,7 +35,9 @@ export default async function DashboardPage() {
   const { officeId, role, id: userId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 
-  const [subscription, teamCount, activeFilesCount, customerCount] = await Promise.all([
+  const jalaliMonthStart = startOfMonth(new Date())
+
+  const [subscription, teamCount, activeFilesCount, customerCount, fileStatusGroups, monthContractData] = await Promise.all([
     db.subscription.findFirst({ where: { officeId } }),
     db.user.count({ where: { officeId } }),
     db.propertyFile.count({
@@ -46,6 +50,16 @@ export default async function DashboardPage() {
       },
     }),
     db.customer.count({ where: { officeId } }),
+    db.propertyFile.groupBy({
+      by: ["status"],
+      where: { officeId },
+      _count: { id: true },
+    }),
+    db.contract.aggregate({
+      where: { officeId, finalizedAt: { gte: jalaliMonthStart } },
+      _count: { id: true },
+      _sum: { commissionAmount: true },
+    }),
   ])
 
   const trialDaysLeft =
@@ -60,6 +74,13 @@ export default async function DashboardPage() {
       : null
 
   const subStatus = subscription ? statusConfig[subscription.status] : null
+
+  const fileStatusData = fileStatusGroups.map((g) => ({
+    status: g.status,
+    count: g._count.id,
+  }))
+  const monthDeals = monthContractData._count.id
+  const monthCommission = monthContractData._sum.commissionAmount ?? BigInt(0)
 
   return (
     <div className="space-y-6">
@@ -149,6 +170,44 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
+      {/* Visual section: file pipeline ring + this-month summary */}
+      {role === "MANAGER" && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <FileStatusRing data={fileStatusData} />
+          <ThisMonthCard deals={monthDeals} commission={monthCommission} />
+        </div>
+      )}
     </div>
+  )
+}
+
+// ─── Inline sub-component ─────────────────────────────────────────────────────
+
+interface ThisMonthCardProps {
+  deals: number
+  commission: bigint
+}
+
+function ThisMonthCard({ deals, commission }: ThisMonthCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>این ماه</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">تعداد قراردادها</p>
+          <p className="text-2xl font-bold tabular-nums">
+            {deals.toLocaleString("fa-IR")}
+          </p>
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">کل کمیسیون</p>
+          <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">
+            {formatToman(commission)}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

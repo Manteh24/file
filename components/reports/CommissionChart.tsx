@@ -5,13 +5,16 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
 } from "@/components/ui/chart"
 import { formatTomanAxis, formatToman } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export interface MonthlyDataPoint {
   label: string
-  commission: number
+  officeShare: number
+  agentShare: number
   deals: number
 }
 
@@ -20,7 +23,8 @@ interface Props {
 }
 
 const chartConfig = {
-  commission: { label: "کمیسیون", color: "hsl(var(--primary))" },
+  officeShare: { label: "سهم دفتر", color: "hsl(217, 91%, 60%)" },
+  agentShare: { label: "سهم مشاور", color: "hsl(142, 71%, 45%)" },
 }
 
 export function CommissionChart({ data }: Props) {
@@ -32,7 +36,7 @@ export function CommissionChart({ data }: Props) {
         <CardTitle>روند کمیسیون</CardTitle>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-52 w-full">
+        <ChartContainer config={chartConfig} className="w-full" style={{ height: 208 }}>
           <BarChart data={data} margin={{ top: 4, right: 4, left: 8, bottom: 4 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" />
             <XAxis
@@ -65,10 +69,18 @@ export function CommissionChart({ data }: Props) {
               )}
             />
             <Bar
-              dataKey="commission"
-              fill="var(--color-commission)"
+              dataKey="officeShare"
+              stackId="a"
+              fill="var(--color-officeShare)"
+              radius={[0, 0, 0, 0]}
+            />
+            <Bar
+              dataKey="agentShare"
+              stackId="a"
+              fill="var(--color-agentShare)"
               radius={[4, 4, 0, 0]}
             />
+            <ChartLegend content={(props) => <ChartLegendContent payload={props.payload} />} />
           </BarChart>
         </ChartContainer>
       </CardContent>

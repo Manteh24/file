@@ -16,6 +16,8 @@ import { EmptyState } from "@/components/shared/EmptyState"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CommissionChart, type MonthlyDataPoint } from "@/components/reports/CommissionChart"
+import { TypeBreakdownChart } from "@/components/reports/TypeBreakdownChart"
+import { AgentPerformanceChart } from "@/components/reports/AgentPerformanceChart"
 import {
   normalisePeriod,
   getDateFilter,
@@ -168,10 +170,11 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     const monthNum = parseInt(format(contract.finalizedAt, "M"), 10)
     const label = JALALI_MONTH_SHORT[monthNum] ?? String(monthNum)
     if (!monthlyMap.has(key)) {
-      monthlyMap.set(key, { label, commission: 0, deals: 0 })
+      monthlyMap.set(key, { label, officeShare: 0, agentShare: 0, deals: 0 })
     }
     const entry = monthlyMap.get(key)!
-    entry.commission += Number(contract.commissionAmount)
+    entry.officeShare += Number(contract.officeShare)
+    entry.agentShare += Number(contract.agentShare)
     entry.deals += 1
   }
   const monthlyData: MonthlyDataPoint[] = Array.from(monthlyMap.entries())
@@ -241,71 +244,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       {/* Type breakdown + Agent performance side-by-side on desktop */}
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* By transaction type */}
-        <Card>
-          <CardHeader>
-            <CardTitle>بر اساس نوع معامله</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {typeBreakdown.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                هیچ معامله‌ای در این بازه زمانی ثبت نشده است
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {typeBreakdown.map((item) => (
-                  <li
-                    key={item.type}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{item.label}</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {item.count.toLocaleString("fa-IR")} معامله
-                      </span>
-                    </div>
-                    <span className="text-sm font-medium">
-                      {formatToman(item.commission)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Agent performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>عملکرد مشاوران</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {agentPerformance.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">
-                هیچ معامله‌ای در این بازه زمانی ثبت نشده است
-              </p>
-            ) : (
-              <ul className="space-y-3">
-                {agentPerformance.map((agent) => (
-                  <li
-                    key={agent.displayName}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">
-                        {agent.displayName}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {agent.deals.toLocaleString("fa-IR")} معامله
-                      </span>
-                    </div>
-                    <span className="text-sm">{formatToman(agent.agentShare)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <TypeBreakdownChart data={typeBreakdown} />
+        <AgentPerformanceChart
+          data={agentPerformance.map((a) => ({
+            displayName: a.displayName,
+            deals: a.deals,
+            agentShare: Number(a.agentShare),
+          }))}
+        />
       </div>
 
       {/* Recent contracts */}
