@@ -86,7 +86,7 @@ export async function POST(
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
-  const { customPrice, customDepositAmount } = parsed.data
+  const { customPrice, customDepositAmount, agentId } = parsed.data
 
   // Verify file belongs to office; agents must be assigned
   const file = await db.propertyFile.findFirst({
@@ -111,6 +111,19 @@ export async function POST(
     )
   }
 
+  // Validate that the selected agent is actually assigned to this file
+  if (agentId) {
+    const isAssigned = await db.fileAssignment.findFirst({
+      where: { fileId, userId: agentId },
+    })
+    if (!isAssigned) {
+      return NextResponse.json(
+        { success: false, error: "مشاور انتخاب‌شده به این فایل دسترسی ندارد" },
+        { status: 400 }
+      )
+    }
+  }
+
   try {
     const token = randomBytes(12).toString("hex")
 
@@ -119,6 +132,7 @@ export async function POST(
         data: {
           fileId,
           createdById: userId,
+          agentId: agentId ?? null,
           token,
           customPrice: customPrice != null ? BigInt(customPrice) : null,
           customDepositAmount: customDepositAmount != null ? BigInt(customDepositAmount) : null,

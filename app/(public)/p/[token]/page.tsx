@@ -34,7 +34,7 @@ export default async function SharePage({ params }: SharePageProps) {
   const link = await db.shareLink.findUnique({
     where: { token },
     include: {
-      createdBy: {
+      agent: {
         select: { displayName: true, avatarUrl: true, phone: true, bio: true },
       },
       file: {
@@ -267,53 +267,54 @@ export default async function SharePage({ params }: SharePageProps) {
         </Card>
       )}
 
-      {/* Agent contact card */}
-      <Card>
-        <CardContent className="p-4">
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-3">مشاور ملک</p>
-          <div className="flex items-start gap-4">
-            {/* Avatar */}
-            <div className="h-14 w-14 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center overflow-hidden">
-              {link.createdBy.avatarUrl ? (
-                <img
-                  src={link.createdBy.avatarUrl}
-                  alt={link.createdBy.displayName}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="text-lg font-bold">{link.createdBy.displayName.charAt(0)}</span>
-              )}
+      {/* Agent contact card — shown only when an agent is selected for this link */}
+      {link.agent && (
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground mb-3">مشاور ملک</p>
+            <div className="flex items-start gap-4">
+              <div className="h-14 w-14 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center overflow-hidden">
+                {link.agent.avatarUrl ? (
+                  <img
+                    src={link.agent.avatarUrl}
+                    alt={link.agent.displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-lg font-bold">{link.agent.displayName.charAt(0)}</span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-base">{link.agent.displayName}</p>
+                {link.agent.bio && (
+                  <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{link.agent.bio}</p>
+                )}
+                {link.agent.phone && (
+                  <div className="flex gap-2 mt-3 flex-wrap">
+                    <a
+                      href={`tel:${link.agent.phone}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                    >
+                      <Phone className="h-4 w-4" />
+                      تماس
+                    </a>
+                    <a
+                      href={`sms:${link.agent.phone}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      پیامک
+                    </a>
+                  </div>
+                )}
+                {!link.agent.phone && (
+                  <p className="text-xs text-muted-foreground mt-2">برای تماس با دفتر مراجعه کنید</p>
+                )}
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-base">{link.createdBy.displayName}</p>
-              {link.createdBy.bio && (
-                <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">{link.createdBy.bio}</p>
-              )}
-              {link.createdBy.phone && (
-                <div className="flex gap-2 mt-3 flex-wrap">
-                  <a
-                    href={`tel:${link.createdBy.phone}`}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                  >
-                    <Phone className="h-4 w-4" />
-                    تماس
-                  </a>
-                  <a
-                    href={`sms:${link.createdBy.phone}`}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    پیامک
-                  </a>
-                </div>
-              )}
-              {!link.createdBy.phone && (
-                <p className="text-xs text-muted-foreground mt-2">برای تماس با دفتر مراجعه کنید</p>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Office card */}
       <Card>

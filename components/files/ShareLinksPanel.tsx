@@ -25,6 +25,11 @@ interface Contact {
   phone: string
 }
 
+interface AssignedAgent {
+  id: string
+  displayName: string
+}
+
 interface ShareLinksPanelProps {
   fileId: string
   transactionType: string
@@ -33,6 +38,9 @@ interface ShareLinksPanelProps {
   customers?: Contact[]
   agentName?: string
   officeName?: string
+  assignedAgents?: AssignedAgent[]
+  // The current user's ID — used to auto-select the agent when role=AGENT
+  currentUserId?: string
 }
 
 function getShareUrl(token: string): string {
@@ -55,6 +63,8 @@ export function ShareLinksPanel({
   customers,
   agentName = "",
   officeName = "",
+  assignedAgents = [],
+  currentUserId,
 }: ShareLinksPanelProps) {
   const router = useRouter()
   const [links, setLinks] = useState<ShareLink[]>([])
@@ -63,10 +73,22 @@ export function ShareLinksPanel({
 
   const isLongTermRent = transactionType === "LONG_TERM_RENT"
 
+  // Determine initial agentId:
+  // - Agents auto-select themselves
+  // - Manager with 1 assigned agent: auto-select that agent
+  // - Manager with 0 or 2+ agents: start with null (office card only, or manager picks)
+  const defaultAgentId =
+    role === "AGENT" && currentUserId
+      ? currentUserId
+      : assignedAgents.length === 1
+        ? assignedAgents[0].id
+        : null
+
   // Create form state
   const [creating, setCreating] = useState(false)
   const [customPriceInput, setCustomPriceInput] = useState<number | undefined>(undefined)
   const [customDepositInput, setCustomDepositInput] = useState<number | undefined>(undefined)
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(defaultAgentId)
   const [saving, setSaving] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
@@ -122,6 +144,7 @@ export function ShareLinksPanel({
         body: JSON.stringify({
           customPrice: customPriceInput ?? null,
           customDepositAmount: isLongTermRent ? (customDepositInput ?? null) : null,
+          agentId: selectedAgentId,
         }),
       })
       const body = await res.json()
@@ -134,6 +157,7 @@ export function ShareLinksPanel({
       setCreating(false)
       setCustomPriceInput(undefined)
       setCustomDepositInput(undefined)
+      setSelectedAgentId(defaultAgentId)
       router.refresh()
     } catch {
       setCreateError("خطا در ارتباط با سرور")
@@ -190,6 +214,24 @@ export function ShareLinksPanel({
         {creating && (
           <div className="rounded-lg border bg-accent/30 p-3 space-y-3">
             <p className="text-xs font-medium text-muted-foreground">ایجاد لینک اشتراک جدید</p>
+
+            {/* Agent selector — shown to manager when 2+ agents are assigned */}
+            {role === "MANAGER" && assignedAgents.length >= 2 && (
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">مشاور نمایش‌داده‌شده در لینک</label>
+                <select
+                  value={selectedAgentId ?? ""}
+                  onChange={(e) => setSelectedAgentId(e.target.value || null)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="">فقط دفتر (بدون مشاور)</option>
+                  {assignedAgents.map((a) => (
+                    <option key={a.id} value={a.id}>{a.displayName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {isLongTermRent ? (
               // LONG_TERM_RENT needs two separate price overrides
               <div className="space-y-2">
@@ -238,6 +280,7 @@ export function ShareLinksPanel({
                   setCreating(false)
                   setCustomPriceInput(undefined)
                   setCustomDepositInput(undefined)
+                  setSelectedAgentId(defaultAgentId)
                   setCreateError(null)
                 }}
                 disabled={saving}

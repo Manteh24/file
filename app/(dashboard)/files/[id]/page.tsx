@@ -386,6 +386,11 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
           customers={crmCustomers}
           agentName={session.user.name ?? ""}
           officeName={file.office.name}
+          assignedAgents={file.assignedAgents.map((a) => ({
+            id: a.user.id,
+            displayName: a.user.displayName,
+          }))}
+          currentUserId={userId}
         />
       )}
 

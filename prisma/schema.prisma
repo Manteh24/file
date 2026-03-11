@@ -176,7 +176,8 @@ model User {
   fileAssignments     FileAssignment[]
   activityLogs        ActivityLog[]
   priceHistory        PriceHistory[]
-  shareLinks          ShareLink[]
+  shareLinks          ShareLink[]      @relation("ShareLinkCreator")
+  shareLinkAgentCards ShareLink[]      @relation("ShareLinkAgent")
   notifications       Notification[]
   createdCustomers    Customer[]       @relation("CreatedCustomers")
   customerNotes       CustomerNote[]   @relation("CustomerNotes")
@@ -441,6 +442,9 @@ model ShareLink {
   id          String       @id @default(cuid())
   fileId      String
   createdById String
+  // The agent whose profile card is shown on the public share page.
+  // Null = no agent card shown (office card only).
+  agentId     String?
   token       String       @unique
   // Custom price overrides. For SALE/PRE_SALE: customPrice = sale price.
   // For SHORT_TERM_RENT: customPrice = rent amount.
@@ -452,7 +456,8 @@ model ShareLink {
   createdAt   DateTime     @default(now())
 
   file        PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  createdBy   User         @relation(fields: [createdById], references: [id])
+  createdBy   User         @relation("ShareLinkCreator", fields: [createdById], references: [id])
+  agent       User?        @relation("ShareLinkAgent", fields: [agentId], references: [id])
 
   @@index([token])
   @@map("share_links")

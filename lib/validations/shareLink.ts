@@ -13,6 +13,8 @@ export const createShareLinkSchema = z.object({
   customPrice: priceField,
   // For LONG_TERM_RENT only: custom رهن (deposit) amount.
   customDepositAmount: priceField,
+  // The assigned agent to show on the public share page. Null = office card only.
+  agentId: z.string().optional().nullable(),
 })
 
 export type CreateShareLinkInput = z.infer<typeof createShareLinkSchema>
