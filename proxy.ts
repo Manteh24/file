@@ -4,9 +4,6 @@ import { isMaintenanceModeEnabled } from "@/lib/platform-settings"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-// Middleware uses Prisma (via auth), which requires Node.js built-ins — opt out of Edge runtime.
-export const runtime = "nodejs"
-
 // Routes that require the user to be authenticated
 const PROTECTED_PREFIXES = [
   "/dashboard",

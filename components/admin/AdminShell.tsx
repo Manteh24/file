@@ -15,21 +15,26 @@ export function AdminShell({ children, role, userName }: AdminShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
 
-  // Read persisted preference on mount
+  // Read persisted preference on mount and apply to <html>.
+  // Clean up on unmount so the dark class doesn't bleed into the tenant dashboard.
   useEffect(() => {
-    setIsDark(localStorage.getItem("admin-dark") === "1")
+    const stored = localStorage.getItem("dark") === "1"
+    setIsDark(stored)
+    document.documentElement.classList.toggle("dark", stored)
+    return () => document.documentElement.classList.remove("dark")
   }, [])
 
   function toggleDark() {
     setIsDark((prev) => {
       const next = !prev
-      localStorage.setItem("admin-dark", next ? "1" : "0")
+      localStorage.setItem("dark", next ? "1" : "0")
+      document.documentElement.classList.toggle("dark", next)
       return next
     })
   }
 
   return (
-    <div className={isDark ? "dark" : undefined}>
+    <div>
       <div className="flex h-screen overflow-hidden bg-muted/20">
         <AdminSidebar
           role={role}

@@ -1,16 +1,18 @@
 "use client"
 
-import { Menu } from "lucide-react"
+import { Menu, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { NotificationBell } from "@/components/dashboard/NotificationBell"
 import { signOutAction } from "@/app/(dashboard)/actions"
 
 interface TopbarProps {
   userName: string
+  isDark: boolean
   onMenuClick: () => void
+  onToggleDark: () => void
 }
 
-export function Topbar({ userName, onMenuClick }: TopbarProps) {
+export function Topbar({ userName, isDark, onMenuClick, onToggleDark }: TopbarProps) {
   // Take the first character as the avatar initial
   const initial = userName.charAt(0)
 
@@ -28,6 +30,14 @@ export function Topbar({ userName, onMenuClick }: TopbarProps) {
       {/* Actions — pinned to the end (left side in RTL) */}
       <div className="flex items-center gap-2 ms-auto">
         <NotificationBell />
+
+        <button
+          onClick={onToggleDark}
+          className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          aria-label={isDark ? "تغییر به حالت روشن" : "تغییر به حالت تاریک"}
+        >
+          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
 
         {/* User avatar */}
         <div
