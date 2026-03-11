@@ -134,6 +134,13 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId 
       hasStorage: initialData?.hasStorage ?? false,
       hasBalcony: initialData?.hasBalcony ?? false,
       hasSecurity: initialData?.hasSecurity ?? false,
+      hasGym: initialData?.hasGym ?? false,
+      hasPool: initialData?.hasPool ?? false,
+      hasWesternToilet: initialData?.hasWesternToilet ?? false,
+      hasSmartHome: initialData?.hasSmartHome ?? false,
+      hasSauna: initialData?.hasSauna ?? false,
+      hasJacuzzi: initialData?.hasJacuzzi ?? false,
+      hasRoofGarden: initialData?.hasRoofGarden ?? false,
       contacts:
         initialData?.contacts?.map((c) => ({
           type: c.type,
@@ -277,6 +284,13 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId 
       hasStorage: values.hasStorage,
       hasBalcony: values.hasBalcony,
       hasSecurity: values.hasSecurity,
+      hasGym: values.hasGym,
+      hasPool: values.hasPool,
+      hasWesternToilet: values.hasWesternToilet,
+      hasSmartHome: values.hasSmartHome,
+      hasSauna: values.hasSauna,
+      hasJacuzzi: values.hasJacuzzi,
+      hasRoofGarden: values.hasRoofGarden,
       locationContext,
       tone: aiTone,
     }
@@ -667,6 +681,13 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId 
                 { name: "hasStorage", label: "انباری" },
                 { name: "hasBalcony", label: "بالکن" },
                 { name: "hasSecurity", label: "نگهبانی" },
+                { name: "hasGym", label: "باشگاه بدنسازی" },
+                { name: "hasPool", label: "استخر" },
+                { name: "hasWesternToilet", label: "توالت فرنگی" },
+                { name: "hasSmartHome", label: "خانه هوشمند" },
+                { name: "hasSauna", label: "سونا" },
+                { name: "hasJacuzzi", label: "جکوزی" },
+                { name: "hasRoofGarden", label: "روف گاردن" },
               ] as const
             ).map(({ name, label }) => (
               <FormField

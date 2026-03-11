@@ -31,6 +31,13 @@ export async function GET(request: Request) {
     hasStorage: searchParams.get("hasStorage") ?? undefined,
     hasBalcony: searchParams.get("hasBalcony") ?? undefined,
     hasSecurity: searchParams.get("hasSecurity") ?? undefined,
+    hasGym: searchParams.get("hasGym") ?? undefined,
+    hasPool: searchParams.get("hasPool") ?? undefined,
+    hasWesternToilet: searchParams.get("hasWesternToilet") ?? undefined,
+    hasSmartHome: searchParams.get("hasSmartHome") ?? undefined,
+    hasSauna: searchParams.get("hasSauna") ?? undefined,
+    hasJacuzzi: searchParams.get("hasJacuzzi") ?? undefined,
+    hasRoofGarden: searchParams.get("hasRoofGarden") ?? undefined,
     sort: searchParams.get("sort") ?? undefined,
   })
 

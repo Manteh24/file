@@ -231,13 +231,27 @@ export default async function SharePage({ params }: SharePageProps) {
             file.hasParking ||
             file.hasStorage ||
             file.hasBalcony ||
-            file.hasSecurity) && (
+            file.hasSecurity ||
+            file.hasGym ||
+            file.hasPool ||
+            file.hasWesternToilet ||
+            file.hasSmartHome ||
+            file.hasSauna ||
+            file.hasJacuzzi ||
+            file.hasRoofGarden) && (
             <div className="mt-4 flex flex-wrap gap-2">
               {file.hasElevator && <AmenityTag label="آسانسور" />}
               {file.hasParking && <AmenityTag label="پارکینگ" />}
               {file.hasStorage && <AmenityTag label="انباری" />}
               {file.hasBalcony && <AmenityTag label="بالکن" />}
               {file.hasSecurity && <AmenityTag label="نگهبانی" />}
+              {file.hasGym && <AmenityTag label="باشگاه بدنسازی" />}
+              {file.hasPool && <AmenityTag label="استخر" />}
+              {file.hasWesternToilet && <AmenityTag label="توالت فرنگی" />}
+              {file.hasSmartHome && <AmenityTag label="خانه هوشمند" />}
+              {file.hasSauna && <AmenityTag label="سونا" />}
+              {file.hasJacuzzi && <AmenityTag label="جکوزی" />}
+              {file.hasRoofGarden && <AmenityTag label="روف گاردن" />}
             </div>
           )}
         </CardContent>

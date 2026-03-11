@@ -162,6 +162,13 @@ export function buildFileWhere(
     ...(filters.hasStorage && { hasStorage: true }),
     ...(filters.hasBalcony && { hasBalcony: true }),
     ...(filters.hasSecurity && { hasSecurity: true }),
+    ...(filters.hasGym && { hasGym: true }),
+    ...(filters.hasPool && { hasPool: true }),
+    ...(filters.hasWesternToilet && { hasWesternToilet: true }),
+    ...(filters.hasSmartHome && { hasSmartHome: true }),
+    ...(filters.hasSauna && { hasSauna: true }),
+    ...(filters.hasJacuzzi && { hasJacuzzi: true }),
+    ...(filters.hasRoofGarden && { hasRoofGarden: true }),
     ...(andConditions.length > 0 && { AND: andConditions }),
   }
 }

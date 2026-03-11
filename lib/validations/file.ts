@@ -28,7 +28,7 @@ export const createFileSchema = z.object({
 
   // Physical details
   area: z.coerce.number().int().positive("متراژ باید بیشتر از صفر باشد").optional(),
-  floorNumber: z.coerce.number().int().min(1, "شماره طبقه باید حداقل ۱ باشد").optional(),
+  floorNumber: z.coerce.number().int().min(0, "شماره طبقه نمی‌تواند منفی باشد").optional(),
   totalFloors: z.coerce.number().int().positive("تعداد طبقات باید بیشتر از صفر باشد").optional(),
   buildingAge: z.coerce.number().int().min(0, "سن بنا نمی‌تواند منفی باشد").max(150, "سن بنا نمی‌تواند بیشتر از ۱۵۰ سال باشد").optional(),
 
@@ -52,6 +52,13 @@ export const createFileSchema = z.object({
   hasStorage: z.boolean().default(false),
   hasBalcony: z.boolean().default(false),
   hasSecurity: z.boolean().default(false),
+  hasGym: z.boolean().default(false),
+  hasPool: z.boolean().default(false),
+  hasWesternToilet: z.boolean().default(false),
+  hasSmartHome: z.boolean().default(false),
+  hasSauna: z.boolean().default(false),
+  hasJacuzzi: z.boolean().default(false),
+  hasRoofGarden: z.boolean().default(false),
 
   // At least 1 contact is required
   contacts: z.array(contactSchema).min(1, "حداقل یک مخاطب الزامی است"),
@@ -142,6 +149,34 @@ export const fileFiltersSchema = z.object({
     .transform(() => true)
     .optional(),
   hasSecurity: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasGym: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasPool: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasWesternToilet: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasSmartHome: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasSauna: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasJacuzzi: z
+    .enum(["true"])
+    .transform(() => true)
+    .optional(),
+  hasRoofGarden: z
     .enum(["true"])
     .transform(() => true)
     .optional(),

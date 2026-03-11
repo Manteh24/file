@@ -59,6 +59,13 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
     hasStorage: params.hasStorage ?? undefined,
     hasBalcony: params.hasBalcony ?? undefined,
     hasSecurity: params.hasSecurity ?? undefined,
+    hasGym: params.hasGym ?? undefined,
+    hasPool: params.hasPool ?? undefined,
+    hasWesternToilet: params.hasWesternToilet ?? undefined,
+    hasSmartHome: params.hasSmartHome ?? undefined,
+    hasSauna: params.hasSauna ?? undefined,
+    hasJacuzzi: params.hasJacuzzi ?? undefined,
+    hasRoofGarden: params.hasRoofGarden ?? undefined,
     sort: params.sort ?? undefined,
   })
 
@@ -104,6 +111,13 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
       params.hasStorage ||
       params.hasBalcony ||
       params.hasSecurity ||
+      params.hasGym ||
+      params.hasPool ||
+      params.hasWesternToilet ||
+      params.hasSmartHome ||
+      params.hasSauna ||
+      params.hasJacuzzi ||
+      params.hasRoofGarden ||
       params.sort
   )
 

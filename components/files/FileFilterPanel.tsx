@@ -25,6 +25,13 @@ export interface RawFilterParams {
   hasStorage?: string
   hasBalcony?: string
   hasSecurity?: string
+  hasGym?: string
+  hasPool?: string
+  hasWesternToilet?: string
+  hasSmartHome?: string
+  hasSauna?: string
+  hasJacuzzi?: string
+  hasRoofGarden?: string
   sort?: string
 }
 
@@ -45,6 +52,13 @@ interface FilterState {
   hasStorage: boolean
   hasBalcony: boolean
   hasSecurity: boolean
+  hasGym: boolean
+  hasPool: boolean
+  hasWesternToilet: boolean
+  hasSmartHome: boolean
+  hasSauna: boolean
+  hasJacuzzi: boolean
+  hasRoofGarden: boolean
   sort: SortOption | ""
 }
 
@@ -62,6 +76,13 @@ function initState(p: RawFilterParams): FilterState {
     hasStorage: p.hasStorage === "true",
     hasBalcony: p.hasBalcony === "true",
     hasSecurity: p.hasSecurity === "true",
+    hasGym: p.hasGym === "true",
+    hasPool: p.hasPool === "true",
+    hasWesternToilet: p.hasWesternToilet === "true",
+    hasSmartHome: p.hasSmartHome === "true",
+    hasSauna: p.hasSauna === "true",
+    hasJacuzzi: p.hasJacuzzi === "true",
+    hasRoofGarden: p.hasRoofGarden === "true",
     sort: (p.sort as SortOption) || "",
   }
 }
@@ -78,6 +99,13 @@ function countActiveFilters(state: FilterState): number {
   if (state.hasStorage) count++
   if (state.hasBalcony) count++
   if (state.hasSecurity) count++
+  if (state.hasGym) count++
+  if (state.hasPool) count++
+  if (state.hasWesternToilet) count++
+  if (state.hasSmartHome) count++
+  if (state.hasSauna) count++
+  if (state.hasJacuzzi) count++
+  if (state.hasRoofGarden) count++
   if (state.sort) count++
   return count
 }
@@ -109,12 +137,19 @@ const PROPERTY_TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
   { value: "OTHER", label: "سایر" },
 ]
 
-const AMENITY_OPTIONS: { key: keyof Pick<FilterState, "hasElevator" | "hasParking" | "hasStorage" | "hasBalcony" | "hasSecurity">; label: string }[] = [
+const AMENITY_OPTIONS: { key: keyof Pick<FilterState, "hasElevator" | "hasParking" | "hasStorage" | "hasBalcony" | "hasSecurity" | "hasGym" | "hasPool" | "hasWesternToilet" | "hasSmartHome" | "hasSauna" | "hasJacuzzi" | "hasRoofGarden">; label: string }[] = [
   { key: "hasElevator", label: "آسانسور" },
   { key: "hasParking", label: "پارکینگ" },
   { key: "hasStorage", label: "انباری" },
   { key: "hasBalcony", label: "بالکن" },
   { key: "hasSecurity", label: "نگهبانی" },
+  { key: "hasGym", label: "باشگاه بدنسازی" },
+  { key: "hasPool", label: "استخر" },
+  { key: "hasWesternToilet", label: "توالت فرنگی" },
+  { key: "hasSmartHome", label: "خانه هوشمند" },
+  { key: "hasSauna", label: "سونا" },
+  { key: "hasJacuzzi", label: "جکوزی" },
+  { key: "hasRoofGarden", label: "روف گاردن" },
 ]
 
 const SORT_OPTIONS_UI: { value: SortOption; label: string }[] = [
@@ -155,6 +190,13 @@ export function FileFilterPanel({ initialParams }: FileFilterPanelProps) {
       if (filters.hasStorage) p.set("hasStorage", "true")
       if (filters.hasBalcony) p.set("hasBalcony", "true")
       if (filters.hasSecurity) p.set("hasSecurity", "true")
+      if (filters.hasGym) p.set("hasGym", "true")
+      if (filters.hasPool) p.set("hasPool", "true")
+      if (filters.hasWesternToilet) p.set("hasWesternToilet", "true")
+      if (filters.hasSmartHome) p.set("hasSmartHome", "true")
+      if (filters.hasSauna) p.set("hasSauna", "true")
+      if (filters.hasJacuzzi) p.set("hasJacuzzi", "true")
+      if (filters.hasRoofGarden) p.set("hasRoofGarden", "true")
       if (filters.sort) p.set("sort", filters.sort)
       router.push(p.size ? `/files?${p}` : "/files")
     })

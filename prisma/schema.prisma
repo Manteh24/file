@@ -263,11 +263,18 @@ model PropertyFile {
   description     String?
 
   // Amenities
-  hasElevator     Boolean         @default(false)
-  hasParking      Boolean         @default(false)
-  hasStorage      Boolean         @default(false)
-  hasBalcony      Boolean         @default(false)
-  hasSecurity     Boolean         @default(false)
+  hasElevator      Boolean         @default(false)
+  hasParking       Boolean         @default(false)
+  hasStorage       Boolean         @default(false)
+  hasBalcony       Boolean         @default(false)
+  hasSecurity      Boolean         @default(false)
+  hasGym           Boolean         @default(false)
+  hasPool          Boolean         @default(false)
+  hasWesternToilet Boolean         @default(false)
+  hasSmartHome     Boolean         @default(false)
+  hasSauna         Boolean         @default(false)
+  hasJacuzzi       Boolean         @default(false)
+  hasRoofGarden    Boolean         @default(false)
 
   // Internal notes — not shown on public share page
   notes           String?

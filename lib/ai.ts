@@ -22,6 +22,13 @@ export interface DescriptionInput {
   hasStorage?: boolean
   hasBalcony?: boolean
   hasSecurity?: boolean
+  hasGym?: boolean
+  hasPool?: boolean
+  hasWesternToilet?: boolean
+  hasSmartHome?: boolean
+  hasSauna?: boolean
+  hasJacuzzi?: boolean
+  hasRoofGarden?: boolean
   // Compact summary of nearby amenities from location analysis — passed to the AI prompt when available
   locationContext?: string | null
 }
@@ -110,6 +117,13 @@ export function buildDescriptionTemplate(
   if (input.hasElevator) amenities.push("آسانسور")
   if (input.hasBalcony) amenities.push("بالکن")
   if (input.hasSecurity) amenities.push("نگهبانی")
+  if (input.hasGym) amenities.push("باشگاه بدنسازی")
+  if (input.hasPool) amenities.push("استخر")
+  if (input.hasWesternToilet) amenities.push("توالت فرنگی")
+  if (input.hasSmartHome) amenities.push("خانه هوشمند")
+  if (input.hasSauna) amenities.push("سونا")
+  if (input.hasJacuzzi) amenities.push("جکوزی")
+  if (input.hasRoofGarden) amenities.push("روف گاردن")
   if (amenities.length > 0) {
     if (tone === "compelling") {
       parts.push(`این ملک دارای ${amenities.join("، ")} می‌باشد.`)
@@ -160,6 +174,13 @@ function buildUserMessage(input: DescriptionInput, tone: DescriptionTone): strin
   if (input.hasElevator) amenities.push("آسانسور")
   if (input.hasBalcony) amenities.push("بالکن")
   if (input.hasSecurity) amenities.push("نگهبانی")
+  if (input.hasGym) amenities.push("باشگاه بدنسازی")
+  if (input.hasPool) amenities.push("استخر")
+  if (input.hasWesternToilet) amenities.push("توالت فرنگی")
+  if (input.hasSmartHome) amenities.push("خانه هوشمند")
+  if (input.hasSauna) amenities.push("سونا")
+  if (input.hasJacuzzi) amenities.push("جکوزی")
+  if (input.hasRoofGarden) amenities.push("روف گاردن")
 
   const lines = [`لحن: ${toneLabel}`, `${transactionLabel} ${propertyLabel}`]
   if (specs.length > 0) lines.push(specs.join(" | "))

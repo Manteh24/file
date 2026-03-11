@@ -80,6 +80,13 @@ export default async function EditFilePage({ params }: EditFilePageProps) {
           hasStorage: file.hasStorage,
           hasBalcony: file.hasBalcony,
           hasSecurity: file.hasSecurity,
+          hasGym: file.hasGym,
+          hasPool: file.hasPool,
+          hasWesternToilet: file.hasWesternToilet,
+          hasSmartHome: file.hasSmartHome,
+          hasSauna: file.hasSauna,
+          hasJacuzzi: file.hasJacuzzi,
+          hasRoofGarden: file.hasRoofGarden,
           contacts: file.contacts.map((c) => ({
             id: c.id,
             fileId: c.fileId,
