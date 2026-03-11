@@ -71,7 +71,7 @@ export function OfficeNotesPanel({ officeId }: OfficeNotesPanelProps) {
         />
         {submitError && <p className="text-xs text-red-600">{submitError}</p>}
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">{content.length}/۲۰۰۰</span>
+          <span className="text-xs text-muted-foreground">{content.length.toLocaleString('fa-IR')}/۲۰۰۰</span>
           <button
             type="submit"
             disabled={submitting || !content.trim()}

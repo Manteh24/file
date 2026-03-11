@@ -179,7 +179,7 @@ export function SmsPanel({
           inputMode="numeric"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="09123456789"
+          placeholder="۰۹۱۲۳۴۵۶۷۸۹"
           className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           dir="ltr"
         />
@@ -197,7 +197,7 @@ export function SmsPanel({
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
         />
         <p className="text-xs text-muted-foreground text-end">
-          {message.length} / ۵۰۰
+          {message.length.toLocaleString('fa-IR')} / ۵۰۰
         </p>
       </div>
 

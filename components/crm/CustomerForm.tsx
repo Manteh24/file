@@ -111,7 +111,7 @@ export function CustomerForm({ initialData, customerId }: CustomerFormProps) {
             <FormItem>
               <FormLabel>شماره تماس *</FormLabel>
               <FormControl>
-                <Input placeholder="09121234567" dir="ltr" {...field} />
+                <Input placeholder="۰۹۱۲۱۲۳۴۵۶۷" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

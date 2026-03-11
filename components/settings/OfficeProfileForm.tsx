@@ -120,7 +120,7 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
               <FormItem>
                 <FormLabel>تلفن دفتر</FormLabel>
                 <FormControl>
-                  <Input className="h-11" placeholder="021XXXXXXXX" dir="ltr" {...field} />
+                  <Input className="h-11" placeholder="۰۲۱۱۲۳۴۵۶۷۸" dir="ltr" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

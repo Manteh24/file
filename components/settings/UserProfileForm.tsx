@@ -210,7 +210,7 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
           type="tel"
           dir="ltr"
           inputMode="numeric"
-          placeholder="09XXXXXXXXX"
+          placeholder="۰۹۱۲۳۴۵۶۷۸۹"
           value={phone}
           onChange={(e) => { setPhone(e.target.value); setSaved(false) }}
           className="h-11 max-w-xs"
@@ -229,7 +229,7 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
           rows={3}
           maxLength={300}
         />
-        <p className="text-xs text-muted-foreground text-end">{bio.length} / ۳۰۰</p>
+        <p className="text-xs text-muted-foreground text-end">{bio.length.toLocaleString('fa-IR')} / ۳۰۰</p>
       </div>
 
       <div className="flex items-center gap-4">

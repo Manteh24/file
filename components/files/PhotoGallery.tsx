@@ -179,7 +179,7 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit }: PhotoGalleryPro
 
           {/* Counter */}
           <span className="absolute top-4 right-4 text-sm text-white/70">
-            {lightboxIndex + 1} / {photos.length}
+            {(lightboxIndex + 1).toLocaleString('fa-IR')} / {photos.length.toLocaleString('fa-IR')}
           </span>
 
           {/* Image — stop click from bubbling to the overlay */}
