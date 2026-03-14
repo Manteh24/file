@@ -31,7 +31,11 @@ export async function POST(request: Request) {
       const usedThisMonth = await getAiUsageThisMonth(officeId)
       if (usedThisMonth >= limits.maxAiPerMonth) {
         return NextResponse.json(
-          { success: false, error: "محدودیت ماهانه توضیحات هوشمند به پایان رسید" },
+          {
+            success: false,
+            error: "محدودیت ماهانه توضیحات هوشمند به پایان رسید",
+            code: "PLAN_LIMIT_EXCEEDED",
+          },
           { status: 403 }
         )
       }

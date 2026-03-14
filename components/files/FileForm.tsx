@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/form"
 import { PriceInput } from "@/components/forms/PriceInput"
 import { LocationPicker } from "@/components/files/LocationPicker"
+import { UpgradePrompt } from "@/components/shared/UpgradePrompt"
 import { useDraft } from "@/hooks/useDraft"
 import { toFarsiDigits, parseFarsiNumber } from "@/lib/utils"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
@@ -32,6 +33,8 @@ interface FileFormProps {
   initialLocationAnalysis?: LocationAnalysis | null
   // Used to scope the IndexedDB draft to this user so different users on the same browser don't share drafts
   userId?: string
+  // Role determines which UpgradePrompt copy is shown on plan limit errors
+  role?: "MANAGER" | "AGENT"
 }
 
 const TRANSACTION_TYPE_OPTIONS = [
@@ -64,13 +67,15 @@ const TONE_OPTIONS: { value: DescriptionTone; label: string }[] = [
   { value: "compelling", label: "جذاب" },
 ]
 
-export function FileForm({ initialData, fileId, initialLocationAnalysis, userId }: FileFormProps) {
+export function FileForm({ initialData, fileId, initialLocationAnalysis, userId, role }: FileFormProps) {
   const router = useRouter()
   const isEdit = !!fileId
 
   const [aiTone, setAiTone] = useState<DescriptionTone>("standard")
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [filePlanLimit, setFilePlanLimit] = useState(false)
+  const [aiPlanLimit, setAiPlanLimit] = useState(false)
   const [locationAnalysis, setLocationAnalysis] = useState<LocationAnalysis | null>(
     initialLocationAnalysis ?? null
   )
@@ -200,9 +205,18 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId 
       body: JSON.stringify(values),
     })
 
-    const result = (await response.json()) as { success: boolean; data?: { id: string }; error?: string }
+    const result = (await response.json()) as {
+      success: boolean
+      data?: { id: string }
+      error?: string
+      code?: string
+    }
 
     if (!result.success) {
+      if (result.code === "PLAN_LIMIT_EXCEEDED") {
+        setFilePlanLimit(true)
+        return
+      }
       form.setError("root", { message: result.error ?? "خطا در ذخیره فایل" })
       return
     }
@@ -306,10 +320,17 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId 
         success: boolean
         data?: { description: string }
         error?: string
+        code?: string
       }
 
-      if (!result.success || !result.data?.description) {
-        setAiError(result.error ?? "خطا در تولید توضیحات")
+      if (!result.success) {
+        if (result.code === "PLAN_LIMIT_EXCEEDED") {
+          setAiPlanLimit(true)
+        } else {
+          setAiError(result.error ?? "خطا در تولید توضیحات")
+        }
+      } else if (!result.data?.description) {
+        setAiError("خطا در تولید توضیحات")
       } else {
         form.setValue("description", result.data.description, { shouldDirty: true })
       }
@@ -843,7 +864,8 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId 
                 {aiLoading ? "در حال تولید..." : "تولید توضیحات"}
               </Button>
             </div>
-            {aiError && <p className="text-sm text-destructive">{aiError}</p>}
+            {aiPlanLimit && <UpgradePrompt reason="ai" role={role} />}
+            {!aiPlanLimit && aiError && <p className="text-sm text-destructive">{aiError}</p>}
           </div>
 
           <FormField
@@ -884,8 +906,11 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId 
           />
         </section>
 
+        {/* Plan limit hit on file creation — show upgrade prompt */}
+        {filePlanLimit && <UpgradePrompt reason="files" role={role} />}
+
         {/* Root error */}
-        {form.formState.errors.root && (
+        {!filePlanLimit && form.formState.errors.root && (
           <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
         )}
 

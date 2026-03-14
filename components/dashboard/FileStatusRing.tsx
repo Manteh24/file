@@ -65,7 +65,7 @@ export function FileStatusRing({ data }: Props) {
                         <tspan
                           x={cx}
                           y={cy - 6}
-                          style={{ fontSize: 20, fontWeight: 700 }}
+                          style={{ fontSize: 20, fontWeight: 700, fill: "var(--foreground)" }}
                         >
                           {totalFiles.toLocaleString("fa-IR")}
                         </tspan>

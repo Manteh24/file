@@ -136,6 +136,8 @@ model Office {
   supportTickets   SupportTicket[]
   // Referral earning snapshots that included this office as an active referred office
   referralEarningSnapshots ReferralMonthlyEarningOffice[]
+  // One-time trial phone record — prevents the same mobile from starting multiple trials
+  trialPhone       TrialPhone?
 
   @@map("offices")
 }
@@ -763,4 +765,18 @@ model TicketMessage {
 
   @@index([ticketId])
   @@map("ticket_messages")
+}
+
+// One record per office that starts a paid trial (PRO or TEAM).
+// Prevents the same mobile number from being used for multiple trials.
+// Phone is NOT verified by OTP — this is a soft constraint to deter casual abuse.
+model TrialPhone {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  officeId  String   @unique
+  createdAt DateTime @default(now())
+
+  office    Office   @relation(fields: [officeId], references: [id])
+
+  @@map("trial_phones")
 }

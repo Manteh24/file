@@ -90,7 +90,11 @@ export async function POST(request: Request) {
       const currentCount = await getUserCount(officeId!)
       if (currentCount >= limits.maxUsers) {
         return NextResponse.json(
-          { success: false, error: `پلن شما حداکثر ${limits.maxUsers} کاربر را پشتیبانی می‌کند` },
+          {
+            success: false,
+            error: `پلن شما حداکثر ${limits.maxUsers} کاربر را پشتیبانی می‌کند`,
+            code: "PLAN_LIMIT_EXCEEDED",
+          },
           { status: 403 }
         )
       }

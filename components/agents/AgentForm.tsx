@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
@@ -14,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { UpgradePrompt } from "@/components/shared/UpgradePrompt"
 import type { AgentDetail } from "@/types"
 
 interface AgentFormProps {
@@ -25,6 +27,7 @@ interface AgentFormProps {
 export function AgentForm({ initialData, agentId }: AgentFormProps) {
   const router = useRouter()
   const isEdit = !!agentId
+  const [showPlanLimit, setShowPlanLimit] = useState(false)
 
   const form = useForm<CreateAgentInput>({
     // Cast needed: standardSchemaResolver's return type has a different third generic
@@ -53,10 +56,14 @@ export function AgentForm({ initialData, agentId }: AgentFormProps) {
       body: JSON.stringify(body),
     })
 
-    const data: { success: boolean; data?: { id: string }; error?: string } =
+    const data: { success: boolean; data?: { id: string }; error?: string; code?: string } =
       await response.json()
 
     if (!data.success) {
+      if (data.code === "PLAN_LIMIT_EXCEEDED") {
+        setShowPlanLimit(true)
+        return
+      }
       form.setError("root", { message: data.error ?? "خطایی رخ داد" })
       return
     }
@@ -72,8 +79,11 @@ export function AgentForm({ initialData, agentId }: AgentFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {/* Plan limit hit — show upgrade prompt instead of generic error */}
+        {showPlanLimit && <UpgradePrompt reason="users" role="MANAGER" />}
+
         {/* Root error */}
-        {form.formState.errors.root && (
+        {!showPlanLimit && form.formState.errors.root && (
           <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
         )}
 

@@ -8,16 +8,50 @@ import {
 // ─── registerSchema ────────────────────────────────────────────────────────────
 
 describe("registerSchema", () => {
+  // PRO plan (default) requires phone
   const valid = {
     displayName: "علی رضایی",
     officeName: "دفتر مرکزی",
     email: "ali@example.com",
     password: "password123",
     confirmPassword: "password123",
+    phone: "09121234567",
   }
 
-  it("accepts valid input", () => {
+  // FREE plan does not require phone
+  const validFree = {
+    displayName: "علی رضایی",
+    officeName: "دفتر مرکزی",
+    email: "ali@example.com",
+    password: "password123",
+    confirmPassword: "password123",
+    plan: "FREE" as const,
+  }
+
+  it("accepts valid input for PRO plan with phone", () => {
     expect(registerSchema.safeParse(valid).success).toBe(true)
+  })
+
+  it("accepts valid input for FREE plan without phone", () => {
+    expect(registerSchema.safeParse(validFree).success).toBe(true)
+  })
+
+  it("rejects PRO plan input when phone is missing", () => {
+    const result = registerSchema.safeParse({ ...valid, phone: undefined, plan: "PRO" })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const phoneError = result.error.issues.find((i) => i.path[0] === "phone")
+      expect(phoneError?.message).toBe("شماره موبایل برای دوره آزمایشی الزامی است")
+    }
+  })
+
+  it("rejects invalid phone format", () => {
+    const result = registerSchema.safeParse({ ...valid, phone: "12345" })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const phoneError = result.error.issues.find((i) => i.path[0] === "phone")
+      expect(phoneError?.message).toBe("شماره موبایل معتبر نیست")
+    }
   })
 
   it("accepts valid input with optional referralCode", () => {

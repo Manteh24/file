@@ -127,7 +127,11 @@ export async function POST(request: Request) {
       const activeCount = await getActiveFileCount(officeId)
       if (activeCount >= limits.maxActiveFiles) {
         return NextResponse.json(
-          { success: false, error: "حداکثر تعداد فایل فعال به پایان رسید" },
+          {
+            success: false,
+            error: "حداکثر تعداد فایل فعال به پایان رسید",
+            code: "PLAN_LIMIT_EXCEEDED",
+          },
           { status: 403 }
         )
       }

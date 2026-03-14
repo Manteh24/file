@@ -29,8 +29,8 @@ import type { Plan } from "@/types"
 
 const PLAN_DESCRIPTIONS: Record<Plan, string> = {
   FREE: "شروع رایگان — بدون نیاز به کارت بانکی",
-  PRO: "آزمایش ۳۰ روزه رایگان پلن حرفه‌ای",
-  TEAM: "آزمایش ۳۰ روزه رایگان پلن تیم",
+  PRO: "آزمایش ۳۰ روزه رایگان — دسترسی کامل به امکانات حرفه‌ای",
+  TEAM: "آزمایش ۳۰ روزه رایگان — دسترسی کامل به امکانات تیم",
 }
 
 interface RegisterFormProps {
@@ -53,6 +53,7 @@ export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
       confirmPassword: "",
       referralCode: initialRef ?? "",
       plan: initialPlan,
+      phone: "",
     },
   })
 
@@ -156,6 +157,28 @@ export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
                 </FormItem>
               )}
             />
+
+            {/* Phone — required for PRO/TEAM trials to enforce one-trial-per-phone */}
+            {initialPlan !== "FREE" && (
+              <FormField
+                name="phone"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>شماره موبایل *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="tel"
+                        placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                        dir="ltr"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               name="password"

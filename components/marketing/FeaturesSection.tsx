@@ -1,4 +1,4 @@
-import { FolderOpen, Link2, MapPin, MessageSquare, Sparkles, Users } from "lucide-react"
+import { BarChart2, FolderOpen, Link2, MapPin, MessageSquare, Sparkles, Users } from "lucide-react"
 
 const mockFiles = [
   {
@@ -29,13 +29,13 @@ const smallFeatures = [
   },
   {
     icon: MapPin,
-    title: "نقشه‌یابی با نشان",
-    description: "موقعیت ملک و دسترسی‌ها روی نقشه ایرانی",
+    title: "تحلیل موقعیت مکانی",
+    description: "بررسی دسترسی‌ها و امکانات محله",
   },
   {
     icon: MessageSquare,
-    title: "پیامک کاوه‌نگار",
-    description: "قالب‌های آماده فارسی برای مشتریان",
+    title: "پیامک",
+    description: "قالب‌های آماده برای ارسال به مشتریان",
   },
   {
     icon: Sparkles,
@@ -47,29 +47,35 @@ const smallFeatures = [
     title: "مدیریت مشتریان (CRM)",
     description: "تاریخچه تماس و پیگیری معاملات",
   },
+  {
+    icon: BarChart2,
+    title: "گزارش‌های عملکرد",
+    description: "تحلیل درآمد، عملکرد مشاوران و تصمیم‌گیری آگاهانه — با امکان تعیین هدف در پلن تیم",
+    badge: "حرفه‌ای+",
+  },
 ]
 
 export function FeaturesSection() {
   return (
-    <section className="py-20 px-6 bg-[#0F1923]">
+    <section className="py-20 px-6 bg-slate-50">
       <div className="container mx-auto max-w-5xl">
-        <h2 className="text-3xl font-bold text-center text-[#F1F5F9] mb-3">
+        <h2 className="text-3xl font-bold text-center text-slate-900 mb-3">
           همه ابزارهای دفتر در یک جا
         </h2>
-        <p className="text-[#94A3B8] text-center mb-12">
-          طراحی شده برای مشاورین و مدیران دفاتر ایرانی
+        <p className="text-slate-500 text-center mb-12">
+          طراحی شده برای مشاوران و مدیران دفاتر املاک
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* ── Large hero card: File Management ─────────────────────────── */}
-          <div className="md:col-span-2 md:row-span-2 rounded-2xl border border-white/8 bg-[#162332]/70 backdrop-blur-xl p-6 flex flex-col transition-colors duration-300 hover:border-[rgba(20,184,166,0.3)]">
+          <div className="md:col-span-2 md:row-span-2 rounded-2xl border border-slate-200 bg-white p-6 flex flex-col transition-colors duration-300 hover:border-teal-300 shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#14B8A6]/10">
-                <FolderOpen className="h-5 w-5 text-[#14B8A6]" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50">
+                <FolderOpen className="h-5 w-5 text-teal-500" />
               </div>
               <div>
-                <h3 className="font-semibold text-[#F1F5F9]">مدیریت فایل‌های ملک</h3>
-                <p className="text-[#94A3B8] text-xs mt-0.5">ثبت، ویرایش و پیگیری با لاگ تغییرات</p>
+                <h3 className="font-semibold text-slate-800">مدیریت فایل‌های ملک</h3>
+                <p className="text-slate-400 text-xs mt-0.5">ثبت، ویرایش و پیگیری با لاگ تغییرات</p>
               </div>
             </div>
 
@@ -78,20 +84,20 @@ export function FeaturesSection() {
               {mockFiles.map((file) => (
                 <div
                   key={file.title}
-                  className="flex items-center justify-between rounded-xl border border-white/5 bg-[#0F1923]/60 px-4 py-3"
+                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
                     <span
                       className={`h-2 w-2 rounded-full shrink-0 ${
-                        file.active ? "bg-[#14B8A6]" : "bg-[#475569]"
+                        file.active ? "bg-teal-500" : "bg-slate-300"
                       }`}
                     />
                     <div>
-                      <p className="text-sm font-medium text-[#F1F5F9]">{file.title}</p>
-                      <p className="text-xs text-[#94A3B8]">{file.meta}</p>
+                      <p className="text-sm font-medium text-slate-800">{file.title}</p>
+                      <p className="text-xs text-slate-400">{file.meta}</p>
                     </div>
                   </div>
-                  <p className="hidden sm:block text-xs text-[#14B8A6] font-medium">{file.price}</p>
+                  <p className="hidden sm:block text-xs text-teal-600 font-medium">{file.price}</p>
                 </div>
               ))}
             </div>
@@ -103,13 +109,20 @@ export function FeaturesSection() {
             return (
               <div
                 key={feature.title}
-                className="rounded-2xl border border-white/8 bg-[#162332]/70 backdrop-blur-xl p-5 flex flex-col min-h-[140px] transition-colors duration-300 hover:border-[rgba(20,184,166,0.3)]"
+                className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col min-h-[140px] transition-colors duration-300 hover:border-teal-300 shadow-sm"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#14B8A6]/10 mb-3">
-                  <Icon className="h-[18px] w-[18px] text-[#14B8A6]" />
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50">
+                    <Icon className="h-[18px] w-[18px] text-teal-500" />
+                  </div>
+                  {"badge" in feature && feature.badge && (
+                    <span className="rounded-full bg-teal-50 border border-teal-200 px-2 py-0.5 text-[10px] font-semibold text-teal-600">
+                      {feature.badge}
+                    </span>
+                  )}
                 </div>
-                <h3 className="font-semibold text-[#F1F5F9] text-sm mb-1.5">{feature.title}</h3>
-                <p className="text-[#94A3B8] text-xs leading-relaxed">{feature.description}</p>
+                <h3 className="font-semibold text-slate-800 text-sm mb-1.5">{feature.title}</h3>
+                <p className="text-slate-500 text-xs leading-relaxed">{feature.description}</p>
               </div>
             )
           })}

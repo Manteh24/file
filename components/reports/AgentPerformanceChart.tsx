@@ -76,7 +76,7 @@ export function AgentPerformanceChart({ data }: Props) {
               />
               <Bar
                 dataKey="agentShare"
-                fill="hsl(var(--primary))"
+                fill="#14b8a6"
                 radius={[0, 4, 4, 0]}
               >
                 <LabelList

@@ -32,12 +32,26 @@ export async function registerAction(
     return { success: false, error: firstError }
   }
 
-  const { displayName, officeName, city, email, password, referralCode, plan } = parsed.data
+  const { displayName, officeName, city, email, password, referralCode, plan, phone } = parsed.data
+  const chosenPlan: Plan = plan ?? "PRO"
+  const isFree = chosenPlan === "FREE"
 
   // 2. Check for duplicate email
   const existingUser = await db.user.findUnique({ where: { email } })
   if (existingUser) {
     return { success: false, error: "این ایمیل قبلاً ثبت شده است" }
+  }
+
+  // 2b. For non-FREE plans: check if this phone was already used for a trial
+  const normalizedPhone = phone?.trim() || null
+  if (!isFree && normalizedPhone) {
+    const existingTrial = await db.trialPhone.findUnique({ where: { phone: normalizedPhone } })
+    if (existingTrial) {
+      return {
+        success: false,
+        error: "این شماره موبایل قبلاً برای دوره آزمایشی استفاده شده است",
+      }
+    }
   }
 
   // 3. Generate username from email prefix (lowercase alphanumeric) + 4-digit random suffix
@@ -57,9 +71,6 @@ export async function registerAction(
   // 5. Create Office, User, and Subscription atomically.
   // FREE plan: no trial, permanent free access.
   // PRO/TEAM: configurable-day full trial (default 30), no card required.
-  const chosenPlan: Plan = plan ?? "PRO"
-  const isFree = chosenPlan === "FREE"
-
   const trialDays = isFree ? 0 : await getTrialLengthDays()
   const trialEndsAt = isFree ? null : (() => {
     const d = new Date()
@@ -124,6 +135,13 @@ export async function registerAction(
       await tx.referralCode.create({
         data: { code: autoCode, officeId: office.id, commissionPerOfficePerMonth: commission },
       })
+
+      // Record phone for one-trial-per-phone enforcement (non-FREE plans only)
+      if (!isFree && normalizedPhone) {
+        await tx.trialPhone.create({
+          data: { phone: normalizedPhone, officeId: office.id },
+        })
+      }
     })
   } catch {
     // Do not expose internal DB errors to the client

@@ -90,6 +90,15 @@ export function NotificationBell() {
         )
       }
     }
+    // Trial reminder notifications link to settings billing section
+    if (
+      notification.type === "TRIAL_REMINDER_14" ||
+      notification.type === "TRIAL_REMINDER_23"
+    ) {
+      setOpen(false)
+      router.push("/settings#billing")
+      return
+    }
     if (notification.fileId) {
       setOpen(false)
       router.push(`/files/${notification.fileId}`)

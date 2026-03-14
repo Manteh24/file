@@ -12,6 +12,9 @@ vi.mock("@/lib/db", () => ({
     user: {
       findUnique: vi.fn(),
     },
+    trialPhone: {
+      findUnique: vi.fn().mockResolvedValue(null), // no existing trial phone
+    },
     platformSetting: {
       findUnique: vi.fn().mockResolvedValue(null), // returns null → fallback 30 days
     },
@@ -38,17 +41,20 @@ import type { ApiError } from "@/types"
 // Cast through unknown — the Prisma client type is replaced entirely by the vi.mock above.
 const mockDb = db as unknown as {
   user: { findUnique: ReturnType<typeof vi.fn> }
+  trialPhone: { findUnique: ReturnType<typeof vi.fn> }
   platformSetting: { findUnique: ReturnType<typeof vi.fn> }
   referralCode: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn> }
   $transaction: ReturnType<typeof vi.fn>
 }
 
+// PRO plan (default) now requires phone for one-trial-per-phone enforcement
 const validFormData = {
   displayName: "علی رضایی",
   officeName: "دفتر مرکزی",
   email: "ali@example.com",
   password: "password123",
   confirmPassword: "password123",
+  phone: "09121234567",
 }
 
 beforeEach(() => {
@@ -101,6 +107,19 @@ describe("registerAction", () => {
     const result = await registerAction(validFormData)
     expect(result.success).toBe(false)
     if (!result.success) expect((result as ApiError).error).toBe("این ایمیل قبلاً ثبت شده است")
+  })
+
+  it("returns an error when phone was already used for a trial", async () => {
+    mockDb.user.findUnique.mockResolvedValue(null)
+    // trialPhone lookup → found
+    mockDb.trialPhone.findUnique.mockResolvedValueOnce({ id: "existing-trial" })
+
+    const result = await registerAction(validFormData)
+    expect(result.success).toBe(false)
+    if (!result.success)
+      expect((result as ApiError).error).toBe(
+        "این شماره موبایل قبلاً برای دوره آزمایشی استفاده شده است"
+      )
   })
 
   it("returns an error on username collision", async () => {

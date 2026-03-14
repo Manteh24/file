@@ -58,6 +58,7 @@ export default async function EditFilePage({ params }: EditFilePageProps) {
 
       <FileForm
         fileId={id}
+        role={role as "MANAGER" | "AGENT"}
         initialLocationAnalysis={parseLocationAnalysis(file.locationAnalysis)}
         initialData={{
           transactionType: file.transactionType,
