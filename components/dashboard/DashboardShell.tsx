@@ -5,6 +5,7 @@ import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
 import { SubscriptionBanner } from "./SubscriptionBanner"
 import { OnboardingTutorial } from "./OnboardingTutorial"
+import { PWAInstallPrompt } from "./PWAInstallPrompt"
 import type { Role } from "@/types"
 import type { ResolvedSubscription } from "@/lib/subscription"
 
@@ -80,6 +81,7 @@ export function DashboardShell({
       </div>
 
       {showOnboarding && <OnboardingTutorial onOpenSidebar={openSidebar} />}
+      <PWAInstallPrompt />
     </div>
   )
 }

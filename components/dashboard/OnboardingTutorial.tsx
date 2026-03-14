@@ -48,6 +48,7 @@ interface OnboardingTutorialProps {
 
 export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
   const [stepIdx, setStepIdx] = useState(0)
+  // null = full-overlay (centered steps); rect = spotlight position
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -56,7 +57,6 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
   const step = STEPS[stepIdx]
   const isLast = stepIdx === STEPS.length - 1
 
-  // Measure target element position for spotlight
   const measureTarget = useCallback(() => {
     if (!step.targetId) {
       setSpotlightRect(null)
@@ -65,28 +65,23 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
     const el = document.querySelector<HTMLElement>(
       `[data-tutorial-id="${step.targetId}"]`
     )
-    if (!el) {
-      setSpotlightRect(null)
-      return
-    }
+    if (!el) { setSpotlightRect(null); return }
     const r = el.getBoundingClientRect()
-    // If hidden (e.g. sidebar closed on mobile and animation not complete), show centered
-    if (r.width === 0 || r.height === 0) {
-      setSpotlightRect(null)
-      return
-    }
+    if (r.width === 0 || r.height === 0) { setSpotlightRect(null); return }
     setSpotlightRect({ top: r.top, left: r.left, width: r.width, height: r.height })
   }, [step.targetId])
 
-  // On step change: open sidebar on mobile so target is visible, then measure
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    setSpotlightRect(null)
 
     if (step.targetId) {
       onOpenSidebar()
-      // Wait for sidebar slide-in animation (200ms) before measuring
+      // Don't null the rect during transition — keep previous spotlight position
+      // so the div stays mounted and CSS transition has a start point.
       timerRef.current = setTimeout(measureTarget, 260)
+    } else {
+      // Centered step: collapse spotlight to full overlay immediately
+      setSpotlightRect(null)
     }
 
     return () => {
@@ -94,7 +89,7 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
     }
   }, [step.targetId, onOpenSidebar, measureTarget])
 
-  // Re-measure on viewport resize
+  // Re-measure on resize
   useEffect(() => {
     const onResize = () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
@@ -109,7 +104,6 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
 
   const dismiss = useCallback(async () => {
     setDismissed(true)
-    // Fire-and-forget — non-critical
     try {
       await fetch("/api/user/onboarding-complete", { method: "PATCH" })
     } catch {
@@ -118,78 +112,109 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
   }, [])
 
   const handleNext = useCallback(() => {
-    if (isLast) {
-      dismiss()
-    } else {
-      setStepIdx((i) => i + 1)
-    }
+    if (isLast) dismiss()
+    else setStepIdx((i) => i + 1)
   }, [isLast, dismiss])
 
-  const handleBack = useCallback(() => {
-    setStepIdx((i) => i - 1)
-  }, [])
+  const handleBack = useCallback(() => setStepIdx((i) => i - 1), [])
 
   if (dismissed) return null
 
-  const pad = 8 // padding around spotlight element
+  const pad = 8
 
-  // Tooltip positioning:
-  //   • With spotlight → anchor to the physical left of the element
-  //     (sidebar is on the physical right in RTL, so tooltip goes into the content area)
-  //   • Without spotlight → centered on screen
-  const tooltipStyle: React.CSSProperties = spotlightRect
-    ? {
+  // When spotlightRect is null (centered steps), collapse the spotlight div to a 0×0
+  // point at the viewport center. The box-shadow then covers the whole screen like a
+  // full overlay — and since the div is NEVER unmounted, CSS transitions always have a
+  // valid start position (no more jump from 0,0).
+  const cx = window.innerWidth / 2
+  const cy = window.innerHeight / 2
+  const sr = spotlightRect
+  const divTop    = sr ? sr.top  - pad : cy
+  const divLeft   = sr ? sr.left - pad : cx
+  const divWidth  = sr ? sr.width  + pad * 2 : 0
+  const divHeight = sr ? sr.height + pad * 2 : 0
+
+  // Tooltip position: bottom-center on small screens when spotlight is active,
+  // content-area anchor on desktop, centered card otherwise.
+  const isMobile = window.innerWidth < 640
+  const tooltipStyle: React.CSSProperties = (() => {
+    if (sr && isMobile) {
+      // Keep card at bottom so it never overlaps the spotlight or escapes the viewport
+      return {
         position: "fixed",
-        // Place tooltip left of the spotlight (content-area side)
-        right: window.innerWidth - spotlightRect.left + 16,
-        top: Math.max(16, spotlightRect.top + spotlightRect.height / 2 - 110),
-        width: "min(300px, calc(100vw - 32px))",
-        zIndex: 10001,
-      }
-    : {
-        position: "fixed",
-        top: "50%",
+        bottom: 20,
         left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: "min(380px, calc(100vw - 32px))",
+        transform: "translateX(-50%)",
+        width: `calc(100vw - 32px)`,
+        maxWidth: 360,
         zIndex: 10001,
       }
+    }
+    if (sr) {
+      // Desktop: place in the content area (physically left of spotlight in RTL layout)
+      const tooltipW = 300
+      // How much space is to the left of the spotlight element
+      const spaceLeft = sr.left - pad - 16
+      if (spaceLeft >= tooltipW) {
+        const right = window.innerWidth - sr.left + 16
+        // Clamp so it never goes off either screen edge
+        const clampedRight = Math.max(16, Math.min(right, window.innerWidth - tooltipW - 16))
+        const top = Math.max(
+          16,
+          Math.min(
+            sr.top + sr.height / 2 - 110,
+            window.innerHeight - 260
+          )
+        )
+        return { position: "fixed", right: clampedRight, top, width: tooltipW, zIndex: 10001 }
+      }
+      // Not enough space on either side — fall back to bottom-center
+      return {
+        position: "fixed",
+        bottom: 20,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: Math.min(340, window.innerWidth - 32),
+        zIndex: 10001,
+      }
+    }
+    // Centered card (no spotlight)
+    return {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "min(380px, calc(100vw - 32px))",
+      zIndex: 10001,
+    }
+  })()
 
   return (
     <>
-      {/* ── Spotlight / backdrop ── */}
-      {spotlightRect ? (
-        // Single div: box-shadow darkens everything AROUND the element
-        <div
-          aria-hidden
-          style={{
-            position: "fixed",
-            top: spotlightRect.top - pad,
-            left: spotlightRect.left - pad,
-            width: spotlightRect.width + pad * 2,
-            height: spotlightRect.height + pad * 2,
-            borderRadius: 10,
-            boxShadow: "0 0 0 9999px rgba(0,0,0,0.65)",
-            zIndex: 10000,
-            pointerEvents: "none",
-            transition: "top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease",
-          }}
-        />
-      ) : (
-        // Full-screen dark overlay for centered steps
-        <div
-          aria-hidden
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.65)",
-            zIndex: 10000,
-            pointerEvents: "none",
-          }}
-        />
-      )}
+      {/*
+        Single always-mounted div. When `sr` is null it is a 0×0 point at the viewport
+        center so its box-shadow acts as a full-screen overlay. When `sr` is set it
+        becomes the spotlight cutout. CSS transitions run continuously because the div
+        is never unmounted — no more flash from (0, 0).
+      */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          top: divTop,
+          left: divLeft,
+          width: divWidth,
+          height: divHeight,
+          borderRadius: sr ? 10 : 0,
+          boxShadow: "0 0 0 9999px rgba(0,0,0,0.65)",
+          zIndex: 10000,
+          pointerEvents: "none",
+          transition:
+            "top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease, border-radius 0.3s ease",
+        }}
+      />
 
-      {/* ── Tooltip card ── */}
+      {/* Tooltip card */}
       <div
         role="dialog"
         aria-modal="true"
@@ -223,18 +248,15 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
           </button>
         </div>
 
-        {/* Step counter */}
         <p className="mb-1 text-[11px] text-muted-foreground">
           مرحله {stepIdx + 1} از {STEPS.length}
         </p>
 
-        {/* Content */}
         <h3 className="mb-1.5 text-base font-semibold">{step.title}</h3>
         <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
           {step.description}
         </p>
 
-        {/* Actions */}
         <div className="flex items-center justify-between gap-2">
           <button
             onClick={dismiss}
