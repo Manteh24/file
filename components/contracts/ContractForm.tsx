@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useWatch, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
@@ -92,13 +92,29 @@ interface ContractFormProps {
 export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) {
   const router = useRouter()
 
-  // UI-only percentage fields — not sent to the API
+  // UI-only percentage fields — not sent to the API.
+  // Each has a matching ref so that cascade handlers always read the latest
+  // value even when called before React has re-rendered (stale closure guard).
+  const commissionRateRef = useRef("")
+  const agentSplitPercentRef = useRef("")
   const [commissionRate, setCommissionRate] = useState("")
   const [agentSplitPercent, setAgentSplitPercent] = useState("")
 
+  function updateCommissionRate(v: string) {
+    commissionRateRef.current = v
+    setCommissionRate(v)
+  }
+
+  function updateAgentSplitPercent(v: string) {
+    agentSplitPercentRef.current = v
+    setAgentSplitPercent(v)
+  }
+
   const initialFile = activeFiles.find((f) => f.id === initialFileId)
+  // Prisma BigInt fields are passed from the server component as BigInt — convert
+  // to Number here so form default values and all arithmetic stay in plain number land.
   const initialPrice = initialFile
-    ? (initialFile.salePrice ?? initialFile.depositAmount ?? initialFile.rentAmount ?? 0)
+    ? Number(initialFile.salePrice ?? initialFile.depositAmount ?? initialFile.rentAmount ?? 0)
     : 0
   const fileIsLocked = !!initialFileId
 
@@ -130,77 +146,87 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
 
   // ─── Sync handlers ─────────────────────────────────────────────────────────
   // All updates are synchronous onChange — no useEffect.
+  // Percentage values are always read from refs (not state) so cascades never
+  // see a stale closure value between the setState call and the next render.
 
   function handleFileSelect(fileId: string) {
     form.setValue("fileId", fileId)
     const file = activeFiles.find((f) => f.id === fileId)
     if (file) {
-      const listedPrice = file.salePrice ?? file.depositAmount ?? file.rentAmount ?? 0
-      form.setValue("finalPrice", listedPrice)
+      const listedPrice = Number(file.salePrice ?? file.depositAmount ?? file.rentAmount ?? 0)
+      form.setValue("finalPrice", listedPrice, { shouldValidate: true })
     }
   }
 
   function handleFinalPriceChange(newPrice: number) {
-    form.setValue("finalPrice", newPrice)
+    form.setValue("finalPrice", newPrice, { shouldValidate: true })
     // Cascade: recalculate commission if rate is already set
-    const rate = parseFloat(commissionRate)
+    const rate = parseFloat(commissionRateRef.current)
     if (!isNaN(rate) && rate > 0 && newPrice > 0) {
       const newCommission = Math.round(newPrice * (rate / 100))
-      form.setValue("commissionAmount", newCommission)
+      form.setValue("commissionAmount", newCommission, { shouldValidate: true })
       // Cascade further to agentShare
-      const split = parseFloat(agentSplitPercent)
+      const split = parseFloat(agentSplitPercentRef.current)
       if (!isNaN(split) && split > 0) {
-        form.setValue("agentShare", Math.round(newCommission * (split / 100)))
+        form.setValue("agentShare", Math.round(newCommission * (split / 100)), {
+          shouldValidate: true,
+        })
       }
     }
   }
 
   function handleCommissionRateChange(rateStr: string) {
-    setCommissionRate(rateStr)
-    const rate = parseFloat(rateStr)
-    const fp = form.getValues("finalPrice")
-    if (!isNaN(rate) && fp > 0) {
+    // Allow only digits and a single decimal point
+    const cleaned = rateStr.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")
+    updateCommissionRate(cleaned)
+    const rate = parseFloat(cleaned)
+    const fp = Number(form.getValues("finalPrice"))
+    if (!isNaN(rate) && rate >= 0 && fp > 0) {
       const newCommission = Math.round(fp * (rate / 100))
-      form.setValue("commissionAmount", newCommission)
+      form.setValue("commissionAmount", newCommission, { shouldValidate: true })
       // Cascade to agentShare
-      const split = parseFloat(agentSplitPercent)
+      const split = parseFloat(agentSplitPercentRef.current)
       if (!isNaN(split) && split > 0) {
-        form.setValue("agentShare", Math.round(newCommission * (split / 100)))
+        form.setValue("agentShare", Math.round(newCommission * (split / 100)), {
+          shouldValidate: true,
+        })
       }
     }
   }
 
   function handleCommissionAmountChange(newAmount: number) {
-    form.setValue("commissionAmount", newAmount)
-    const fp = form.getValues("finalPrice")
+    form.setValue("commissionAmount", newAmount, { shouldValidate: true })
+    const fp = Number(form.getValues("finalPrice"))
     // Back-calculate rate
-    setCommissionRate(fp > 0 && newAmount > 0 ? ((newAmount / fp) * 100).toFixed(2) : "")
+    updateCommissionRate(fp > 0 && newAmount > 0 ? ((newAmount / fp) * 100).toFixed(2) : "")
     // Cascade to agentShare if split% is set; otherwise back-calculate split%
-    const split = parseFloat(agentSplitPercent)
+    const split = parseFloat(agentSplitPercentRef.current)
     if (!isNaN(split) && split > 0) {
-      form.setValue("agentShare", Math.round(newAmount * (split / 100)))
+      form.setValue("agentShare", Math.round(newAmount * (split / 100)), { shouldValidate: true })
     } else {
-      const currentAgentShare = form.getValues("agentShare")
+      const currentAgentShare = Number(form.getValues("agentShare"))
       if (newAmount > 0 && currentAgentShare > 0) {
-        setAgentSplitPercent(((currentAgentShare / newAmount) * 100).toFixed(2))
+        updateAgentSplitPercent(((currentAgentShare / newAmount) * 100).toFixed(2))
       }
     }
   }
 
   function handleAgentSplitChange(splitStr: string) {
-    setAgentSplitPercent(splitStr)
-    const split = parseFloat(splitStr)
-    const ca = form.getValues("commissionAmount")
+    // Allow only digits and a single decimal point
+    const cleaned = splitStr.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")
+    updateAgentSplitPercent(cleaned)
+    const split = parseFloat(cleaned)
+    const ca = Number(form.getValues("commissionAmount"))
     if (!isNaN(split) && ca > 0) {
-      form.setValue("agentShare", Math.round(ca * (split / 100)))
+      form.setValue("agentShare", Math.round(ca * (split / 100)), { shouldValidate: true })
     }
   }
 
   function handleAgentShareChange(newShare: number) {
-    form.setValue("agentShare", newShare)
-    const ca = form.getValues("commissionAmount")
+    form.setValue("agentShare", newShare, { shouldValidate: true })
+    const ca = Number(form.getValues("commissionAmount"))
     // Back-calculate split%
-    setAgentSplitPercent(ca > 0 && newShare > 0 ? ((newShare / ca) * 100).toFixed(2) : "")
+    updateAgentSplitPercent(ca > 0 && newShare > 0 ? ((newShare / ca) * 100).toFixed(2) : "")
   }
 
   // ─── Submit ────────────────────────────────────────────────────────────────
@@ -324,18 +350,16 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
         {/* Commission rate (UI-only) + commission amount */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">نرخ کمیسیون ٪</label>
+            <label className="text-sm font-medium">نرخ کمیسیون (٪)</label>
             <Input
-              type="number"
+              type="text"
               dir="ltr"
               inputMode="decimal"
-              placeholder="مثال: ۱"
-              min="0"
-              max="100"
-              step="0.01"
+              placeholder="مثال: 0.5"
               value={commissionRate}
               onChange={(e) => handleCommissionRateChange(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">درصدی از قیمت نهایی</p>
           </div>
 
           <FormField
@@ -363,18 +387,16 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
         {/* Agent split % (UI-only) + agent share */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">درصد سهم مشاور ٪</label>
+            <label className="text-sm font-medium">درصد سهم مشاور (٪)</label>
             <Input
-              type="number"
+              type="text"
               dir="ltr"
               inputMode="decimal"
-              placeholder="مثال: ۵۰"
-              min="0"
-              max="100"
-              step="0.01"
+              placeholder="مثال: 50"
               value={agentSplitPercent}
               onChange={(e) => handleAgentSplitChange(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">درصدی از مبلغ کمیسیون</p>
           </div>
 
           <FormField
