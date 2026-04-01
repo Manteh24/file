@@ -47,10 +47,10 @@ const mockDb = db as unknown as {
   $transaction: ReturnType<typeof vi.fn>
 }
 
-// PRO plan (default) now requires phone for one-trial-per-phone enforcement
 const validFormData = {
   displayName: "علی رضایی",
   officeName: "دفتر مرکزی",
+  city: "تهران",
   email: "ali@example.com",
   password: "password123",
   confirmPassword: "password123",

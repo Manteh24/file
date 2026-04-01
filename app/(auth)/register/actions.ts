@@ -43,8 +43,8 @@ export async function registerAction(
   }
 
   // 2b. For non-FREE plans: check if this phone was already used for a trial
-  const normalizedPhone = phone?.trim() || null
-  if (!isFree && normalizedPhone) {
+  const normalizedPhone = phone.trim()
+  if (!isFree) {
     const existingTrial = await db.trialPhone.findUnique({ where: { phone: normalizedPhone } })
     if (existingTrial) {
       return {
@@ -105,6 +105,7 @@ export async function registerAction(
           displayName,
           role: "MANAGER",
           officeId: office.id,
+          phone: normalizedPhone,
         },
       })
 
@@ -137,7 +138,7 @@ export async function registerAction(
       })
 
       // Record phone for one-trial-per-phone enforcement (non-FREE plans only)
-      if (!isFree && normalizedPhone) {
+      if (!isFree) {
         await tx.trialPhone.create({
           data: { phone: normalizedPhone, officeId: office.id },
         })

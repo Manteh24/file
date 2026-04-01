@@ -158,27 +158,24 @@ export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
               )}
             />
 
-            {/* Phone — required for PRO/TEAM trials to enforce one-trial-per-phone */}
-            {initialPlan !== "FREE" && (
-              <FormField
-                name="phone"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>شماره موبایل *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="tel"
-                        placeholder="۰۹۱۲۳۴۵۶۷۸۹"
-                        dir="ltr"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <FormField
+              name="phone"
+              control={form.control}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>شماره موبایل</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="tel"
+                      placeholder="۰۹۱۲۳۴۵۶۷۸۹"
+                      dir="ltr"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               name="password"

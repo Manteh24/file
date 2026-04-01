@@ -12,9 +12,8 @@ export const registerSchema = z
       .max(100, "نام دفتر نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد"),
     city: z
       .string()
-      .max(100, "نام شهر نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد")
-      .optional()
-      .or(z.literal("")),
+      .min(1, "شهر را انتخاب کنید")
+      .max(100, "نام شهر نمی‌تواند بیشتر از ۱۰۰ کاراکتر باشد"),
     email: z.string().email("ایمیل معتبر وارد کنید"),
     password: z
       .string()
@@ -29,29 +28,14 @@ export const registerSchema = z
       .or(z.literal("")),
     // plan is set from the pricing page CTA (?plan=free|pro|team). Defaults to PRO trial.
     plan: z.enum(["FREE", "PRO", "TEAM"]).default("PRO").optional(),
-    // Phone is required for PRO/TEAM trials to enforce one-trial-per-phone constraint.
-    // Optional for FREE plan (no trial, no phone needed).
     phone: z
       .string()
-      .regex(/^0?9\d{9}$/, "شماره موبایل معتبر نیست")
-      .optional()
-      .or(z.literal("")),
+      .regex(/^0?9\d{9}$/, "شماره موبایل معتبر نیست"),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "رمزهای عبور یکسان نیستند",
     path: ["confirmPassword"],
   })
-  .refine(
-    (data) => {
-      // Phone is required for PRO/TEAM trials
-      const plan = data.plan ?? "PRO"
-      if (plan !== "FREE") {
-        return !!data.phone && data.phone.length > 0
-      }
-      return true
-    },
-    { message: "شماره موبایل برای دوره آزمایشی الزامی است", path: ["phone"] }
-  )
 
 export type RegisterInput = z.infer<typeof registerSchema>
 
