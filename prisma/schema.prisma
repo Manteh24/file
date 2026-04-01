@@ -215,11 +215,11 @@ model UserSession {
 model Subscription {
   id               String       @id @default(cuid())
   officeId         String       @unique
-  plan             Plan         @default(PRO)
+  plan             Plan         @default(FREE)
   status           SubStatus    @default(ACTIVE)
   // True while the office is on a free trial period (PRO or TEAM trial).
   // FREE plan offices never have a trial — isTrial stays false.
-  isTrial          Boolean      @default(true)
+  isTrial          Boolean      @default(false)
   billingCycle     BillingCycle @default(MONTHLY)
   // Set to now + 30 days at registration for trial offices. Null for FREE plan.
   trialEndsAt      DateTime?

@@ -25,20 +25,12 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { IRANIAN_CITIES } from "@/lib/cities"
-import type { Plan } from "@/types"
-
-const PLAN_DESCRIPTIONS: Record<Plan, string> = {
-  FREE: "شروع رایگان — بدون نیاز به کارت بانکی",
-  PRO: "آزمایش ۳۰ روزه رایگان — دسترسی کامل به امکانات حرفه‌ای",
-  TEAM: "آزمایش ۳۰ روزه رایگان — دسترسی کامل به امکانات تیم",
-}
 
 interface RegisterFormProps {
-  initialPlan: Plan
   initialRef?: string
 }
 
-export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
+export function RegisterForm({ initialRef }: RegisterFormProps) {
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
 
@@ -52,7 +44,6 @@ export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
       password: "",
       confirmPassword: "",
       referralCode: initialRef ?? "",
-      plan: initialPlan,
       phone: "",
     },
   })
@@ -74,7 +65,7 @@ export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
       <CardHeader>
         <CardTitle>ثبت‌نام دفتر</CardTitle>
         <CardDescription>
-          {PLAN_DESCRIPTIONS[initialPlan]}
+          ثبت‌نام رایگان — بدون نیاز به کارت بانکی
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -86,9 +77,6 @@ export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Hidden plan field */}
-            <input type="hidden" {...form.register("plan")} />
-
             <FormField
               name="displayName"
               control={form.control}
@@ -227,11 +215,7 @@ export function RegisterForm({ initialPlan, initialRef }: RegisterFormProps) {
             />
 
             <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending
-                ? "در حال ثبت‌نام..."
-                : initialPlan === "FREE"
-                  ? "شروع رایگان"
-                  : "ثبت‌نام و شروع دوره آزمایشی"}
+              {isPending ? "در حال ثبت‌نام..." : "ثبت‌نام رایگان"}
             </Button>
           </form>
         </Form>

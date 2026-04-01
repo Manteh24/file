@@ -4,9 +4,9 @@ import bcrypt from "bcryptjs"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { registerSchema } from "@/lib/validations/auth"
-import { getTrialLengthDays, getDefaultReferralCommission } from "@/lib/platform-settings"
+import { getDefaultReferralCommission } from "@/lib/platform-settings"
 import { generateReferralCode } from "@/lib/referral"
-import type { ApiResponse, Plan } from "@/types"
+import type { ApiResponse } from "@/types"
 
 /**
  * Registration Server Action.
@@ -16,7 +16,7 @@ import type { ApiResponse, Plan } from "@/types"
  * 2. Check for duplicate email
  * 3. Generate a unique username from the email prefix + random suffix
  * 4. Hash password with bcrypt (cost factor 12)
- * 5. Atomically create Office, User (MANAGER), and Subscription (TRIAL) in a transaction
+ * 5. Atomically create Office, User (MANAGER), and Subscription (FREE) in a transaction
  * 6. Redirect to /login on success
  *
  * Returns ApiError on failure. On success, redirect() throws internally and this function
@@ -32,26 +32,12 @@ export async function registerAction(
     return { success: false, error: firstError }
   }
 
-  const { displayName, officeName, city, email, password, referralCode, plan, phone } = parsed.data
-  const chosenPlan: Plan = plan ?? "PRO"
-  const isFree = chosenPlan === "FREE"
+  const { displayName, officeName, city, email, password, referralCode, phone } = parsed.data
 
   // 2. Check for duplicate email
   const existingUser = await db.user.findUnique({ where: { email } })
   if (existingUser) {
     return { success: false, error: "این ایمیل قبلاً ثبت شده است" }
-  }
-
-  // 2b. For non-FREE plans: check if this phone was already used for a trial
-  const normalizedPhone = phone.trim()
-  if (!isFree) {
-    const existingTrial = await db.trialPhone.findUnique({ where: { phone: normalizedPhone } })
-    if (existingTrial) {
-      return {
-        success: false,
-        error: "این شماره موبایل قبلاً برای دوره آزمایشی استفاده شده است",
-      }
-    }
   }
 
   // 3. Generate username from email prefix (lowercase alphanumeric) + 4-digit random suffix
@@ -68,16 +54,7 @@ export async function registerAction(
   // 4. Hash password — cost factor 12 is a good balance of security and speed
   const passwordHash = await bcrypt.hash(password, 12)
 
-  // 5. Create Office, User, and Subscription atomically.
-  // FREE plan: no trial, permanent free access.
-  // PRO/TEAM: configurable-day full trial (default 30), no card required.
-  const trialDays = isFree ? 0 : await getTrialLengthDays()
-  const trialEndsAt = isFree ? null : (() => {
-    const d = new Date()
-    d.setDate(d.getDate() + trialDays)
-    return d
-  })()
-
+  const normalizedPhone = phone.trim()
   const trimmedReferralCode = referralCode?.trim() || null
 
   try {
@@ -112,11 +89,11 @@ export async function registerAction(
       await tx.subscription.create({
         data: {
           officeId: office.id,
-          plan: chosenPlan,
+          plan: "FREE",
           status: "ACTIVE",
-          isTrial: !isFree,
+          isTrial: false,
           billingCycle: "MONTHLY",
-          trialEndsAt,
+          trialEndsAt: null,
         },
       })
 
@@ -136,13 +113,6 @@ export async function registerAction(
       await tx.referralCode.create({
         data: { code: autoCode, officeId: office.id, commissionPerOfficePerMonth: commission },
       })
-
-      // Record phone for one-trial-per-phone enforcement (non-FREE plans only)
-      if (!isFree) {
-        await tx.trialPhone.create({
-          data: { phone: normalizedPhone, officeId: office.id },
-        })
-      }
     })
   } catch {
     // Do not expose internal DB errors to the client

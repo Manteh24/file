@@ -31,8 +31,21 @@ export default async function DashboardLayout({
     }),
   ])
 
+  // Only fetch for FREE non-trial offices — zero cost for subscribers
+  const trialPhone =
+    subscription?.plan === "FREE" && !subscription?.isTrial
+      ? await db.trialPhone.findFirst({ where: { officeId } })
+      : null
+
   const showOnboarding =
     session.user.role === "MANAGER" && userRecord?.onboardingCompleted === false
+
+  const trialBannerProps =
+    session.user.role === "MANAGER" &&
+    subscription?.plan === "FREE" &&
+    !subscription?.isTrial
+      ? { hasUsedTrial: trialPhone !== null }
+      : null
 
   return (
     <DashboardShell
@@ -42,6 +55,7 @@ export default async function DashboardLayout({
       avatarUrl={userRecord?.avatarUrl}
       subscription={subscription}
       showOnboarding={showOnboarding}
+      trialBannerProps={trialBannerProps}
     >
       {children}
     </DashboardShell>

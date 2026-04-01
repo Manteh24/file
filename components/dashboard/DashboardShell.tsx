@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react"
 import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
 import { SubscriptionBanner } from "./SubscriptionBanner"
+import { TrialActivationBanner } from "./TrialActivationBanner"
 import { OnboardingTutorial } from "./OnboardingTutorial"
 import { PWAInstallPrompt } from "./PWAInstallPrompt"
 import type { Role } from "@/types"
@@ -17,6 +18,7 @@ interface DashboardShellProps {
   avatarUrl?: string | null
   subscription: ResolvedSubscription | null
   showOnboarding: boolean
+  trialBannerProps?: { hasUsedTrial: boolean } | null
 }
 
 export function DashboardShell({
@@ -27,6 +29,7 @@ export function DashboardShell({
   avatarUrl,
   subscription,
   showOnboarding,
+  trialBannerProps,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const openSidebar = useCallback(() => setSidebarOpen(true), [])
@@ -66,6 +69,9 @@ export function DashboardShell({
           onMenuClick={() => setSidebarOpen(true)}
           onToggleDark={toggleDark}
         />
+        {trialBannerProps && (
+          <TrialActivationBanner hasUsedTrial={trialBannerProps.hasUsedTrial} />
+        )}
         {subscription && (
           <SubscriptionBanner
             plan={subscription.plan}

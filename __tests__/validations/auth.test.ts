@@ -18,17 +18,8 @@ describe("registerSchema", () => {
     phone: "09121234567",
   }
 
-  const validFree = {
-    ...valid,
-    plan: "FREE" as const,
-  }
-
-  it("accepts valid input for PRO plan", () => {
+  it("accepts valid registration input", () => {
     expect(registerSchema.safeParse(valid).success).toBe(true)
-  })
-
-  it("accepts valid input for FREE plan", () => {
-    expect(registerSchema.safeParse(validFree).success).toBe(true)
   })
 
   it("rejects input when phone is missing", () => {
