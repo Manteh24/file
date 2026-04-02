@@ -208,7 +208,7 @@ export function FileListView({ files }: FileListViewProps) {
                     <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={(e) => { e.stopPropagation(); openQuickView(file) }}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-teal-500)] transition-colors opacity-0 group-hover:opacity-100"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-teal-500)] transition-colors"
                         title="نمای سریع"
                         aria-label="نمای سریع"
                       >

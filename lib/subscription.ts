@@ -7,7 +7,8 @@ import type { Plan, BillingCycle, SubStatus } from "@/types"
 // Actual values live in lib/plan-constants-client.ts (client-safe, no Node imports).
 // Re-exported here so server code can continue to import from lib/subscription.
 
-export { PLAN_LIMITS, PLAN_FEATURES } from "@/lib/plan-constants-client"
+import { PLAN_LIMITS, PLAN_FEATURES } from "@/lib/plan-constants-client"
+export { PLAN_LIMITS, PLAN_FEATURES }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
