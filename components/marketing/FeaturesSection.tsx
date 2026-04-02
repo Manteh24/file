@@ -57,25 +57,28 @@ const smallFeatures = [
 
 export function FeaturesSection() {
   return (
-    <section className="py-20 px-6 bg-slate-50">
+    <section id="features" className="py-20 px-6" style={{ background: "var(--color-surface-2)" }}>
       <div className="container mx-auto max-w-5xl">
-        <h2 className="text-3xl font-bold text-center text-slate-900 mb-3">
+        <h2
+          className="font-semibold text-center text-[var(--color-text-primary)] mb-3"
+          style={{ fontSize: "clamp(1.75rem, 4vw, 2.375rem)" }}
+        >
           همه ابزارهای دفتر در یک جا
         </h2>
-        <p className="text-slate-500 text-center mb-12">
+        <p className="text-[var(--color-text-secondary)] text-center mb-12">
           طراحی شده برای مشاوران و مدیران دفاتر املاک
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* ── Large hero card: File Management ─────────────────────────── */}
-          <div className="md:col-span-2 md:row-span-2 rounded-2xl border border-slate-200 bg-white p-6 flex flex-col transition-colors duration-300 hover:border-teal-300 shadow-sm">
+          <div className="md:col-span-2 md:row-span-2 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 flex flex-col transition-all duration-300 hover:border-[var(--color-teal-300)] hover:-translate-y-0.5 hover:shadow-md shadow-sm">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50">
-                <FolderOpen className="h-5 w-5 text-teal-500" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-teal-50)]">
+                <FolderOpen className="h-5 w-5 text-[var(--color-teal-500)]" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-800">مدیریت فایل‌های ملک</h3>
-                <p className="text-slate-400 text-xs mt-0.5">ثبت، ویرایش و پیگیری با لاگ تغییرات</p>
+                <h3 className="font-semibold text-[var(--color-text-primary)]">مدیریت فایل‌های ملک</h3>
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-0.5">ثبت، ویرایش و پیگیری با لاگ تغییرات</p>
               </div>
             </div>
 
@@ -84,20 +87,20 @@ export function FeaturesSection() {
               {mockFiles.map((file) => (
                 <div
                   key={file.title}
-                  className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                  className="flex items-center justify-between rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
                     <span
                       className={`h-2 w-2 rounded-full shrink-0 ${
-                        file.active ? "bg-teal-500" : "bg-slate-300"
+                        file.active ? "bg-[var(--color-teal-500)]" : "bg-[var(--color-surface-4)]"
                       }`}
                     />
                     <div>
-                      <p className="text-sm font-medium text-slate-800">{file.title}</p>
-                      <p className="text-xs text-slate-400">{file.meta}</p>
+                      <p className="text-sm font-semibold text-[var(--color-text-primary)]">{file.title}</p>
+                      <p className="text-xs text-[var(--color-text-tertiary)]">{file.meta}</p>
                     </div>
                   </div>
-                  <p className="hidden sm:block text-xs text-teal-600 font-medium">{file.price}</p>
+                  <p className="hidden sm:block text-xs text-[var(--color-teal-600)] font-semibold">{file.price}</p>
                 </div>
               ))}
             </div>
@@ -109,20 +112,20 @@ export function FeaturesSection() {
             return (
               <div
                 key={feature.title}
-                className="rounded-2xl border border-slate-200 bg-white p-5 flex flex-col min-h-[140px] transition-colors duration-300 hover:border-teal-300 shadow-sm"
+                className="rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-5 flex flex-col min-h-[140px] transition-all duration-300 hover:border-[var(--color-teal-300)] hover:-translate-y-0.5 hover:shadow-md shadow-sm"
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-50">
-                    <Icon className="h-[18px] w-[18px] text-teal-500" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-teal-50)]">
+                    <Icon className="h-[18px] w-[18px] text-[var(--color-teal-500)]" />
                   </div>
                   {"badge" in feature && feature.badge && (
-                    <span className="rounded-full bg-teal-50 border border-teal-200 px-2 py-0.5 text-[10px] font-semibold text-teal-600">
+                    <span className="rounded-full bg-[var(--color-teal-50)] border border-[var(--color-teal-200)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-teal-600)]">
                       {feature.badge}
                     </span>
                   )}
                 </div>
-                <h3 className="font-semibold text-slate-800 text-sm mb-1.5">{feature.title}</h3>
-                <p className="text-slate-500 text-xs leading-relaxed">{feature.description}</p>
+                <h3 className="font-semibold text-[var(--color-text-primary)] text-sm mb-1.5">{feature.title}</h3>
+                <p className="text-[var(--color-text-secondary)] text-xs leading-relaxed">{feature.description}</p>
               </div>
             )
           })}

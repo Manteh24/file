@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
+import { createPortal } from "react-dom"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -10,14 +11,13 @@ import {
   UserCheck,
   FileText,
   BarChart2,
-  Settings,
-  LifeBuoy,
-  Gift,
   ChevronLeft,
   ArrowUp,
   LogOut,
   CreditCard,
   HelpCircle,
+  Gift,
+  Settings,
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -53,14 +53,6 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/reports", label: "گزارش‌ها", icon: BarChart2, managerOnly: true },
     ],
   },
-  {
-    label: "ابزار",
-    items: [
-      { href: "/support", label: "پشتیبانی", icon: LifeBuoy },
-      { href: "/referral", label: "کد معرفی", icon: Gift, managerOnly: true },
-      { href: "/settings", label: "تنظیمات", icon: Settings, managerOnly: true },
-    ],
-  },
 ]
 
 /* ─── Plan Badge ─────────────────────────────────────────────────────────── */
@@ -71,29 +63,72 @@ const PLAN_LABELS: Record<string, string> = {
   TEAM: "تیمی",
 }
 
-/* ─── Tooltip ────────────────────────────────────────────────────────────── */
+/* ─── Tooltip (fixed-positioned portal to escape overflow:hidden parents) ── */
 
 function Tooltip({ label, children }: { label: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false)
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
+  const ref = useRef<HTMLDivElement>(null)
+
+  function handleEnter() {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect()
+      setPos({
+        top: rect.top + rect.height / 2,
+        // Position to the left of the element (RTL: sidebar is on right side)
+        right: window.innerWidth - rect.left + 8,
+      })
+    }
+  }
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
+    <div ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setPos(null)}>
       {children}
-      {open && (
-        <div
-          className="overlay absolute right-full top-1/2 -translate-y-1/2 mr-2 whitespace-nowrap px-3 py-1.5 text-sm font-medium z-50"
-          style={{ borderRadius: 8, minWidth: 80 }}
-          role="tooltip"
-        >
-          {label}
-        </div>
-      )}
+      {pos &&
+        createPortal(
+          <div
+            className="overlay pointer-events-none whitespace-nowrap px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)]"
+            style={{
+              position: "fixed",
+              top: pos.top,
+              right: pos.right,
+              transform: "translateY(-50%)",
+              borderRadius: 8,
+              zIndex: 9999,
+            }}
+            role="tooltip"
+          >
+            {label}
+          </div>,
+          document.body
+        )}
     </div>
   )
+}
+
+/* ─── Notification count hook ────────────────────────────────────────────── */
+
+function useUnreadCount() {
+  const [count, setCount] = useState(0)
+
+  const fetchCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications")
+      const body = await res.json()
+      if (body.success && Array.isArray(body.data)) {
+        setCount((body.data as { read: boolean }[]).filter((n) => !n.read).length)
+      }
+    } catch {
+      // Silently ignore
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchCount()
+    const timer = setInterval(fetchCount, 30_000)
+    return () => clearInterval(timer)
+  }, [fetchCount])
+
+  return count
 }
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
@@ -129,6 +164,7 @@ export function Sidebar({
   const [trialLoading, setTrialLoading] = useState(false)
   const [trialError, setTrialError] = useState<string | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const unreadCount = useUnreadCount()
 
   const plan = subscription?.plan ?? "FREE"
   const isTrial = subscription?.isTrial ?? false
@@ -137,7 +173,6 @@ export function Sidebar({
 
   // Initials for office card
   const officeInitials = officeName.slice(0, 2)
-  const userInitial = userName.charAt(0)
 
   // Close popover on outside click
   useEffect(() => {
@@ -227,11 +262,11 @@ export function Sidebar({
         )}
       >
         {collapsed ? (
-          <img src="/logo.png" alt="املاکبین" className="h-7 w-7 rounded-lg shrink-0" />
+          <img src="/logo-black.png" alt="املاکبین" className="h-7 w-7 rounded-lg shrink-0 dark:invert" />
         ) : (
           <>
             <div className="flex items-center gap-2.5">
-              <img src="/logo.png" alt="" className="h-7 w-7 rounded-lg shrink-0" />
+              <img src="/logo-black.png" alt="" className="h-7 w-7 rounded-lg shrink-0 dark:invert" />
               <span className="text-lg font-semibold tracking-tight">املاکبین</span>
             </div>
             <button
@@ -239,7 +274,6 @@ export function Sidebar({
               className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
               aria-label="جمع کردن منو"
             >
-              {/* ChevronLeft points left; in RTL it appears on the right, pointing right (toward sidebar) */}
               <ChevronLeft className="h-4 w-4" />
             </button>
             {/* Mobile close button */}
@@ -429,8 +463,19 @@ export function Sidebar({
             }}
           >
             {officeInitials}
-            {/* FREE plan upgrade indicator */}
-            {plan === "FREE" && !isTrial && collapsed && (
+
+            {/* Notification badge on collapsed office avatar */}
+            {collapsed && unreadCount > 0 && (
+              <span
+                className="absolute -top-1.5 -left-1.5 h-4 w-4 flex items-center justify-center rounded-full text-white text-[9px] font-bold"
+                style={{ background: "#EF4444", minWidth: 16 }}
+              >
+                {unreadCount > 9 ? "۹+" : unreadCount.toLocaleString("fa-IR")}
+              </span>
+            )}
+
+            {/* FREE plan upgrade indicator (only when no notifications) */}
+            {plan === "FREE" && !isTrial && collapsed && unreadCount === 0 && (
               <span
                 className="absolute -top-1 -left-1 h-4 w-4 flex items-center justify-center rounded-full text-white text-[9px]"
                 style={{ background: "var(--color-teal-500)" }}
@@ -442,9 +487,20 @@ export function Sidebar({
 
           {!collapsed && (
             <div className="flex-1 min-w-0 text-right">
-              <p className="text-sm font-medium text-[var(--color-text-primary)] truncate leading-tight">
-                {officeName}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-[var(--color-text-primary)] truncate leading-tight flex-1">
+                  {officeName}
+                </p>
+                {/* Unread notification badge (expanded state) */}
+                {unreadCount > 0 && (
+                  <span
+                    className="shrink-0 flex items-center justify-center rounded-full text-white text-[9px] font-bold px-1.5 h-4"
+                    style={{ background: "#EF4444", minWidth: 16 }}
+                  >
+                    {unreadCount > 9 ? "۹+" : unreadCount.toLocaleString("fa-IR")}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
                 <span
                   className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium"

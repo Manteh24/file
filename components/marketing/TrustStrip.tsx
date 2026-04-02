@@ -9,16 +9,19 @@ const badges = [
 
 export function TrustStrip() {
   return (
-    <section className="border-y border-slate-100 bg-slate-50 py-10 px-6 overflow-x-auto">
+    <section
+      className="border-y border-[var(--color-border-subtle)] py-10 px-6 overflow-x-auto"
+      style={{ background: "var(--color-surface-2)" }}
+    >
       <div className="flex justify-center gap-4 min-w-max mx-auto">
         {badges.map((badge) => {
           const Icon = badge.icon
           return (
             <div
               key={badge.label}
-              className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 whitespace-nowrap transition-colors hover:border-teal-300 hover:text-slate-800 shadow-sm"
+              className="flex items-center gap-2.5 rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-1)] px-5 py-2.5 text-sm font-semibold text-[var(--color-text-secondary)] whitespace-nowrap transition-colors hover:border-[var(--color-teal-300)] hover:text-[var(--color-text-primary)] shadow-sm"
             >
-              <Icon className="h-4 w-4 shrink-0 text-teal-500" />
+              <Icon className="h-4 w-4 shrink-0 text-[var(--color-teal-500)]" />
               {badge.label}
             </div>
           )
