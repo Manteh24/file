@@ -117,7 +117,6 @@ export function DashboardShell({
           isDark={isDark}
           onMenuClick={() => setSidebarOpen(true)}
           onToggleDark={toggleDark}
-          onOpenPopover={() => setPopoverOpen(true)}
         />
 
         {trialBannerProps && (

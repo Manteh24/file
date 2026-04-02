@@ -1,6 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { Menu, Sun, Moon } from "lucide-react"
 import { NotificationBell } from "@/components/dashboard/NotificationBell"
 
@@ -12,8 +13,10 @@ const ROUTE_TITLES: Record<string, string> = {
   "/contracts": "قراردادها",
   "/reports": "گزارش‌ها",
   "/support": "پشتیبانی",
+  "/guide": "راهنما",
   "/referral": "کد معرفی",
   "/settings": "تنظیمات",
+  "/profile": "پروفایل من",
 }
 
 function getPageTitle(pathname: string): string {
@@ -32,7 +35,6 @@ interface TopbarProps {
   isDark: boolean
   onMenuClick: () => void
   onToggleDark: () => void
-  onOpenPopover?: () => void
 }
 
 export function Topbar({
@@ -41,7 +43,6 @@ export function Topbar({
   isDark,
   onMenuClick,
   onToggleDark,
-  onOpenPopover,
 }: TopbarProps) {
   const pathname = usePathname()
   const pageTitle = getPageTitle(pathname)
@@ -87,22 +88,22 @@ export function Topbar({
         {/* Notifications */}
         <NotificationBell />
 
-        {/* Avatar */}
-        <button
-          onClick={onOpenPopover}
+        {/* Avatar — navigates to profile page */}
+        <Link
+          href="/profile"
           className="h-8 w-8 flex items-center justify-center rounded-full overflow-hidden font-semibold text-xs shrink-0 hover:ring-2 transition-all"
           style={{
             background: "var(--color-teal-50)",
             color: "var(--color-teal-700)",
           }}
-          aria-label="منوی حساب"
+          aria-label="ویرایش پروفایل"
         >
           {avatarUrl ? (
             <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
           ) : (
             initial
           )}
-        </button>
+        </Link>
       </div>
     </header>
   )

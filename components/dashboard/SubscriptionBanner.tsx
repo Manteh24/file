@@ -52,10 +52,10 @@ export function SubscriptionBanner({
 
   if (bannerState === "near_expiry") {
     return (
-      <Alert className="rounded-none border-x-0 border-t-0 border-yellow-200 bg-yellow-50 text-yellow-900 [&>svg]:text-yellow-700">
+      <Alert className="rounded-none border-x-0 border-t-0 border-yellow-200 bg-yellow-50 text-yellow-900 [&>svg]:text-yellow-700 dark:border-yellow-800/40 dark:bg-yellow-950/40 dark:text-yellow-300 dark:[&>svg]:text-yellow-400">
         <Clock />
         {isManager && <AlertTitle>اشتراک در حال انقضا</AlertTitle>}
-        <AlertDescription className="text-yellow-800">
+        <AlertDescription className="text-yellow-800 dark:text-yellow-400">
           {isManager ? (
             <>
               {subscriptionLabel} شما {daysLeftPersian} روز دیگر به پایان می‌رسد.{" "}
@@ -73,10 +73,10 @@ export function SubscriptionBanner({
 
   if (bannerState === "grace") {
     return (
-      <Alert className="rounded-none border-x-0 border-t-0 border-amber-200 bg-amber-50 text-amber-900 [&>svg]:text-amber-700">
+      <Alert className="rounded-none border-x-0 border-t-0 border-amber-200 bg-amber-50 text-amber-900 [&>svg]:text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-300 dark:[&>svg]:text-amber-400">
         <AlertTriangle />
         {isManager && <AlertTitle>اشتراک منقضی شده</AlertTitle>}
-        <AlertDescription className="text-amber-800">
+        <AlertDescription className="text-amber-800 dark:text-amber-400">
           {isManager ? (
             <>
               اشتراک {subscriptionLabel} شما منقضی شده است. {graceDaysPersian} روز تا محدودیت دسترسی باقی است.{" "}
@@ -94,7 +94,7 @@ export function SubscriptionBanner({
 
   // locked
   return (
-    <Alert variant="destructive" className="rounded-none border-x-0 border-t-0">
+    <Alert variant="destructive" className="rounded-none border-x-0 border-t-0 dark:border-red-800/40 dark:bg-red-950/40">
       <XCircle />
       {isManager && <AlertTitle>حساب قفل شده</AlertTitle>}
       <AlertDescription>

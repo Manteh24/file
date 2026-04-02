@@ -16,6 +16,7 @@ import {
   LogOut,
   CreditCard,
   HelpCircle,
+  BookOpen,
   Gift,
   Settings,
   X,
@@ -266,7 +267,20 @@ export function Sidebar({
         )}
       >
         {collapsed ? (
-          <img src="/logo-black.png" alt="املاکبین" className="h-7 w-7 rounded-lg shrink-0 dark:invert" />
+          <button
+            onClick={onToggleCollapsed}
+            className="hidden lg:flex items-center justify-center relative group h-7 w-7"
+            aria-label="باز کردن منو"
+          >
+            <img
+              src="/logo-black.png"
+              alt="املاکبین"
+              className="h-7 w-7 rounded-lg shrink-0 dark:invert transition-opacity duration-150 group-hover:opacity-0"
+            />
+            <ChevronLeft
+              className="h-5 w-5 absolute inset-0 m-auto opacity-0 transition-opacity duration-150 group-hover:opacity-100 text-[var(--color-text-primary)]"
+            />
+          </button>
         ) : (
           <>
             <div className="flex items-center gap-2.5">
@@ -278,7 +292,7 @@ export function Sidebar({
               className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
               aria-label="جمع کردن منو"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 scale-x-[-1]" />
             </button>
             {/* Mobile close button */}
             <button
@@ -291,21 +305,6 @@ export function Sidebar({
           </>
         )}
       </div>
-
-      {/* Expand button when collapsed (desktop) */}
-      {collapsed && (
-        <div className="hidden lg:flex justify-center py-2 border-b border-[var(--color-border-subtle)]">
-          <Tooltip label="باز کردن منو">
-            <button
-              onClick={onToggleCollapsed}
-              className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
-              aria-label="باز کردن منو"
-            >
-              <ChevronLeft className="h-4 w-4 scale-x-[-1]" />
-            </button>
-          </Tooltip>
-        </div>
-      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2" aria-label="منوی اصلی">
@@ -423,12 +422,20 @@ export function Sidebar({
                   </Link>
                 )}
                 <Link
+                  href="/guide"
+                  onClick={() => onPopoverChange(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                >
+                  <BookOpen className="h-4 w-4 shrink-0" />
+                  راهنمای استفاده
+                </Link>
+                <Link
                   href="/support"
                   onClick={() => onPopoverChange(false)}
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
                 >
                   <HelpCircle className="h-4 w-4 shrink-0" />
-                  راهنما و پشتیبانی
+                  پشتیبانی
                 </Link>
               </div>
 

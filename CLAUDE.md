@@ -606,9 +606,10 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | City selection (Iranian cities dropdown on registration + office profile; city filter on admin offices, users, broadcast, support pages) | ✅ | ✅ |
 | — | Jalali calendar for admin payments date range filter (replaces native Gregorian `<input type="date">`) | ✅ | ✅ |
 | — | Subscription Tier Enforcement Refinement (SMS split gate, map enrichment gate, SmsUsageLog, usePlanStatus hook, TrialFeatureWarning, PlanUsageSummary, pre-flight UI limit checks) | ✅ | ✅ |
+| — | Dashboard UX polish (profile page, guide page, sidebar RTL arrows, dark-mode banners) | ✅ | — |
 
 ### Current Status
-- **Last completed:** Subscription tier enforcement refinement — SMS monthly cap, bulk SMS gate, map enrichment gate, usage API + hook, TrialFeatureWarning chip, PlanUsageSummary bars, pre-flight limit checks on files/agents/AI
+- **Last completed:** Dashboard UX polish — topbar avatar → `/profile` page (all roles), `/guide` page (FAQ + tutorials + tips), sidebar popover separates راهنما/پشتیبانی, RTL-correct collapse/expand arrows, SubscriptionBanner dark-mode colors
 - **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS
 - **Total tests:** 676 passing, 0 failing (47 test files)
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write
