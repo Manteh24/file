@@ -5,8 +5,8 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
-import { FileCard } from "@/components/files/FileCard"
 import { FileFilterPanel } from "@/components/files/FileFilterPanel"
+import { FileListView } from "@/components/files/FileListView"
 import { NewFileButton } from "@/components/files/NewFileButton"
 import { fileFiltersSchema } from "@/lib/validations/file"
 import { buildFileWhere, buildOrderBy } from "@/lib/file-helpers"
@@ -170,11 +170,7 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
           actionHref={!hasActiveFilters && activeFilter === "ALL" ? "/files/new" : undefined}
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {files.map((file) => (
-            <FileCard key={file.id} file={file as PropertyFileSummary} />
-          ))}
-        </div>
+        <FileListView files={files as PropertyFileSummary[]} />
       )}
     </div>
   )

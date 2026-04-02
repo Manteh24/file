@@ -36,24 +36,25 @@ export function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const openSidebar = useCallback(() => setSidebarOpen(true), [])
 
-  // Desktop sidebar collapse — init from localStorage to prevent layout flash
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false
-    return localStorage.getItem("sidebarCollapsed") === "1"
-  })
+  // Desktop sidebar collapse — start false on server, sync from localStorage after hydration
+  const [collapsed, setCollapsed] = useState(false)
 
-  // Dark mode
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === "undefined") return false
-    return localStorage.getItem("dark") === "1"
-  })
+  // Dark mode — start false on server, sync from localStorage after hydration
+  const [isDark, setIsDark] = useState(false)
 
   // Loading screen — show until fonts/session are ready
   const [showLoader, setShowLoader] = useState(true)
 
   useEffect(() => {
-    // Apply dark mode class (the inline script in layout handles the flash,
-    // but we also need to keep the state in sync after hydration)
+    // Sync persisted preferences after hydration (safe to read localStorage here)
+    setCollapsed(localStorage.getItem("sidebarCollapsed") === "1")
+    const dark = localStorage.getItem("dark") === "1"
+    setIsDark(dark)
+    document.documentElement.classList.toggle("dark", dark)
+  }, [])
+
+  useEffect(() => {
+    // Keep dark class in sync when toggled during the session
     document.documentElement.classList.toggle("dark", isDark)
   }, [isDark])
 
