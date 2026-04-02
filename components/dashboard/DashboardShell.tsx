@@ -36,6 +36,9 @@ export function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const openSidebar = useCallback(() => setSidebarOpen(true), [])
 
+  // Office popover — shared between sidebar card and topbar avatar
+  const [popoverOpen, setPopoverOpen] = useState(false)
+
   // Desktop sidebar collapse — start false on server, sync from localStorage after hydration
   const [collapsed, setCollapsed] = useState(false)
 
@@ -98,6 +101,8 @@ export function DashboardShell({
         onClose={() => setSidebarOpen(false)}
         collapsed={collapsed}
         onToggleCollapsed={toggleCollapsed}
+        popoverOpen={popoverOpen}
+        onPopoverChange={setPopoverOpen}
       />
 
       {/* Main content — margin-right handled by CSS data attribute (desktop only) */}
@@ -112,6 +117,7 @@ export function DashboardShell({
           isDark={isDark}
           onMenuClick={() => setSidebarOpen(true)}
           onToggleDark={toggleDark}
+          onOpenPopover={() => setPopoverOpen(true)}
         />
 
         {trialBannerProps && (

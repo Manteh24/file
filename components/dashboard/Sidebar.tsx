@@ -144,6 +144,9 @@ interface SidebarProps {
   /** Desktop collapse state (controlled by DashboardShell) */
   collapsed: boolean
   onToggleCollapsed: () => void
+  /** Office popover open state — lifted to DashboardShell so topbar avatar can also open it */
+  popoverOpen: boolean
+  onPopoverChange: (v: boolean) => void
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -157,10 +160,11 @@ export function Sidebar({
   onClose,
   collapsed,
   onToggleCollapsed,
+  popoverOpen,
+  onPopoverChange,
 }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [popoverOpen, setPopoverOpen] = useState(false)
   const [trialLoading, setTrialLoading] = useState(false)
   const [trialError, setTrialError] = useState<string | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
@@ -179,7 +183,7 @@ export function Sidebar({
     if (!popoverOpen) return
     function handleClick(e: MouseEvent) {
       if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setPopoverOpen(false)
+        onPopoverChange(false)
       }
     }
     document.addEventListener("mousedown", handleClick)
@@ -388,7 +392,7 @@ export function Sidebar({
                 {isManager && (plan === "FREE" || isTrial) && (
                   <Link
                     href="/settings#billing"
-                    onClick={() => setPopoverOpen(false)}
+                    onClick={() => onPopoverChange(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] hover:bg-[var(--color-surface-2)] transition-colors"
                   >
                     <CreditCard className="h-4 w-4 shrink-0" />
@@ -398,7 +402,7 @@ export function Sidebar({
                 {isManager && (
                   <Link
                     href="/referral"
-                    onClick={() => setPopoverOpen(false)}
+                    onClick={() => onPopoverChange(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
                   >
                     <Gift className="h-4 w-4 shrink-0" />
@@ -411,7 +415,7 @@ export function Sidebar({
                 {isManager && (
                   <Link
                     href="/settings"
-                    onClick={() => setPopoverOpen(false)}
+                    onClick={() => onPopoverChange(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
                   >
                     <Settings className="h-4 w-4 shrink-0" />
@@ -420,7 +424,7 @@ export function Sidebar({
                 )}
                 <Link
                   href="/support"
-                  onClick={() => setPopoverOpen(false)}
+                  onClick={() => onPopoverChange(false)}
                   className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
                 >
                   <HelpCircle className="h-4 w-4 shrink-0" />
@@ -445,7 +449,7 @@ export function Sidebar({
 
         {/* Card button */}
         <button
-          onClick={() => setPopoverOpen((v) => !v)}
+          onClick={() => onPopoverChange(!popoverOpen)}
           className={cn(
             "w-full flex items-center rounded-xl hover:bg-[var(--color-surface-2)] transition-colors text-start",
             collapsed ? "justify-center h-11 w-11 mx-auto" : "gap-3 px-2 py-2"
