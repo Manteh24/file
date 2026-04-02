@@ -11,6 +11,7 @@ export const sendSmsSchema = z.object({
     .string()
     .min(1, "متن پیامک نمی‌تواند خالی باشد")
     .max(500, "متن پیامک نباید بیشتر از ۵۰۰ کاراکتر باشد"),
+  type: z.enum(["share", "bulk"]),
 })
 
 export type SendSmsInput = z.infer<typeof sendSmsSchema>

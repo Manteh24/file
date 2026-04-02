@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ArrowUpCircle } from "lucide-react"
 
 interface UpgradePromptProps {
-  reason: "users" | "files" | "ai"
+  reason: "users" | "files" | "ai" | "sms" | "maps_enrichment" | "pdf" | "reports"
   role?: "MANAGER" | "AGENT"
 }
 
@@ -10,6 +10,10 @@ const REASON_LABELS: Record<UpgradePromptProps["reason"], string> = {
   users: "ظرفیت مشاوران",
   files: "ظرفیت فایل‌های فعال",
   ai: "سهمیه توضیحات هوشمند ماهانه",
+  sms: "پیامک ماهانه شما تمام شده است",
+  maps_enrichment: "آنالیز موقعیت فقط در پلن پرو فعال است",
+  pdf: "خروجی PDF فقط در پلن پرو فعال است",
+  reports: "گزارشات فقط در پلن پرو فعال است",
 }
 
 export function UpgradePrompt({ reason, role }: UpgradePromptProps) {

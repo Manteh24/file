@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   FREE_MAX_USERS: "1",
   FREE_MAX_FILES: "10",
   FREE_MAX_AI_MONTH: "10",
+  FREE_MAX_SMS_MONTH: "30",
   DEFAULT_REFERRAL_COMMISSION: "50000",
 }
 
@@ -118,17 +119,19 @@ export async function getDefaultReferralCommission(): Promise<number> {
 
 /**
  * Returns the runtime-configurable limits for the FREE plan.
- * Falls back to defaults (1 user, 10 files, 10 AI/month) if settings are missing.
+ * Falls back to defaults (1 user, 10 files, 10 AI/month, 30 SMS/month) if settings are missing.
  */
 export async function getFreePlanLimits(): Promise<{
   maxUsers: number
   maxActiveFiles: number
   maxAiPerMonth: number
+  maxSmsPerMonth: number
 }> {
-  const [usersRaw, filesRaw, aiRaw] = await Promise.all([
+  const [usersRaw, filesRaw, aiRaw, smsRaw] = await Promise.all([
     getSetting("FREE_MAX_USERS", "1"),
     getSetting("FREE_MAX_FILES", "10"),
     getSetting("FREE_MAX_AI_MONTH", "10"),
+    getSetting("FREE_MAX_SMS_MONTH", "30"),
   ])
 
   const parsePositiveInt = (raw: string, fallback: number): number => {
@@ -140,5 +143,6 @@ export async function getFreePlanLimits(): Promise<{
     maxUsers: parsePositiveInt(usersRaw, 1),
     maxActiveFiles: parsePositiveInt(filesRaw, 10),
     maxAiPerMonth: parsePositiveInt(aiRaw, 10),
+    maxSmsPerMonth: parsePositiveInt(smsRaw, 30),
   }
 }

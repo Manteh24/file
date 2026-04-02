@@ -122,7 +122,7 @@ export default async function CustomerPage({ params }: CustomerPageProps) {
           <CardTitle className="text-sm font-medium">ارسال پیامک</CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0">
-          <SmsPanel defaultPhone={customer.phone} defaultMessage="" />
+          <SmsPanel defaultPhone={customer.phone} defaultMessage="" type="bulk" />
         </CardContent>
       </Card>
     </div>

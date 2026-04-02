@@ -6,15 +6,17 @@ import type { Plan, BillingCycle, SubStatus } from "@/types"
 // ─── Plan Feature Definitions ─────────────────────────────────────────────────
 
 export const PLAN_LIMITS = {
-  FREE: { maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10 },
-  PRO:  { maxUsers: 7, maxActiveFiles: Infinity, maxAiPerMonth: Infinity },
-  TEAM: { maxUsers: Infinity, maxActiveFiles: Infinity, maxAiPerMonth: Infinity },
+  FREE: { maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10, maxSmsPerMonth: 30 },
+  PRO:  { maxUsers: 10, maxActiveFiles: Infinity, maxAiPerMonth: Infinity, maxSmsPerMonth: Infinity },
+  TEAM: { maxUsers: Infinity, maxActiveFiles: Infinity, maxAiPerMonth: Infinity, maxSmsPerMonth: Infinity },
 } as const
 
 export const PLAN_FEATURES = {
   FREE: {
-    hasSms: false,
-    hasMaps: false,
+    hasShareSms: true,
+    hasBulkSms: false,
+    hasMaps: true,
+    hasMapEnrichment: false,
     hasReports: false,
     hasPdfExport: false,
     hasLinkTracking: false,
@@ -24,8 +26,10 @@ export const PLAN_FEATURES = {
     watermarkLinks: true,
   },
   PRO: {
-    hasSms: true,
+    hasShareSms: true,
+    hasBulkSms: true,
     hasMaps: true,
+    hasMapEnrichment: true,
     hasReports: true,
     hasPdfExport: true,
     hasLinkTracking: true,
@@ -35,8 +39,10 @@ export const PLAN_FEATURES = {
     watermarkLinks: false,
   },
   TEAM: {
-    hasSms: true,
+    hasShareSms: true,
+    hasBulkSms: true,
     hasMaps: true,
+    hasMapEnrichment: true,
     hasReports: true,
     hasPdfExport: true,
     hasLinkTracking: true,
@@ -264,6 +270,7 @@ export interface PlanLimits {
   maxUsers: number
   maxActiveFiles: number
   maxAiPerMonth: number
+  maxSmsPerMonth: number
 }
 
 /**
@@ -276,6 +283,33 @@ export async function getEffectivePlanLimits(plan: Plan): Promise<PlanLimits> {
     return PLAN_LIMITS[plan] as PlanLimits
   }
   return getFreePlanLimits()
+}
+
+// ─── SMS Usage Helpers ────────────────────────────────────────────────────────
+
+/**
+ * Returns the number of share SMS sends made by the office this Shamsi month.
+ */
+export async function getSmsUsageThisMonth(officeId: string): Promise<number> {
+  const shamsiMonth = getCurrentShamsiMonth()
+  const log = await db.smsUsageLog.findUnique({
+    where: { officeId_shamsiMonth: { officeId, shamsiMonth } },
+    select: { count: true },
+  })
+  return log?.count ?? 0
+}
+
+/**
+ * Increments the SMS usage counter for the office in the current Shamsi month.
+ * Uses upsert so the row is created on first use and incremented thereafter.
+ */
+export async function incrementSmsUsage(officeId: string): Promise<void> {
+  const shamsiMonth = getCurrentShamsiMonth()
+  await db.smsUsageLog.upsert({
+    where: { officeId_shamsiMonth: { officeId, shamsiMonth } },
+    create: { officeId, shamsiMonth, count: 1 },
+    update: { count: { increment: 1 } },
+  })
 }
 
 // ─── API Route Guards ─────────────────────────────────────────────────────────

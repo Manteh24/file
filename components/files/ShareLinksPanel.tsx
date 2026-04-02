@@ -415,6 +415,7 @@ export function ShareLinksPanel({
                         defaultMessage={buildSmsMessage(link)}
                         contacts={contacts}
                         customers={customers}
+                        type="share"
                       />
                     </div>
                   )}

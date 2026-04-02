@@ -38,10 +38,12 @@ describe("getEffectivePlanLimits", () => {
       .mockResolvedValueOnce({ value: "2" })  // FREE_MAX_USERS
       .mockResolvedValueOnce({ value: "15" }) // FREE_MAX_FILES
       .mockResolvedValueOnce({ value: "5" })  // FREE_MAX_AI_MONTH
+      .mockResolvedValueOnce({ value: "20" }) // FREE_MAX_SMS_MONTH
     const limits = await getEffectivePlanLimits("FREE")
     expect(limits.maxUsers).toBe(2)
     expect(limits.maxActiveFiles).toBe(15)
     expect(limits.maxAiPerMonth).toBe(5)
+    expect(limits.maxSmsPerMonth).toBe(20)
   })
 
   it("uses defaults when FREE settings are not stored", async () => {
@@ -50,5 +52,6 @@ describe("getEffectivePlanLimits", () => {
     expect(limits.maxUsers).toBe(1)
     expect(limits.maxActiveFiles).toBe(10)
     expect(limits.maxAiPerMonth).toBe(10)
+    expect(limits.maxSmsPerMonth).toBe(30)
   })
 })

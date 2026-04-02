@@ -1,13 +1,13 @@
 import Link from "next/link"
-import { Plus, FolderOpen } from "lucide-react"
+import { FolderOpen } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { FileCard } from "@/components/files/FileCard"
 import { FileFilterPanel } from "@/components/files/FileFilterPanel"
+import { NewFileButton } from "@/components/files/NewFileButton"
 import { fileFiltersSchema } from "@/lib/validations/file"
 import { buildFileWhere, buildOrderBy } from "@/lib/file-helpers"
 import type { FileStatus, PropertyFileSummary } from "@/types"
@@ -126,14 +126,7 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
       <PageHeader
         title="فایل‌های ملکی"
         description={`${files.length.toLocaleString("fa-IR")} فایل`}
-        actions={
-          <Button asChild>
-            <Link href="/files/new">
-              <Plus className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
-              فایل جدید
-            </Link>
-          </Button>
-        }
+        actions={<NewFileButton role={role as "MANAGER" | "AGENT"} />}
       />
 
       {/* Status filter tabs — hrefs preserve all active secondary filters */}

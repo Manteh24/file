@@ -83,6 +83,7 @@ export function ContractSmsActions({
             <SmsPanel
               defaultMessage={ratingMessage}
               contacts={contacts}
+              type="bulk"
             />
           </div>
         )}
@@ -93,6 +94,7 @@ export function ContractSmsActions({
             <SmsPanel
               defaultMessage={rentFollowupMessage}
               contacts={contacts}
+              type="bulk"
             />
           </div>
         )}

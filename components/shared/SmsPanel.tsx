@@ -29,6 +29,8 @@ interface SmsPanelProps {
   contacts?: Contact[]
   // CRM customers (BUYER/RENTER) shown in the second group of the combobox.
   customers?: Contact[]
+  // SMS type: "share" (file link, soft monthly cap) or "bulk" (outreach, PRO+ only)
+  type: "share" | "bulk"
 }
 
 export function SmsPanel({
@@ -36,6 +38,7 @@ export function SmsPanel({
   defaultMessage,
   contacts,
   customers,
+  type,
 }: SmsPanelProps) {
   const [phone, setPhone] = useState(defaultPhone)
   const [message, setMessage] = useState(defaultMessage)
@@ -64,7 +67,7 @@ export function SmsPanel({
       const res = await fetch("/api/sms/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: phone.trim(), message: message.trim() }),
+        body: JSON.stringify({ phone: phone.trim(), message: message.trim(), type }),
       })
       const body = await res.json()
       if (body.success) {

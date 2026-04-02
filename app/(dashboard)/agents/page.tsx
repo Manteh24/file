@@ -1,12 +1,11 @@
-import Link from "next/link"
-import { Plus, Users } from "lucide-react"
+import { Users } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AgentCard } from "@/components/agents/AgentCard"
+import { NewAgentButton } from "@/components/agents/NewAgentButton"
 import type { AgentSummary } from "@/types"
 
 export default async function AgentsPage() {
@@ -36,14 +35,7 @@ export default async function AgentsPage() {
       <PageHeader
         title="مشاوران"
         description={`${agents.length.toLocaleString("fa-IR")} مشاور`}
-        actions={
-          <Button asChild>
-            <Link href="/agents/new">
-              <Plus className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
-              مشاور جدید
-            </Link>
-          </Button>
-        }
+        actions={<NewAgentButton />}
       />
 
       {agents.length === 0 ? (

@@ -294,10 +294,11 @@ describe("PLAN_LIMITS", () => {
     expect(PLAN_LIMITS.FREE.maxAiPerMonth).toBe(10)
   })
 
-  it("PRO plan allows 7 users and unlimited files and AI", () => {
-    expect(PLAN_LIMITS.PRO.maxUsers).toBe(7)
+  it("PRO plan allows 10 users and unlimited files, AI, and SMS", () => {
+    expect(PLAN_LIMITS.PRO.maxUsers).toBe(10)
     expect(PLAN_LIMITS.PRO.maxActiveFiles).toBe(Infinity)
     expect(PLAN_LIMITS.PRO.maxAiPerMonth).toBe(Infinity)
+    expect(PLAN_LIMITS.PRO.maxSmsPerMonth).toBe(Infinity)
   })
 
   it("TEAM plan has unlimited users, files, and AI", () => {
@@ -310,22 +311,23 @@ describe("PLAN_LIMITS", () => {
 // ─── PLAN_FEATURES constants ──────────────────────────────────────────────────
 
 describe("PLAN_FEATURES", () => {
-  it("FREE plan disables SMS, maps, reports, and sets watermarkLinks=true", () => {
-    expect(PLAN_FEATURES.FREE.hasSms).toBe(false)
-    expect(PLAN_FEATURES.FREE.hasMaps).toBe(false)
+  it("FREE plan disables bulk SMS, map enrichment, reports, and sets watermarkLinks=true", () => {
+    expect(PLAN_FEATURES.FREE.hasBulkSms).toBe(false)
+    expect(PLAN_FEATURES.FREE.hasMapEnrichment).toBe(false)
     expect(PLAN_FEATURES.FREE.hasReports).toBe(false)
     expect(PLAN_FEATURES.FREE.watermarkLinks).toBe(true)
   })
 
-  it("PRO plan enables SMS, maps, reports, and sets watermarkLinks=false", () => {
-    expect(PLAN_FEATURES.PRO.hasSms).toBe(true)
-    expect(PLAN_FEATURES.PRO.hasMaps).toBe(true)
+  it("PRO plan enables share SMS, bulk SMS, map enrichment, reports, and sets watermarkLinks=false", () => {
+    expect(PLAN_FEATURES.PRO.hasShareSms).toBe(true)
+    expect(PLAN_FEATURES.PRO.hasBulkSms).toBe(true)
+    expect(PLAN_FEATURES.PRO.hasMapEnrichment).toBe(true)
     expect(PLAN_FEATURES.PRO.hasReports).toBe(true)
     expect(PLAN_FEATURES.PRO.watermarkLinks).toBe(false)
   })
 
   it("TEAM plan includes advanced analytics and multi-branch on top of PRO features", () => {
-    expect(PLAN_FEATURES.TEAM.hasSms).toBe(true)
+    expect(PLAN_FEATURES.TEAM.hasShareSms).toBe(true)
     expect(PLAN_FEATURES.TEAM.hasAdvancedAnalytics).toBe(true)
     expect(PLAN_FEATURES.TEAM.hasMultiBranch).toBe(true)
     expect(PLAN_FEATURES.TEAM.watermarkLinks).toBe(false)

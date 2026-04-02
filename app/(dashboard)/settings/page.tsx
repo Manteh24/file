@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { OfficeProfileForm } from "@/components/settings/OfficeProfileForm"
 import { SubscriptionCard } from "@/components/settings/SubscriptionCard"
 import { UserPhoneForm } from "@/components/settings/UserPhoneForm"
+import { PlanUsageSummary } from "@/components/dashboard/PlanUsageSummary"
 import type { OfficeProfile, SubscriptionInfo } from "@/types"
 
 interface SettingsPageProps {
@@ -119,13 +120,16 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       </section>
 
       {/* Section: Subscription */}
-      <section>
+      <section id="billing">
         <div className="mb-4 border-b border-border pb-3">
           <h2 className="text-[13px] font-medium uppercase tracking-widest text-muted-foreground">
             اشتراک و پرداخت
           </h2>
         </div>
-        <SubscriptionCard subscription={subscriptionInfo} />
+        <PlanUsageSummary />
+        <div className="mt-4">
+          <SubscriptionCard subscription={subscriptionInfo} />
+        </div>
       </section>
     </div>
   )

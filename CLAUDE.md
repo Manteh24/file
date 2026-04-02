@@ -210,6 +210,7 @@ Helper: `canAdminDo(user, capability)` in `lib/admin.ts` — use this in every a
 - **Subscription** — one per office. `plan: FREE | PRO | TEAM`, `isTrial: boolean`, `billingCycle: MONTHLY | ANNUAL`, `status`, `trialEndsAt`, `currentPeriodEnd`.
 - **PaymentRecord** — one per Zarinpal transaction. `authority`, `status: PENDING | VERIFIED | FAILED`, guards against double-verification.
 - **AiUsageLog** — per-office per-Shamsi-month AI call counter. Used for plan limit enforcement.
+- **SmsUsageLog** — per-office per-Shamsi-month SMS call counter (share SMS only). Used for FREE plan monthly cap enforcement. `@@unique([officeId, shamsiMonth])`.
 - **AdminActionLog** — immutable audit log of all admin write actions. `adminId`, `action`, `targetId`, `metadata`.
 - **OfficeNote** — admin-written notes about an office. `adminId`, `officeId`, `content`.
 - **ReferralCode** — one per office. Used to track referrals at registration.
@@ -278,7 +279,7 @@ Six runtime-configurable keys in `PlatformSetting` table (editable by SUPER_ADMI
 - `MAINTENANCE_MODE` — `"true"` redirects all non-admin traffic in middleware
 - `ZARINPAL_MODE` — `"sandbox"` or `"production"`
 - `AVALAI_MODEL` — overrides the AI model string (default `gpt-4o-mini`)
-- `FREE_MAX_USERS`, `FREE_MAX_FILES`, `FREE_MAX_AI_MONTH` — override FREE plan limits
+- `FREE_MAX_USERS`, `FREE_MAX_FILES`, `FREE_MAX_AI_MONTH`, `FREE_MAX_SMS_MONTH` — override FREE plan limits
 
 Settings are cached for 30s in `lib/platform-settings.ts`. Call `clearSettingsCache()` in tests that exercise settings-reading code.
 
@@ -515,7 +516,11 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `lib/sms.ts` | KaveNegar SMS sending functions |
 | `lib/maps.ts` | Neshan API calls (geocoding, routing, POI) |
 | `lib/file-helpers.ts` | `logActivity`, `recordPriceChanges`, `buildDiff`, `deactivateShareLinks`, `buildFileWhere`, `buildOrderBy` — shared file query builders used by both the server page and the API route |
-| `lib/subscription.ts` | `resolveSubscription`, `getEffectiveSubscription` (lazy status migration), `requireWriteAccess`, `SubscriptionLockedError`, `getEffectivePlanLimits(plan)` (reads PlatformSetting overrides), `PLAN_LIMITS`, `PLAN_FEATURES` |
+| `lib/subscription.ts` | `resolveSubscription`, `getEffectiveSubscription` (lazy status migration), `requireWriteAccess`, `SubscriptionLockedError`, `getEffectivePlanLimits(plan)` (reads PlatformSetting overrides), `PLAN_LIMITS`, `PLAN_FEATURES`, `getSmsUsageThisMonth(officeId)`, `incrementSmsUsage(officeId)`, `getAiUsageThisMonth(officeId)`, `incrementAiUsage(officeId)` |
+| `hooks/usePlanStatus.ts` | Client hook — polls `/api/subscription/usage` every 30s; exposes `isNearLimit(field)` (≥70%) and `isAtLimit(field)` helpers. Fields: `activeFiles`, `users`, `ai`, `sms`. Max=-1 means unlimited. |
+| `app/api/subscription/usage/route.ts` | GET — manager-only; returns plan, isTrial, trialEndsAt, and usage counts with maxes (Infinity serialized as -1). |
+| `components/shared/TrialFeatureWarning.tsx` | Chip shown on PRO-only features when subscription is trial; amber >7 days left, red ≤7 days. Props: `feature` (keyof PLAN_FEATURES.PRO) + `subscription`. |
+| `components/dashboard/PlanUsageSummary.tsx` | FREE-plan usage bars (activeFiles, users, AI, SMS). Only renders when plan=FREE. Color-coded: <70% primary, 70–99% amber, 100% red. |
 | `lib/admin.ts` | `getAccessibleOfficeIds`, `buildOfficeFilter`, `logAdminAction`, `calculateMrr`, `calculateChurnRate`, `calculateTrialConversionRate`, `calculateAiCostThisMonth`, `calculateReferralKpis`, `AI_UNIT_COST_TOMAN`, `TIER_CAPABILITIES`, `canAdminDo(user, capability)`, `TIER_LABELS` |
 | `lib/payment.ts` | `PLAN_PRICES_TOMAN`, `PLAN_PRICES_RIALS`, `PLAN_LABELS`, `requestPayment()`, `verifyPayment()`, `calculateNewPeriodEnd()` |
 | `lib/cities.ts` | Static list of 62 major Iranian cities — imported by city `<select>` dropdowns in registration, office settings, and admin filters |
@@ -600,11 +605,12 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Configurable default referral commission (`DEFAULT_REFERRAL_COMMISSION` PlatformSetting, propagates to auto-generated office codes, live in manager referral panel) | ✅ | ✅ |
 | — | City selection (Iranian cities dropdown on registration + office profile; city filter on admin offices, users, broadcast, support pages) | ✅ | ✅ |
 | — | Jalali calendar for admin payments date range filter (replaces native Gregorian `<input type="date">`) | ✅ | ✅ |
+| — | Subscription Tier Enforcement Refinement (SMS split gate, map enrichment gate, SmsUsageLog, usePlanStatus hook, TrialFeatureWarning, PlanUsageSummary, pre-flight UI limit checks) | ✅ | ✅ |
 
 ### Current Status
-- **Last completed:** Reports page period filter labels/order updated (یک ماه → سه ماه → یک سال → از آغاز)
+- **Last completed:** Subscription tier enforcement refinement — SMS monthly cap, bulk SMS gate, map enrichment gate, usage API + hook, TrialFeatureWarning chip, PlanUsageSummary bars, pre-flight limit checks on files/agents/AI
 - **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS
-- **Total tests:** 656 passing, 0 failing (46 test files)
+- **Total tests:** 676 passing, 0 failing (47 test files)
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write
 
 ### Reference Docs

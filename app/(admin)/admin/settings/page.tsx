@@ -19,6 +19,7 @@ export default async function AdminSettingsPage() {
     freeMaxUsers,
     freeMaxFiles,
     freeMaxAiMonth,
+    freeMaxSmsMonth,
     defaultReferralCommission,
   ] = await Promise.all([
     getSetting("TRIAL_LENGTH_DAYS", "30"),
@@ -28,6 +29,7 @@ export default async function AdminSettingsPage() {
     getSetting("FREE_MAX_USERS", "1"),
     getSetting("FREE_MAX_FILES", "10"),
     getSetting("FREE_MAX_AI_MONTH", "10"),
+    getSetting("FREE_MAX_SMS_MONTH", "30"),
     getSetting("DEFAULT_REFERRAL_COMMISSION", "50000"),
   ])
 
@@ -45,6 +47,7 @@ export default async function AdminSettingsPage() {
         freeMaxUsers={freeMaxUsers}
         freeMaxFiles={freeMaxFiles}
         freeMaxAiMonth={freeMaxAiMonth}
+        freeMaxSmsMonth={freeMaxSmsMonth}
         defaultReferralCommission={defaultReferralCommission}
       />
     </div>

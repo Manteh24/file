@@ -10,6 +10,7 @@ interface AdminSettingsFormProps {
   freeMaxUsers: string
   freeMaxFiles: string
   freeMaxAiMonth: string
+  freeMaxSmsMonth: string
   defaultReferralCommission: string
 }
 
@@ -24,6 +25,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
   const [freeMaxUsers, setFreeMaxUsers] = useState(props.freeMaxUsers)
   const [freeMaxFiles, setFreeMaxFiles] = useState(props.freeMaxFiles)
   const [freeMaxAiMonth, setFreeMaxAiMonth] = useState(props.freeMaxAiMonth)
+  const [freeMaxSmsMonth, setFreeMaxSmsMonth] = useState(props.freeMaxSmsMonth)
   const [days, setDays] = useState(props.trialLengthDays)
   const [defaultReferralCommission, setDefaultReferralCommission] = useState(
     props.defaultReferralCommission
@@ -179,7 +181,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
         <p className="text-xs text-muted-foreground">
           تغییر این مقادیر بلافاصله روی همه حساب‌های رایگان اعمال می‌شود.
         </p>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="space-y-1.5">
             <label className="text-xs font-medium">حداکثر کاربران</label>
             <input
@@ -210,6 +212,16 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium">سقف پیامک رایگان/ماه</label>
+            <input
+              type="number"
+              value={freeMaxSmsMonth}
+              onChange={(e) => { setFreeMaxSmsMonth(e.target.value); setSavedSection(null) }}
+              min="0"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -218,6 +230,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
                 FREE_MAX_USERS: freeMaxUsers,
                 FREE_MAX_FILES: freeMaxFiles,
                 FREE_MAX_AI_MONTH: freeMaxAiMonth,
+                FREE_MAX_SMS_MONTH: freeMaxSmsMonth,
               })
             }
             disabled={loadingSection === "freeLimits"}

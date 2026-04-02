@@ -80,7 +80,7 @@ describe("getFreePlanLimits", () => {
   it("returns defaults when nothing is stored", async () => {
     mockDb.platformSetting.findUnique.mockResolvedValue(null)
     const limits = await getFreePlanLimits()
-    expect(limits).toEqual({ maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10 })
+    expect(limits).toEqual({ maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10, maxSmsPerMonth: 30 })
   })
 
   it("returns custom limits when stored", async () => {
@@ -88,10 +88,12 @@ describe("getFreePlanLimits", () => {
       .mockResolvedValueOnce({ value: "3" })  // FREE_MAX_USERS
       .mockResolvedValueOnce({ value: "5" })  // FREE_MAX_FILES
       .mockResolvedValueOnce({ value: "20" }) // FREE_MAX_AI_MONTH
+      .mockResolvedValueOnce({ value: "50" }) // FREE_MAX_SMS_MONTH
     const limits = await getFreePlanLimits()
     expect(limits.maxUsers).toBe(3)
     expect(limits.maxActiveFiles).toBe(5)
     expect(limits.maxAiPerMonth).toBe(20)
+    expect(limits.maxSmsPerMonth).toBe(50)
   })
 
   it("falls back to default for invalid values", async () => {

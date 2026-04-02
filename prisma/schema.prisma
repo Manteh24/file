@@ -127,6 +127,7 @@ model Office {
   paymentRecords   PaymentRecord[]
   adminAssignments AdminOfficeAssignment[]
   aiUsageLogs      AiUsageLog[]
+  smsUsageLogs     SmsUsageLog[]
   branches         Branch[]
   notes            OfficeNote[]
   // Referral that brought this office to the platform (one office can be referred once)
@@ -530,6 +531,21 @@ model AiUsageLog {
 
   @@unique([officeId, shamsiMonth])
   @@map("ai_usage_logs")
+}
+
+// Tracks SMS sends per office per Shamsi calendar month.
+// Used to enforce the FREE plan soft cap on share SMS sends.
+// shamsiMonth is stored as a YYYYMM integer (e.g. 140412 = Farvardin 1404).
+model SmsUsageLog {
+  id          String @id @default(cuid())
+  officeId    String
+  shamsiMonth Int
+  count       Int    @default(0)
+
+  office      Office @relation(fields: [officeId], references: [id])
+
+  @@unique([officeId, shamsiMonth])
+  @@map("sms_usage_logs")
 }
 
 // Office branch for multi-branch management (Team plan).

@@ -18,9 +18,9 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
   const { officeId } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
-  // Check plan feature gate
+  // Check plan feature gate — map enrichment (POI analysis) requires PRO+
   const sub = await getEffectiveSubscription(officeId)
-  if (sub && !PLAN_FEATURES[sub.plan].hasMaps) {
+  if (sub && !PLAN_FEATURES[sub.plan].hasMapEnrichment) {
     return NextResponse.json(
       { success: false, error: "آنالیز موقعیت در پلن رایگان فعال نیست" },
       { status: 403 }

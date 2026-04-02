@@ -22,9 +22,9 @@ vi.mock("@/lib/subscription", () => ({
     graceDaysLeft: 0,
   }),
   PLAN_FEATURES: {
-    FREE: { hasSms: false, hasMaps: false, hasReports: false, hasPdfExport: false, hasLinkTracking: false, hasCustomBranding: false, watermarkLinks: true },
-    PRO: { hasSms: true, hasMaps: true, hasReports: true, hasPdfExport: true, hasLinkTracking: true, hasCustomBranding: true, watermarkLinks: false },
-    TEAM: { hasSms: true, hasMaps: true, hasReports: true, hasPdfExport: true, hasLinkTracking: true, hasCustomBranding: true, watermarkLinks: false },
+    FREE: { hasShareSms: true, hasBulkSms: false, hasMaps: true, hasMapEnrichment: false, hasReports: false, hasPdfExport: false, hasLinkTracking: false, hasCustomBranding: false, watermarkLinks: true },
+    PRO: { hasShareSms: true, hasBulkSms: true, hasMaps: true, hasMapEnrichment: true, hasReports: true, hasPdfExport: true, hasLinkTracking: true, hasCustomBranding: true, watermarkLinks: false },
+    TEAM: { hasShareSms: true, hasBulkSms: true, hasMaps: true, hasMapEnrichment: true, hasReports: true, hasPdfExport: true, hasLinkTracking: true, hasCustomBranding: true, watermarkLinks: false },
   },
 }))
 

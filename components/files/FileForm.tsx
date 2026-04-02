@@ -20,6 +20,7 @@ import { PriceInput } from "@/components/forms/PriceInput"
 import { LocationPicker } from "@/components/files/LocationPicker"
 import { UpgradePrompt } from "@/components/shared/UpgradePrompt"
 import { useDraft } from "@/hooks/useDraft"
+import { usePlanStatus } from "@/hooks/usePlanStatus"
 import { toFarsiDigits, parseFarsiNumber } from "@/lib/utils"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
 import type { PropertyFileDetail, LocationAnalysis } from "@/types"
@@ -89,6 +90,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
   const hasDraftRef = useRef(false)
 
   const { draft, isLoading: draftLoading, hasDraft, saveDraft, clearDraft } = useDraft(userId)
+  const { isAtLimit: isPlanAtLimit, isNearLimit: isPlanNearLimit } = usePlanStatus()
 
   // Keep ref in sync so the online event handler always sees the latest value
   hasDraftRef.current = hasDraft
@@ -857,13 +859,23 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateDescription}
-                disabled={aiLoading || !isOnline}
-                title={!isOnline ? "اتصال اینترنت برای تولید توضیحات لازم است" : undefined}
+                disabled={aiLoading || !isOnline || isPlanAtLimit("ai")}
+                title={
+                  !isOnline
+                    ? "اتصال اینترنت برای تولید توضیحات لازم است"
+                    : isPlanAtLimit("ai")
+                    ? "سهمیه ماهانه هوش مصنوعی تمام شده است"
+                    : undefined
+                }
               >
                 <Sparkles className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
                 {aiLoading ? "در حال تولید..." : "تولید توضیحات"}
               </Button>
             </div>
+            {/* Show near-limit info text */}
+            {!aiPlanLimit && isPlanNearLimit("ai") && !isPlanAtLimit("ai") && (
+              <p className="text-xs text-amber-700">به سقف ماهانه هوش مصنوعی نزدیک می‌شوید.</p>
+            )}
             {aiPlanLimit && <UpgradePrompt reason="ai" role={role} />}
             {!aiPlanLimit && aiError && <p className="text-sm text-destructive">{aiError}</p>}
           </div>

@@ -175,7 +175,7 @@ describe("POST /api/agents", () => {
     vi.clearAllMocks()
     mockAuth.mockResolvedValue(managerSession)
     mockDb.subscription.findUnique.mockResolvedValue(activeSubscription)
-    // PRO plan allows up to 7 users; return 1 so the limit check passes
+    // PRO plan allows up to 10 users; return 1 so the limit check passes
     mockDb.user.count.mockResolvedValue(1)
   })
 
@@ -289,8 +289,8 @@ describe("POST /api/agents", () => {
     expect(body.error).toContain("کاربر")
   })
 
-  it("returns 403 when PRO plan user count is at the limit (maxUsers=7)", async () => {
-    mockDb.user.count.mockResolvedValue(7) // at PRO limit
+  it("returns 403 when PRO plan user count is at the limit (maxUsers=10)", async () => {
+    mockDb.user.count.mockResolvedValue(10) // at PRO limit
     const res = await createAgent(
       new Request("http://localhost/api/agents", {
         method: "POST",
