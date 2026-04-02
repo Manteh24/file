@@ -61,7 +61,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fa" dir="rtl" className={iranYekan.variable}>
+    <html lang="fa" dir="rtl" className={iranYekan.variable} suppressHydrationWarning>
       {/* Prevent dark mode flash: read localStorage before React hydrates */}
       <head>
         <script

@@ -41,7 +41,7 @@ export function FileCard({ file, onQuickView }: FileCardProps) {
       {onQuickView && (
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickView(file) }}
-          className="absolute top-2 left-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-[var(--color-text-tertiary)] shadow-sm transition-all hover:text-[var(--color-teal-500)] hover:border-[var(--color-teal-300)] opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          className="absolute top-2 left-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-[var(--color-text-tertiary)] shadow-sm transition-all hover:text-[var(--color-teal-500)] hover:border-[var(--color-teal-300)] opacity-0 group-hover:opacity-100"
           title="نمای سریع"
           aria-label="نمای سریع"
         >
