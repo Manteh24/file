@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { LayoutGrid, List, MapPin, User, Phone } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { LayoutGrid, List, MapPin, User, Phone, Eye } from "lucide-react"
 import { FileCard } from "@/components/files/FileCard"
 import { FileStatusBadge } from "@/components/files/FileStatusBadge"
+import { QuickViewDrawer } from "@/components/files/QuickViewDrawer"
 import { formatToman, formatJalali } from "@/lib/utils"
 import type { PropertyFileSummary, TransactionType } from "@/types"
 
@@ -50,8 +50,8 @@ interface FileListViewProps {
 }
 
 export function FileListView({ files }: FileListViewProps) {
-  // Always start in gallery mode (SSR-safe), then sync from localStorage
   const [view, setView] = useState<ViewMode>("gallery")
+  const [quickViewFile, setQuickViewFile] = useState<PropertyFileSummary | null>(null)
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
@@ -63,7 +63,17 @@ export function FileListView({ files }: FileListViewProps) {
     localStorage.setItem(STORAGE_KEY, v)
   }
 
+  const openQuickView = useCallback((file: PropertyFileSummary) => {
+    setQuickViewFile(file)
+  }, [])
+
+  const closeQuickView = useCallback(() => {
+    setQuickViewFile(null)
+  }, [])
+
   return (
+    <>
+    <QuickViewDrawer file={quickViewFile} onClose={closeQuickView} />
     <div>
       {/* View toggle — hidden on mobile (always gallery per spec) */}
       <div className="hidden sm:flex items-center justify-end mb-4 gap-1">
@@ -99,7 +109,7 @@ export function FileListView({ files }: FileListViewProps) {
       {view === "gallery" && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {files.map((file) => (
-            <FileCard key={file.id} file={file} />
+            <FileCard key={file.id} file={file} onQuickView={openQuickView} />
           ))}
         </div>
       )}
@@ -113,13 +123,14 @@ export function FileListView({ files }: FileListViewProps) {
                 className="border-b border-[var(--color-border-subtle)] text-xs font-semibold text-[var(--color-text-tertiary)]"
                 style={{ background: "var(--color-surface-2)" }}
               >
-                <th className="text-start px-4 py-3 w-[22%]">نوع / ملک</th>
-                <th className="text-start px-4 py-3 w-[12%]">متراژ</th>
-                <th className="text-start px-4 py-3 w-[22%]">قیمت</th>
+                <th className="text-start px-4 py-3 w-[20%]">نوع / ملک</th>
+                <th className="text-start px-4 py-3 w-[10%]">متراژ</th>
+                <th className="text-start px-4 py-3 w-[20%]">قیمت</th>
                 <th className="text-start px-4 py-3 w-[10%]">وضعیت</th>
                 <th className="text-start px-4 py-3 w-[14%]">موقعیت</th>
                 <th className="text-start px-4 py-3 w-[12%]">مشاور</th>
                 <th className="text-start px-4 py-3 w-[8%]">تاریخ</th>
+                <th className="text-start px-4 py-3 w-[6%]"></th>
               </tr>
             </thead>
             <tbody>
@@ -192,6 +203,18 @@ export function FileListView({ files }: FileListViewProps) {
                     <td className="px-4 py-2 text-[var(--color-text-tertiary)] text-xs">
                       {formatJalali(new Date(file.updatedAt))}
                     </td>
+
+                    {/* Quick view */}
+                    <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openQuickView(file) }}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-3)] hover:text-[var(--color-teal-500)] transition-colors opacity-0 group-hover:opacity-100"
+                        title="نمای سریع"
+                        aria-label="نمای سریع"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 )
               })}
@@ -200,5 +223,6 @@ export function FileListView({ files }: FileListViewProps) {
         </div>
       )}
     </div>
+    </>
   )
 }

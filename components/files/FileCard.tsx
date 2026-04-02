@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { MapPin, User, Phone } from "lucide-react"
+import { MapPin, User, Phone, Eye } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { FileStatusBadge } from "@/components/files/FileStatusBadge"
 import { formatToman, formatJalali } from "@/lib/utils"
@@ -7,6 +7,7 @@ import type { PropertyFileSummary, TransactionType } from "@/types"
 
 interface FileCardProps {
   file: PropertyFileSummary
+  onQuickView?: (file: PropertyFileSummary) => void
 }
 
 const transactionTypeLabels: Record<TransactionType, string> = {
@@ -29,14 +30,26 @@ function getPriceDisplay(file: PropertyFileSummary): string {
   return file.rentAmount ? formatToman(file.rentAmount) : "قیمت ثبت نشده"
 }
 
-export function FileCard({ file }: FileCardProps) {
+export function FileCard({ file, onQuickView }: FileCardProps) {
   const primaryContact = file.contacts[0]
   const price = getPriceDisplay(file)
   const assignedNames = file.assignedAgents.map((a) => a.user.displayName).join("، ")
 
   return (
-    <Link href={`/files/${file.id}`} className="block group">
-      <Card className="transition-shadow hover:shadow-md">
+    <div className="relative group">
+      {/* Quick-view eye button — hover-only on desktop, always visible on mobile */}
+      {onQuickView && (
+        <button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onQuickView(file) }}
+          className="absolute top-2 left-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-surface-1)] border border-[var(--color-border-subtle)] text-[var(--color-text-tertiary)] shadow-sm transition-all hover:text-[var(--color-teal-500)] hover:border-[var(--color-teal-300)] opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+          title="نمای سریع"
+          aria-label="نمای سریع"
+        >
+          <Eye className="h-3.5 w-3.5" />
+        </button>
+      )}
+    <Link href={`/files/${file.id}`} className="block">
+      <Card className="transition-all hover:shadow-md hover:-translate-y-0.5">
         <CardContent className="p-4 space-y-3">
           {/* Header row */}
           <div className="flex items-start justify-between gap-2">
@@ -84,6 +97,7 @@ export function FileCard({ file }: FileCardProps) {
         </CardContent>
       </Card>
     </Link>
+    </div>
   )
 }
 

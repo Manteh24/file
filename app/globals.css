@@ -363,13 +363,23 @@ html.dark {
 
 @media (prefers-reduced-motion: no-preference) {
   @keyframes floatBuild {
-    0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
-    50%       { transform: translateY(-6px) rotate(-1deg) scale(1.02); }
+    0%   { transform: translateY(0px)  rotate(0deg)  scale(1);    }
+    50%  { transform: translateY(-6px) rotate(-1deg) scale(1.02); }
+    100% { transform: translateY(0px)  rotate(0deg)  scale(1);    }
   }
 
-  .float-build-1 { animation: floatBuild 1.4s ease-in-out 0s   infinite; }
-  .float-build-2 { animation: floatBuild 1.4s ease-in-out 0.3s infinite; }
-  .float-build-3 { animation: floatBuild 1.5s ease-in-out 0.6s infinite; }
+  /* transform-box: fill-box makes transform-origin relative to each SVG path's
+     own bounding box — rotation correctly pivots at the building base. */
+  .float-build-1,
+  .float-build-2,
+  .float-build-3 {
+    transform-box: fill-box;
+    transform-origin: center bottom;
+  }
+
+  .float-build-1 { animation: floatBuild 1.2s ease-in-out 0s   infinite alternate; }
+  .float-build-2 { animation: floatBuild 1.5s ease-in-out 0.3s infinite alternate; }
+  .float-build-3 { animation: floatBuild 1.3s ease-in-out 0.6s infinite alternate; }
 }
 
 /* ─── Landing page micro-interaction utilities ──────────────────────────── */
