@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { AlertTriangle } from "lucide-react"
-import { PLAN_FEATURES } from "@/lib/subscription"
+import { PLAN_FEATURES } from "@/lib/plan-constants-client"
 
 interface Props {
   feature: keyof typeof PLAN_FEATURES.PRO

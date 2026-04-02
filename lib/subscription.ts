@@ -4,54 +4,10 @@ import { getFreePlanLimits } from "@/lib/platform-settings"
 import type { Plan, BillingCycle, SubStatus } from "@/types"
 
 // ─── Plan Feature Definitions ─────────────────────────────────────────────────
+// Actual values live in lib/plan-constants-client.ts (client-safe, no Node imports).
+// Re-exported here so server code can continue to import from lib/subscription.
 
-export const PLAN_LIMITS = {
-  FREE: { maxUsers: 1, maxActiveFiles: 10, maxAiPerMonth: 10, maxSmsPerMonth: 30 },
-  PRO:  { maxUsers: 10, maxActiveFiles: Infinity, maxAiPerMonth: Infinity, maxSmsPerMonth: Infinity },
-  TEAM: { maxUsers: Infinity, maxActiveFiles: Infinity, maxAiPerMonth: Infinity, maxSmsPerMonth: Infinity },
-} as const
-
-export const PLAN_FEATURES = {
-  FREE: {
-    hasShareSms: true,
-    hasBulkSms: false,
-    hasMaps: true,
-    hasMapEnrichment: false,
-    hasReports: false,
-    hasPdfExport: false,
-    hasLinkTracking: false,
-    hasCustomBranding: false,
-    hasAdvancedAnalytics: false,
-    hasMultiBranch: false,
-    watermarkLinks: true,
-  },
-  PRO: {
-    hasShareSms: true,
-    hasBulkSms: true,
-    hasMaps: true,
-    hasMapEnrichment: true,
-    hasReports: true,
-    hasPdfExport: true,
-    hasLinkTracking: true,
-    hasCustomBranding: true,
-    hasAdvancedAnalytics: false,
-    hasMultiBranch: false,
-    watermarkLinks: false,
-  },
-  TEAM: {
-    hasShareSms: true,
-    hasBulkSms: true,
-    hasMaps: true,
-    hasMapEnrichment: true,
-    hasReports: true,
-    hasPdfExport: true,
-    hasLinkTracking: true,
-    hasCustomBranding: true,
-    hasAdvancedAnalytics: true,
-    hasMultiBranch: true,
-    watermarkLinks: false,
-  },
-} as const
+export { PLAN_LIMITS, PLAN_FEATURES } from "@/lib/plan-constants-client"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
