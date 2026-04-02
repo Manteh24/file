@@ -1,61 +1,481 @@
 "use client"
 
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   FolderOpen,
   Users,
-  UserCog,
+  UserCheck,
   FileText,
-  BarChart3,
+  BarChart2,
   Settings,
   LifeBuoy,
   Gift,
+  ChevronLeft,
+  ArrowUp,
+  LogOut,
+  CreditCard,
+  HelpCircle,
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { signOutAction } from "@/app/(dashboard)/actions"
+import { activateProTrial } from "@/lib/trial-activation"
 import type { Role } from "@/types"
+import type { ResolvedSubscription } from "@/lib/subscription"
+
+/* ─── Nav Definition ─────────────────────────────────────────────────────── */
 
 interface NavItem {
   href: string
   label: string
   icon: React.ElementType
-  // If true, hidden from AGENT role
   managerOnly?: boolean
-  // Used by the onboarding tutorial to spotlight this nav item
   tutorialId?: string
 }
 
-const navItems: NavItem[] = [
-  { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
-  { href: "/files", label: "فایل‌ها", icon: FolderOpen, tutorialId: "nav-files" },
-  { href: "/crm", label: "مشتریان", icon: Users },
-  { href: "/agents", label: "مشاوران", icon: UserCog, managerOnly: true, tutorialId: "nav-agents" },
-  { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
-  { href: "/reports", label: "گزارش‌ها", icon: BarChart3, managerOnly: true },
-  { href: "/support", label: "پشتیبانی", icon: LifeBuoy },
-  { href: "/referral", label: "کد معرفی", icon: Gift, managerOnly: true },
-  { href: "/settings", label: "تنظیمات", icon: Settings, managerOnly: true },
+const navGroups: { label: string; items: NavItem[] }[] = [
+  {
+    label: "اصلی",
+    items: [
+      { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
+      { href: "/files", label: "فایل‌ها", icon: FolderOpen, tutorialId: "nav-files" },
+      { href: "/crm", label: "مشتریان", icon: Users },
+    ],
+  },
+  {
+    label: "مدیریت",
+    items: [
+      { href: "/agents", label: "مشاوران", icon: UserCheck, managerOnly: true, tutorialId: "nav-agents" },
+      { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
+      { href: "/reports", label: "گزارش‌ها", icon: BarChart2, managerOnly: true },
+    ],
+  },
+  {
+    label: "ابزار",
+    items: [
+      { href: "/support", label: "پشتیبانی", icon: LifeBuoy },
+      { href: "/referral", label: "کد معرفی", icon: Gift, managerOnly: true },
+      { href: "/settings", label: "تنظیمات", icon: Settings, managerOnly: true },
+    ],
+  },
 ]
+
+/* ─── Plan Badge ─────────────────────────────────────────────────────────── */
+
+const PLAN_LABELS: Record<string, string> = {
+  FREE: "رایگان",
+  PRO: "حرفه‌ای",
+  TEAM: "تیمی",
+}
+
+/* ─── Tooltip ────────────────────────────────────────────────────────────── */
+
+function Tooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      {children}
+      {open && (
+        <div
+          className="overlay absolute right-full top-1/2 -translate-y-1/2 mr-2 whitespace-nowrap px-3 py-1.5 text-sm font-medium z-50"
+          style={{ borderRadius: 8, minWidth: 80 }}
+          role="tooltip"
+        >
+          {label}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ─── Props ──────────────────────────────────────────────────────────────── */
 
 interface SidebarProps {
   role: Role
   officeName: string
+  userName: string
+  subscription: ResolvedSubscription | null
+  /** Mobile overlay open state (controlled by DashboardShell) */
   isOpen: boolean
   onClose: () => void
+  /** Desktop collapse state (controlled by DashboardShell) */
+  collapsed: boolean
+  onToggleCollapsed: () => void
 }
 
-export function Sidebar({ role, officeName, isOpen, onClose }: SidebarProps) {
-  const pathname = usePathname()
+/* ─── Component ──────────────────────────────────────────────────────────── */
 
-  const visibleItems = navItems.filter(
-    (item) => !item.managerOnly || role !== "AGENT"
+export function Sidebar({
+  role,
+  officeName,
+  userName,
+  subscription,
+  isOpen,
+  onClose,
+  collapsed,
+  onToggleCollapsed,
+}: SidebarProps) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [trialLoading, setTrialLoading] = useState(false)
+  const [trialError, setTrialError] = useState<string | null>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
+
+  const plan = subscription?.plan ?? "FREE"
+  const isTrial = subscription?.isTrial ?? false
+  const isManager = role !== "AGENT"
+  const showTrialButton = isManager && plan === "FREE" && !isTrial
+
+  // Initials for office card
+  const officeInitials = officeName.slice(0, 2)
+  const userInitial = userName.charAt(0)
+
+  // Close popover on outside click
+  useEffect(() => {
+    if (!popoverOpen) return
+    function handleClick(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setPopoverOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [popoverOpen])
+
+  async function handleActivateTrial() {
+    setTrialLoading(true)
+    setTrialError(null)
+    const result = await activateProTrial()
+    setTrialLoading(false)
+    if (result.success) {
+      router.refresh()
+    } else if ((result as { reason?: string }).reason === "phone_used") {
+      setTrialError("این شماره موبایل قبلاً از دوره آزمایشی استفاده کرده است")
+    } else {
+      router.refresh()
+    }
+  }
+
+  function renderNavItem(item: NavItem, idx: number) {
+    if (item.managerOnly && !isManager) return null
+
+    const isActive =
+      item.href === "/dashboard"
+        ? pathname === "/dashboard"
+        : pathname.startsWith(item.href)
+
+    const itemContent = (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onClose}
+        data-tutorial-id={item.tutorialId}
+        className={cn(
+          "flex items-center gap-3 text-sm font-medium transition-colors relative",
+          collapsed
+            ? "h-11 w-11 justify-center rounded-xl mx-auto"
+            : "px-3 py-2.5 rounded-lg",
+          isActive
+            ? collapsed
+              ? "bg-[var(--color-teal-50-a)] text-[var(--color-teal-500)]"
+              : "text-[var(--color-teal-700)] dark:text-[var(--color-teal-400)] font-medium"
+            : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
+        )}
+        style={
+          isActive && !collapsed
+            ? {
+                borderRight: "4px solid var(--color-teal-500)",
+                paddingRight: "calc(0.75rem - 4px)",
+                background: "var(--color-teal-50-a)",
+              }
+            : {}
+        }
+      >
+        <item.icon className="h-[18px] w-[18px] shrink-0" />
+        {!collapsed && item.label}
+      </Link>
+    )
+
+    if (collapsed) {
+      return (
+        <li key={item.href}>
+          <Tooltip label={item.label}>{itemContent}</Tooltip>
+        </li>
+      )
+    }
+
+    return <li key={item.href}>{itemContent}</li>
+  }
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div
+        className={cn(
+          "flex h-16 shrink-0 items-center border-b",
+          "border-[var(--color-border-subtle)]",
+          collapsed ? "justify-center px-2" : "justify-between px-4"
+        )}
+      >
+        {collapsed ? (
+          <img src="/logo.png" alt="املاکبین" className="h-7 w-7 rounded-lg shrink-0" />
+        ) : (
+          <>
+            <div className="flex items-center gap-2.5">
+              <img src="/logo.png" alt="" className="h-7 w-7 rounded-lg shrink-0" />
+              <span className="text-lg font-semibold tracking-tight">املاکبین</span>
+            </div>
+            <button
+              onClick={onToggleCollapsed}
+              className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
+              aria-label="جمع کردن منو"
+            >
+              {/* ChevronLeft points left; in RTL it appears on the right, pointing right (toward sidebar) */}
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {/* Mobile close button */}
+            <button
+              onClick={onClose}
+              className="lg:hidden h-8 w-8 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)]"
+              aria-label="بستن منو"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Expand button when collapsed (desktop) */}
+      {collapsed && (
+        <div className="hidden lg:flex justify-center py-2 border-b border-[var(--color-border-subtle)]">
+          <Tooltip label="باز کردن منو">
+            <button
+              onClick={onToggleCollapsed}
+              className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
+              aria-label="باز کردن منو"
+            >
+              <ChevronLeft className="h-4 w-4 scale-x-[-1]" />
+            </button>
+          </Tooltip>
+        </div>
+      )}
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2" aria-label="منوی اصلی">
+        {navGroups.map((group) => {
+          const visibleItems = group.items.filter(
+            (item) => !item.managerOnly || isManager
+          )
+          if (visibleItems.length === 0) return null
+
+          return (
+            <div key={group.label} className="mb-4">
+              {!collapsed && (
+                <p className="px-3 pb-1.5 text-[11px] font-medium tracking-wide text-[var(--color-text-tertiary)] uppercase">
+                  {group.label}
+                </p>
+              )}
+              <ul className="space-y-0.5">
+                {visibleItems.map((item, idx) => renderNavItem(item, idx))}
+              </ul>
+            </div>
+          )
+        })}
+      </nav>
+
+      {/* Trial activation button — FREE plan only */}
+      {showTrialButton && (
+        <div className="px-2 pb-2">
+          {collapsed ? (
+            <Tooltip label="فعال‌سازی آزمایشی رایگان پرو">
+              <button
+                onClick={handleActivateTrial}
+                disabled={trialLoading}
+                className="h-11 w-11 mx-auto flex items-center justify-center rounded-xl text-[var(--color-teal-500)] hover:bg-[var(--color-teal-50-a)] transition-colors"
+              >
+                <ArrowUp className="h-5 w-5" />
+              </button>
+            </Tooltip>
+          ) : (
+            <div>
+              <button
+                onClick={handleActivateTrial}
+                disabled={trialLoading}
+                className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] border border-[var(--color-teal-500)] hover:bg-[var(--color-teal-50-a)] transition-colors disabled:opacity-60"
+              >
+                <ArrowUp className="h-4 w-4 shrink-0" />
+                {trialLoading ? "در حال فعال‌سازی..." : "۳۰ روز آزمایش رایگان پرو ←"}
+              </button>
+              {trialError && (
+                <p className="mt-1 px-1 text-[11px] text-[var(--color-danger-text)]">
+                  {trialError}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Office card */}
+      <div
+        className={cn(
+          "relative shrink-0 border-t border-[var(--color-border-subtle)] p-2"
+        )}
+        ref={popoverRef}
+      >
+        {/* Popover */}
+        {popoverOpen && (
+          <div
+            className="overlay absolute bottom-full mb-2 z-50"
+            style={{
+              right: collapsed ? "auto" : 8,
+              left: collapsed ? "auto" : 8,
+              width: collapsed ? 220 : "auto",
+              ...(collapsed ? { right: "100%", marginRight: 8, bottom: "auto", top: "auto", transform: "translateY(-50%)" } : {}),
+            }}
+          >
+            <div className="py-1">
+              {/* Office info */}
+              <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{officeName}</p>
+              </div>
+
+              {/* Actions */}
+              <div className="py-1">
+                {isManager && (plan === "FREE" || isTrial) && (
+                  <Link
+                    href="/settings#billing"
+                    onClick={() => setPopoverOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] hover:bg-[var(--color-surface-2)] transition-colors"
+                  >
+                    <CreditCard className="h-4 w-4 shrink-0" />
+                    ارتقا اشتراک
+                  </Link>
+                )}
+                {isManager && (
+                  <Link
+                    href="/referral"
+                    onClick={() => setPopoverOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                  >
+                    <Gift className="h-4 w-4 shrink-0" />
+                    کسب درآمد و کد معرفی
+                  </Link>
+                )}
+              </div>
+
+              <div className="border-t border-[var(--color-border-subtle)] py-1">
+                {isManager && (
+                  <Link
+                    href="/settings"
+                    onClick={() => setPopoverOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                  >
+                    <Settings className="h-4 w-4 shrink-0" />
+                    تنظیمات
+                  </Link>
+                )}
+                <Link
+                  href="/support"
+                  onClick={() => setPopoverOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                >
+                  <HelpCircle className="h-4 w-4 shrink-0" />
+                  راهنما و پشتیبانی
+                </Link>
+              </div>
+
+              <div className="border-t border-[var(--color-border-subtle)] py-1">
+                <form action={signOutAction}>
+                  <button
+                    type="submit"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-danger-text)] hover:bg-[var(--color-danger-bg)] transition-colors"
+                  >
+                    <LogOut className="h-4 w-4 shrink-0" />
+                    خروج از حساب
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Card button */}
+        <button
+          onClick={() => setPopoverOpen((v) => !v)}
+          className={cn(
+            "w-full flex items-center rounded-xl hover:bg-[var(--color-surface-2)] transition-colors text-start",
+            collapsed ? "justify-center h-11 w-11 mx-auto" : "gap-3 px-2 py-2"
+          )}
+        >
+          {/* Avatar circle */}
+          <div
+            className="relative shrink-0 flex items-center justify-center rounded-xl font-semibold text-sm"
+            style={{
+              width: collapsed ? 40 : 36,
+              height: collapsed ? 40 : 36,
+              background: "var(--color-teal-50)",
+              color: "var(--color-teal-700)",
+              fontSize: collapsed ? 14 : 12,
+            }}
+          >
+            {officeInitials}
+            {/* FREE plan upgrade indicator */}
+            {plan === "FREE" && !isTrial && collapsed && (
+              <span
+                className="absolute -top-1 -left-1 h-4 w-4 flex items-center justify-center rounded-full text-white text-[9px]"
+                style={{ background: "var(--color-teal-500)" }}
+              >
+                ↑
+              </span>
+            )}
+          </div>
+
+          {!collapsed && (
+            <div className="flex-1 min-w-0 text-right">
+              <p className="text-sm font-medium text-[var(--color-text-primary)] truncate leading-tight">
+                {officeName}
+              </p>
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                <span
+                  className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium"
+                  style={{
+                    background:
+                      plan === "FREE"
+                        ? "var(--color-plan-free-bg)"
+                        : plan === "PRO"
+                        ? "var(--color-plan-pro-bg)"
+                        : "var(--color-plan-team-bg)",
+                    color:
+                      plan === "FREE"
+                        ? "var(--color-plan-free-text)"
+                        : plan === "PRO"
+                        ? "var(--color-plan-pro-text)"
+                        : "var(--color-plan-team-text)",
+                  }}
+                >
+                  {isTrial ? "آزمایشی" : (PLAN_LABELS[plan] ?? plan)}
+                </span>
+              </p>
+            </div>
+          )}
+        </button>
+      </div>
+    </div>
   )
 
   return (
     <>
-      {/* Backdrop — mobile only */}
+      {/* Mobile backdrop */}
       {isOpen && (
         <div
           className="fixed inset-0 z-20 bg-black/40 lg:hidden"
@@ -64,69 +484,35 @@ export function Sidebar({ role, officeName, isOpen, onClose }: SidebarProps) {
         />
       )}
 
-      {/* Sidebar panel */}
+      {/* Mobile: fixed overlay from right */}
       <aside
         className={cn(
-          // Mobile: fixed overlay, slides in from the right (RTL start side)
-          "fixed inset-y-0 start-0 z-30 flex w-64 flex-col bg-sidebar border-e border-border transition-transform duration-200 ease-in-out",
-          // Desktop: static, always visible, no transform
-          "lg:static lg:translate-x-0 lg:transition-none",
-          // Mobile toggle
+          "fixed inset-y-0 right-0 z-30 lg:hidden",
+          "border-l border-[var(--color-border-subtle)]",
+          "transition-transform duration-200 ease-out",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
+        style={{
+          width: 260,
+          background: "var(--color-surface-1)",
+        }}
+        aria-label="منوی اصلی"
       >
-        {/* Brand */}
-        <div className="flex h-16 shrink-0 items-center justify-between px-5 border-b border-border">
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg shrink-0" />
-            <span className="text-lg font-bold tracking-tight">املاکبین</span>
-          </div>
-          <button
-            onClick={onClose}
-            className="lg:hidden rounded-md p-1 text-muted-foreground hover:text-foreground"
-            aria-label="بستن منو"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+        {sidebarContent}
+      </aside>
 
-        {/* Office name */}
-        <div className="shrink-0 px-5 py-3 border-b border-border">
-          <p className="text-[11px] text-muted-foreground mb-0.5">دفتر</p>
-          <p className="text-sm font-medium truncate">{officeName}</p>
-        </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="منوی اصلی">
-          <ul className="space-y-0.5">
-            {visibleItems.map((item) => {
-              // Exact match for /dashboard, prefix match for everything else
-              const isActive =
-                item.href === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.href)
-
-              return (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    onClick={onClose}
-                    data-tutorial-id={item.tutorialId}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground visited:text-sidebar-primary-foreground"
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground visited:text-sidebar-foreground"
-                    )}
-                  >
-                    <item.icon className="h-[18px] w-[18px] shrink-0" />
-                    {item.label}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+      {/* Desktop: fixed right sidebar */}
+      <aside
+        className="hidden lg:flex lg:flex-col fixed inset-y-0 right-0 z-30"
+        style={{
+          width: collapsed ? 64 : 260,
+          background: "var(--color-surface-1)",
+          borderLeft: "1px solid var(--color-border-subtle)",
+          transition: "width var(--duration-slow) var(--easing-standard)",
+        }}
+        aria-label="منوی اصلی"
+      >
+        {sidebarContent}
       </aside>
     </>
   )

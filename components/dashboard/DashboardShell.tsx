@@ -7,6 +7,7 @@ import { SubscriptionBanner } from "./SubscriptionBanner"
 import { TrialActivationBanner } from "./TrialActivationBanner"
 import { OnboardingTutorial } from "./OnboardingTutorial"
 import { PWAInstallPrompt } from "./PWAInstallPrompt"
+import { AppLoadingScreen } from "@/components/shared/AppLoadingScreen"
 import type { Role } from "@/types"
 import type { ResolvedSubscription } from "@/lib/subscription"
 
@@ -31,15 +32,36 @@ export function DashboardShell({
   showOnboarding,
   trialBannerProps,
 }: DashboardShellProps) {
+  // Mobile sidebar open/close
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const openSidebar = useCallback(() => setSidebarOpen(true), [])
-  const [isDark, setIsDark] = useState(false)
+
+  // Desktop sidebar collapse — init from localStorage to prevent layout flash
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false
+    return localStorage.getItem("sidebarCollapsed") === "1"
+  })
+
+  // Dark mode
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === "undefined") return false
+    return localStorage.getItem("dark") === "1"
+  })
+
+  // Loading screen — show until fonts/session are ready
+  const [showLoader, setShowLoader] = useState(true)
 
   useEffect(() => {
-    const stored = localStorage.getItem("dark") === "1"
-    setIsDark(stored)
-    document.documentElement.classList.toggle("dark", stored)
-    return () => document.documentElement.classList.remove("dark")
+    // Apply dark mode class (the inline script in layout handles the flash,
+    // but we also need to keep the state in sync after hydration)
+    document.documentElement.classList.toggle("dark", isDark)
+  }, [isDark])
+
+  useEffect(() => {
+    // Hide loading screen once the shell has mounted (session is resolved
+    // by the time this server layout renders, so we just wait one frame)
+    const id = requestAnimationFrame(() => setShowLoader(false))
+    return () => cancelAnimationFrame(id)
   }, [])
 
   function toggleDark() {
@@ -51,17 +73,38 @@ export function DashboardShell({
     })
   }
 
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem("sidebarCollapsed", next ? "1" : "0")
+      return next
+    })
+  }
+
   return (
-    // RTL flex: sidebar (first in DOM) appears on the right, content on the left
-    <div className="flex h-screen overflow-hidden bg-muted/20">
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{ background: "var(--color-base)" }}
+    >
+      <AppLoadingScreen visible={showLoader} />
+
       <Sidebar
         role={role}
         officeName={officeName}
+        userName={userName}
+        subscription={subscription}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
       />
 
-      <div className="flex flex-1 flex-col min-w-0">
+      {/* Main content — margin-right handled by CSS data attribute (desktop only) */}
+      <div
+        className="flex flex-1 flex-col min-w-0"
+        data-sidebar-content
+        data-collapsed={collapsed}
+      >
         <Topbar
           userName={userName}
           avatarUrl={avatarUrl}
@@ -69,6 +112,7 @@ export function DashboardShell({
           onMenuClick={() => setSidebarOpen(true)}
           onToggleDark={toggleDark}
         />
+
         {trialBannerProps && (
           <TrialActivationBanner hasUsedTrial={trialBannerProps.hasUsedTrial} />
         )}
@@ -83,6 +127,7 @@ export function DashboardShell({
             role={role}
           />
         )}
+
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
       </div>
 
