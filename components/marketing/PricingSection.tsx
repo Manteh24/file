@@ -8,8 +8,11 @@ import { PLAN_PRICES_TOMAN, PLAN_LABELS } from "@/lib/plan-constants"
 type BillingCycle = "MONTHLY" | "ANNUAL"
 
 const featureRows = [
-  { label: "پیامک", free: false, pro: true, team: true },
-  { label: "نقشه هوشمند", free: false, pro: true, team: true },
+  { label: "پیامک اشتراک‌گذاری (۳۰/ماه)", free: true, pro: true, team: true },
+  { label: "پیامک انبوه", free: false, pro: true, team: true },
+  { label: "نقشه پایه (پین و نمایش)", free: true, pro: true, team: true },
+  { label: "تحلیل مکانی (POI و مسیر)", free: false, pro: true, team: true },
+  { label: "بهبود عکس و واترمارک لوگو", free: false, pro: true, team: true },
   { label: "گزارش‌های مالی", free: false, pro: true, team: true },
   { label: "گزارش‌های عملکرد", free: false, pro: true, team: true },
   { label: "تعیین هدف برای تیم", free: false, pro: false, team: true },
@@ -102,9 +105,9 @@ export function PricingSection() {
             >
               شروع آزمایشی رایگان
             </Link>
-            <p className="text-center text-xs text-[var(--color-teal-600)] mb-4">۳۰ روز کامل — بدون کارت بانکی</p>
+            <p className="text-center text-xs text-[var(--color-teal-600)] mb-4">۳۰ روز آزمایشی کامل</p>
             <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
-              <li>تا ۷ کاربر</li>
+              <li>تا ۱۰ کاربر</li>
               <li>فایل فعال نامحدود</li>
               <li>AI نامحدود</li>
               <li>گزارش‌های عملکرد</li>
@@ -127,7 +130,7 @@ export function PricingSection() {
             >
               شروع آزمایشی رایگان
             </Link>
-            <p className="text-center text-xs text-[var(--color-teal-600)] mb-4">۳۰ روز کامل — بدون کارت بانکی</p>
+            <p className="text-center text-xs text-[var(--color-teal-600)] mb-4">۳۰ روز آزمایشی کامل</p>
             <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
               <li>کاربر نامحدود</li>
               <li>فایل فعال نامحدود</li>

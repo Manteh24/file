@@ -17,7 +17,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import type { OfficeProfile } from "@/types"
+import { Building2 } from "lucide-react"
+import type { OfficeProfile, PhotoProcessMode } from "@/types"
+
+const PROCESS_MODE_LABELS: Record<PhotoProcessMode, string> = {
+  ALWAYS: "همیشه",
+  NEVER: "هرگز",
+  ASK: "هر بار بپرس",
+}
 
 interface OfficeProfileFormProps {
   initialData: OfficeProfile
@@ -26,6 +33,9 @@ interface OfficeProfileFormProps {
 export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
   const router = useRouter()
   const [saved, setSaved] = useState(false)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(initialData.logoUrl)
+  const logoInputRef = useRef<HTMLInputElement>(null)
   const submitRef = useRef<HTMLButtonElement>(null)
 
   const form = useForm<UpdateOfficeProfileInput>({
@@ -37,8 +47,29 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
       address: initialData.address ?? "",
       city: initialData.city ?? "",
       officeBio: initialData.officeBio ?? "",
+      photoEnhancementMode: initialData.photoEnhancementMode,
+      watermarkMode: initialData.watermarkMode,
     },
   })
+
+  async function handleLogoSelected(file: File) {
+    setLogoUploading(true)
+    const formData = new FormData()
+    formData.append("file", file)
+    try {
+      const res = await fetch("/api/settings/logo", { method: "POST", body: formData })
+      const data: { success: boolean; data?: { logoUrl: string }; error?: string } = await res.json()
+      if (data.success && data.data) {
+        setLogoUrl(data.data.logoUrl)
+        router.refresh()
+      }
+    } catch {
+      // Silent — logo upload failure is non-critical
+    } finally {
+      setLogoUploading(false)
+      if (logoInputRef.current) logoInputRef.current.value = ""
+    }
+  }
 
   async function onSubmit(values: UpdateOfficeProfileInput) {
     const response = await fetch("/api/settings", {
@@ -73,6 +104,40 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
         {form.formState.errors.root && (
           <p className="text-sm text-destructive">{form.formState.errors.root.message}</p>
         )}
+
+        {/* Office logo */}
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0 flex h-20 w-20 items-center justify-center rounded-full border-2 border-border bg-muted overflow-hidden">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="لوگوی دفتر" className="h-full w-full object-cover" />
+            ) : (
+              <Building2 className="h-8 w-8 text-muted-foreground" />
+            )}
+          </div>
+          <div>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleLogoSelected(file)
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={logoUploading}
+              onClick={() => logoInputRef.current?.click()}
+            >
+              {logoUploading ? "در حال بارگذاری..." : "تغییر لوگو"}
+            </Button>
+            <p className="mt-1 text-xs text-muted-foreground">لوگو روی واترمارک عکس‌های ملک استفاده می‌شود</p>
+          </div>
+        </div>
 
         {/* Office name */}
         <FormField
@@ -180,6 +245,66 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
             </FormItem>
           )}
         />
+
+        {/* Photo processing settings */}
+        <div className="rounded-md border border-border p-4 space-y-4">
+          <p className="text-sm font-medium text-foreground">تنظیمات پردازش عکس</p>
+          <p className="text-xs text-muted-foreground -mt-2">تنظیمات پیش‌فرض برای آپلود عکس در فایل‌های ملکی</p>
+
+          <FormField
+            control={form.control}
+            name="photoEnhancementMode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm">بهبود خودکار عکس‌ها</FormLabel>
+                <FormControl>
+                  <div className="flex gap-4 flex-wrap">
+                    {(["ALWAYS", "NEVER", "ASK"] as const).map((mode) => (
+                      <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          value={mode}
+                          checked={field.value === mode}
+                          onChange={() => field.onChange(mode)}
+                          className="accent-primary"
+                        />
+                        <span className="text-sm">{PROCESS_MODE_LABELS[mode]}</span>
+                      </label>
+                    ))}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="watermarkMode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-sm">واترمارک لوگو روی عکس‌ها</FormLabel>
+                <FormControl>
+                  <div className="flex gap-4 flex-wrap">
+                    {(["ALWAYS", "NEVER", "ASK"] as const).map((mode) => (
+                      <label key={mode} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          value={mode}
+                          checked={field.value === mode}
+                          onChange={() => field.onChange(mode)}
+                          className="accent-primary"
+                        />
+                        <span className="text-sm">{PROCESS_MODE_LABELS[mode]}</span>
+                      </label>
+                    ))}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Hidden submit button — triggered by both desktop and mobile bars */}
         <button type="submit" ref={submitRef} className="hidden" />

@@ -33,6 +33,8 @@ export const updateOfficeProfileSchema = z.object({
     .max(400, "توضیحات دفتر نمی‌تواند بیشتر از ۴۰۰ کاراکتر باشد")
     .optional()
     .or(z.literal("")),
+  photoEnhancementMode: z.enum(["ALWAYS", "NEVER", "ASK"]).optional(),
+  watermarkMode: z.enum(["ALWAYS", "NEVER", "ASK"]).optional(),
 })
 
 export type UpdateOfficeProfileInput = z.infer<typeof updateOfficeProfileSchema>

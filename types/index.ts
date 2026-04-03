@@ -264,6 +264,8 @@ export interface ActiveFileSummary {
 
 // ─── Settings Domain Types ─────────────────────────────────────────────────────
 
+export type PhotoProcessMode = "ALWAYS" | "NEVER" | "ASK"
+
 export interface OfficeProfile {
   id: string
   name: string
@@ -272,6 +274,9 @@ export interface OfficeProfile {
   address: string | null
   city: string | null
   officeBio: string | null
+  logoUrl: string | null
+  photoEnhancementMode: PhotoProcessMode
+  watermarkMode: PhotoProcessMode
 }
 
 export interface SubscriptionInfo {

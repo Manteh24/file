@@ -205,7 +205,7 @@ export function Sidebar({
     }
   }
 
-  function renderNavItem(item: NavItem, idx: number) {
+  function renderNavItem(item: NavItem, idx: number, effectiveCollapsed: boolean) {
     if (item.managerOnly && !isManager) return null
 
     const isActive =
@@ -221,17 +221,17 @@ export function Sidebar({
         data-tutorial-id={item.tutorialId}
         className={cn(
           "flex items-center gap-3 text-sm font-medium transition-colors relative",
-          collapsed
+          effectiveCollapsed
             ? "h-11 w-11 justify-center rounded-xl mx-auto"
             : "px-3 py-2.5 rounded-lg",
           isActive
-            ? collapsed
+            ? effectiveCollapsed
               ? "bg-[var(--color-teal-50-a)] text-[var(--color-teal-500)]"
               : "text-[var(--color-teal-700)] dark:text-[var(--color-teal-400)] font-medium"
             : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)]"
         )}
         style={
-          isActive && !collapsed
+          isActive && !effectiveCollapsed
             ? {
                 borderRight: "4px solid var(--color-teal-500)",
                 paddingRight: "calc(0.75rem - 4px)",
@@ -241,11 +241,11 @@ export function Sidebar({
         }
       >
         <item.icon className="h-[18px] w-[18px] shrink-0" />
-        {!collapsed && item.label}
+        {!effectiveCollapsed && item.label}
       </Link>
     )
 
-    if (collapsed) {
+    if (effectiveCollapsed) {
       return (
         <li key={item.href}>
           <Tooltip label={item.label}>{itemContent}</Tooltip>
@@ -256,288 +256,290 @@ export function Sidebar({
     return <li key={item.href}>{itemContent}</li>
   }
 
-  const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div
-        className={cn(
-          "flex h-16 shrink-0 items-center border-b",
-          "border-[var(--color-border-subtle)]",
-          collapsed ? "justify-center px-2" : "justify-between px-4"
-        )}
-      >
-        {collapsed ? (
-          <button
-            onClick={onToggleCollapsed}
-            className="hidden lg:flex items-center justify-center relative group h-7 w-7"
-            aria-label="باز کردن منو"
-          >
-            <img
-              src="/logo-black.png"
-              alt="املاکبین"
-              className="h-7 w-7 rounded-lg shrink-0 dark:invert transition-opacity duration-150 group-hover:opacity-0"
-            />
-            <ChevronLeft
-              className="h-5 w-5 absolute inset-0 m-auto opacity-0 transition-opacity duration-150 group-hover:opacity-100 text-[var(--color-text-primary)]"
-            />
-          </button>
-        ) : (
-          <>
-            <div className="flex items-center gap-2.5">
-              <img src="/logo-black.png" alt="" className="h-7 w-7 rounded-lg shrink-0 dark:invert" />
-              <span className="text-lg font-semibold tracking-tight">املاکبین</span>
-            </div>
-            <button
-              onClick={onToggleCollapsed}
-              className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
-              aria-label="جمع کردن منو"
-            >
-              <ChevronLeft className="h-4 w-4 scale-x-[-1]" />
-            </button>
-            {/* Mobile close button */}
-            <button
-              onClick={onClose}
-              className="lg:hidden h-8 w-8 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)]"
-              aria-label="بستن منو"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2" aria-label="منوی اصلی">
-        {navGroups.map((group) => {
-          const visibleItems = group.items.filter(
-            (item) => !item.managerOnly || isManager
-          )
-          if (visibleItems.length === 0) return null
-
-          return (
-            <div key={group.label} className="mb-4">
-              {!collapsed && (
-                <p className="px-3 pb-1.5 text-[11px] font-medium tracking-wide text-[var(--color-text-tertiary)] uppercase">
-                  {group.label}
-                </p>
-              )}
-              <ul className="space-y-0.5">
-                {visibleItems.map((item, idx) => renderNavItem(item, idx))}
-              </ul>
-            </div>
-          )
-        })}
-      </nav>
-
-      {/* Trial activation button — FREE plan only */}
-      {showTrialButton && (
-        <div className="px-2 pb-2">
-          {collapsed ? (
-            <Tooltip label="فعال‌سازی آزمایشی رایگان پرو">
-              <button
-                onClick={handleActivateTrial}
-                disabled={trialLoading}
-                className="h-11 w-11 mx-auto flex items-center justify-center rounded-xl text-[var(--color-teal-500)] hover:bg-[var(--color-teal-50-a)] transition-colors"
-              >
-                <ArrowUp className="h-5 w-5" />
-              </button>
-            </Tooltip>
-          ) : (
-            <div>
-              <button
-                onClick={handleActivateTrial}
-                disabled={trialLoading}
-                className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] border border-[var(--color-teal-500)] hover:bg-[var(--color-teal-50-a)] transition-colors disabled:opacity-60"
-              >
-                <ArrowUp className="h-4 w-4 shrink-0" />
-                {trialLoading ? "در حال فعال‌سازی..." : "۳۰ روز آزمایش رایگان پرو ←"}
-              </button>
-              {trialError && (
-                <p className="mt-1 px-1 text-[11px] text-[var(--color-danger-text)]">
-                  {trialError}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Office card */}
-      <div
-        className={cn(
-          "relative shrink-0 border-t border-[var(--color-border-subtle)] p-2"
-        )}
-        ref={popoverRef}
-      >
-        {/* Popover */}
-        {popoverOpen && (
-          <div
-            className="overlay absolute bottom-full mb-2 z-50"
-            style={{
-              right: 8,
-              left: collapsed ? "auto" : 8,
-              width: collapsed ? 260 : "auto",
-            }}
-          >
-            <div className="py-1">
-              {/* Office info */}
-              <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
-                <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{officeName}</p>
-              </div>
-
-              {/* Actions */}
-              <div className="py-1">
-                {isManager && (plan === "FREE" || isTrial) && (
-                  <Link
-                    href="/settings#billing"
-                    onClick={() => onPopoverChange(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] hover:bg-[var(--color-surface-2)] transition-colors"
-                  >
-                    <CreditCard className="h-4 w-4 shrink-0" />
-                    ارتقا اشتراک
-                  </Link>
-                )}
-                {isManager && (
-                  <Link
-                    href="/referral"
-                    onClick={() => onPopoverChange(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
-                  >
-                    <Gift className="h-4 w-4 shrink-0" />
-                    کسب درآمد و کد معرفی
-                  </Link>
-                )}
-              </div>
-
-              <div className="border-t border-[var(--color-border-subtle)] py-1">
-                {isManager && (
-                  <Link
-                    href="/settings"
-                    onClick={() => onPopoverChange(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
-                  >
-                    <Settings className="h-4 w-4 shrink-0" />
-                    تنظیمات
-                  </Link>
-                )}
-                <Link
-                  href="/guide"
-                  onClick={() => onPopoverChange(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
-                >
-                  <BookOpen className="h-4 w-4 shrink-0" />
-                  راهنمای استفاده
-                </Link>
-                <Link
-                  href="/support"
-                  onClick={() => onPopoverChange(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
-                >
-                  <HelpCircle className="h-4 w-4 shrink-0" />
-                  پشتیبانی
-                </Link>
-              </div>
-
-              <div className="border-t border-[var(--color-border-subtle)] py-1">
-                <form action={signOutAction}>
-                  <button
-                    type="submit"
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-danger-text)] hover:bg-[var(--color-danger-bg)] transition-colors"
-                  >
-                    <LogOut className="h-4 w-4 shrink-0" />
-                    خروج از حساب
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Card button */}
-        <button
-          onClick={() => onPopoverChange(!popoverOpen)}
+  function renderSidebarContent(effectiveCollapsed: boolean) {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div
           className={cn(
-            "w-full flex items-center rounded-xl hover:bg-[var(--color-surface-2)] transition-colors text-start",
-            collapsed ? "justify-center h-11 w-11 mx-auto" : "gap-3 px-2 py-2"
+            "flex h-16 shrink-0 items-center border-b",
+            "border-[var(--color-border-subtle)]",
+            effectiveCollapsed ? "justify-center px-2" : "justify-between px-4"
           )}
         >
-          {/* Avatar circle */}
-          <div
-            className="relative shrink-0 flex items-center justify-center rounded-xl font-semibold text-sm"
-            style={{
-              width: collapsed ? 40 : 36,
-              height: collapsed ? 40 : 36,
-              background: "var(--color-teal-50)",
-              color: "var(--color-teal-700)",
-              fontSize: collapsed ? 14 : 12,
-            }}
-          >
-            {officeInitials}
-
-            {/* Notification badge on collapsed office avatar */}
-            {collapsed && unreadCount > 0 && (
-              <span
-                className="absolute -top-1.5 -left-1.5 h-4 w-4 flex items-center justify-center rounded-full text-white text-[9px] font-bold"
-                style={{ background: "#EF4444", minWidth: 16 }}
+          {effectiveCollapsed ? (
+            <button
+              onClick={onToggleCollapsed}
+              className="hidden lg:flex items-center justify-center relative group h-7 w-7"
+              aria-label="باز کردن منو"
+            >
+              <img
+                src="/logo-black.png"
+                alt="املاکبین"
+                className="h-7 w-7 rounded-lg shrink-0 dark:invert transition-opacity duration-150 group-hover:opacity-0"
+              />
+              <ChevronLeft
+                className="h-5 w-5 absolute inset-0 m-auto opacity-0 transition-opacity duration-150 group-hover:opacity-100 text-[var(--color-text-primary)]"
+              />
+            </button>
+          ) : (
+            <>
+              <div className="flex items-center gap-2.5">
+                <img src="/logo-black.png" alt="" className="h-7 w-7 rounded-lg shrink-0 dark:invert" />
+                <span className="text-lg font-semibold tracking-tight">املاکبین</span>
+              </div>
+              <button
+                onClick={onToggleCollapsed}
+                className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
+                aria-label="جمع کردن منو"
               >
-                {unreadCount > 9 ? "۹+" : unreadCount.toLocaleString("fa-IR")}
-              </span>
-            )}
-
-            {/* FREE plan upgrade indicator (only when no notifications) */}
-            {plan === "FREE" && !isTrial && collapsed && unreadCount === 0 && (
-              <span
-                className="absolute -top-1 -left-1 h-4 w-4 flex items-center justify-center rounded-full text-white text-[9px]"
-                style={{ background: "var(--color-teal-500)" }}
+                <ChevronLeft className="h-4 w-4 scale-x-[-1]" />
+              </button>
+              {/* Mobile close button */}
+              <button
+                onClick={onClose}
+                className="lg:hidden h-8 w-8 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)]"
+                aria-label="بستن منو"
               >
-                ↑
-              </span>
-            )}
-          </div>
+                <X className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
 
-          {!collapsed && (
-            <div className="flex-1 min-w-0 text-right">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-[var(--color-text-primary)] truncate leading-tight flex-1">
-                  {officeName}
-                </p>
-                {/* Unread notification badge (expanded state) */}
-                {unreadCount > 0 && (
-                  <span
-                    className="shrink-0 flex items-center justify-center rounded-full text-white text-[9px] font-bold px-1.5 h-4"
-                    style={{ background: "#EF4444", minWidth: 16 }}
-                  >
-                    {unreadCount > 9 ? "۹+" : unreadCount.toLocaleString("fa-IR")}
-                  </span>
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2" aria-label="منوی اصلی">
+          {navGroups.map((group) => {
+            const visibleItems = group.items.filter(
+              (item) => !item.managerOnly || isManager
+            )
+            if (visibleItems.length === 0) return null
+
+            return (
+              <div key={group.label} className="mb-4">
+                {!effectiveCollapsed && (
+                  <p className="px-3 pb-1.5 text-[11px] font-medium tracking-wide text-[var(--color-text-tertiary)] uppercase">
+                    {group.label}
+                  </p>
+                )}
+                <ul className="space-y-0.5">
+                  {visibleItems.map((item, idx) => renderNavItem(item, idx, effectiveCollapsed))}
+                </ul>
+              </div>
+            )
+          })}
+        </nav>
+
+        {/* Trial activation button — FREE plan only */}
+        {showTrialButton && (
+          <div className="px-2 pb-2">
+            {effectiveCollapsed ? (
+              <Tooltip label="فعال‌سازی آزمایشی رایگان پرو">
+                <button
+                  onClick={handleActivateTrial}
+                  disabled={trialLoading}
+                  className="h-11 w-11 mx-auto flex items-center justify-center rounded-xl text-[var(--color-teal-500)] hover:bg-[var(--color-teal-50-a)] transition-colors"
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </button>
+              </Tooltip>
+            ) : (
+              <div>
+                <button
+                  onClick={handleActivateTrial}
+                  disabled={trialLoading}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] border border-[var(--color-teal-500)] hover:bg-[var(--color-teal-50-a)] transition-colors disabled:opacity-60"
+                >
+                  <ArrowUp className="h-4 w-4 shrink-0" />
+                  {trialLoading ? "در حال فعال‌سازی..." : "۳۰ روز آزمایش رایگان پرو ←"}
+                </button>
+                {trialError && (
+                  <p className="mt-1 px-1 text-[11px] text-[var(--color-danger-text)]">
+                    {trialError}
+                  </p>
                 )}
               </div>
-              <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
-                <span
-                  className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium"
-                  style={{
-                    background:
-                      plan === "FREE"
-                        ? "var(--color-plan-free-bg)"
-                        : plan === "PRO"
-                        ? "var(--color-plan-pro-bg)"
-                        : "var(--color-plan-team-bg)",
-                    color:
-                      plan === "FREE"
-                        ? "var(--color-plan-free-text)"
-                        : plan === "PRO"
-                        ? "var(--color-plan-pro-text)"
-                        : "var(--color-plan-team-text)",
-                  }}
-                >
-                  {isTrial ? "آزمایشی" : (PLAN_LABELS[plan] ?? plan)}
-                </span>
-              </p>
+            )}
+          </div>
+        )}
+
+        {/* Office card */}
+        <div
+          className={cn(
+            "relative shrink-0 border-t border-[var(--color-border-subtle)] p-2"
+          )}
+          ref={popoverRef}
+        >
+          {/* Popover */}
+          {popoverOpen && (
+            <div
+              className="overlay absolute bottom-full mb-2 z-50"
+              style={{
+                right: 8,
+                left: effectiveCollapsed ? "auto" : 8,
+                width: effectiveCollapsed ? 260 : "auto",
+              }}
+            >
+              <div className="py-1">
+                {/* Office info */}
+                <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{officeName}</p>
+                </div>
+
+                {/* Actions */}
+                <div className="py-1">
+                  {isManager && (plan === "FREE" || isTrial) && (
+                    <Link
+                      href="/settings#billing"
+                      onClick={() => onPopoverChange(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] hover:bg-[var(--color-surface-2)] transition-colors"
+                    >
+                      <CreditCard className="h-4 w-4 shrink-0" />
+                      ارتقا اشتراک
+                    </Link>
+                  )}
+                  {isManager && (
+                    <Link
+                      href="/referral"
+                      onClick={() => onPopoverChange(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                    >
+                      <Gift className="h-4 w-4 shrink-0" />
+                      کسب درآمد و کد معرفی
+                    </Link>
+                  )}
+                </div>
+
+                <div className="border-t border-[var(--color-border-subtle)] py-1">
+                  {isManager && (
+                    <Link
+                      href="/settings"
+                      onClick={() => onPopoverChange(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                    >
+                      <Settings className="h-4 w-4 shrink-0" />
+                      تنظیمات
+                    </Link>
+                  )}
+                  <Link
+                    href="/guide"
+                    onClick={() => onPopoverChange(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                  >
+                    <BookOpen className="h-4 w-4 shrink-0" />
+                    راهنمای استفاده
+                  </Link>
+                  <Link
+                    href="/support"
+                    onClick={() => onPopoverChange(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                  >
+                    <HelpCircle className="h-4 w-4 shrink-0" />
+                    پشتیبانی
+                  </Link>
+                </div>
+
+                <div className="border-t border-[var(--color-border-subtle)] py-1">
+                  <form action={signOutAction}>
+                    <button
+                      type="submit"
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-danger-text)] hover:bg-[var(--color-danger-bg)] transition-colors"
+                    >
+                      <LogOut className="h-4 w-4 shrink-0" />
+                      خروج از حساب
+                    </button>
+                  </form>
+                </div>
+              </div>
             </div>
           )}
-        </button>
+
+          {/* Card button */}
+          <button
+            onClick={() => onPopoverChange(!popoverOpen)}
+            className={cn(
+              "w-full flex items-center rounded-xl hover:bg-[var(--color-surface-2)] transition-colors text-start",
+              effectiveCollapsed ? "justify-center h-11 w-11 mx-auto" : "gap-3 px-2 py-2"
+            )}
+          >
+            {/* Avatar circle */}
+            <div
+              className="relative shrink-0 flex items-center justify-center rounded-xl font-semibold text-sm"
+              style={{
+                width: effectiveCollapsed ? 40 : 36,
+                height: effectiveCollapsed ? 40 : 36,
+                background: "var(--color-teal-50)",
+                color: "var(--color-teal-700)",
+                fontSize: effectiveCollapsed ? 14 : 12,
+              }}
+            >
+              {officeInitials}
+
+              {/* Notification badge on collapsed office avatar */}
+              {effectiveCollapsed && unreadCount > 0 && (
+                <span
+                  className="absolute -top-1.5 -left-1.5 h-4 w-4 flex items-center justify-center rounded-full text-white text-[9px] font-bold"
+                  style={{ background: "#EF4444", minWidth: 16 }}
+                >
+                  {unreadCount > 9 ? "۹+" : unreadCount.toLocaleString("fa-IR")}
+                </span>
+              )}
+
+              {/* FREE plan upgrade indicator (only when no notifications) */}
+              {plan === "FREE" && !isTrial && effectiveCollapsed && unreadCount === 0 && (
+                <span
+                  className="absolute -top-1 -left-1 h-4 w-4 flex items-center justify-center rounded-full text-white text-[9px]"
+                  style={{ background: "var(--color-teal-500)" }}
+                >
+                  ↑
+                </span>
+              )}
+            </div>
+
+            {!effectiveCollapsed && (
+              <div className="flex-1 min-w-0 text-right">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] truncate leading-tight flex-1">
+                    {officeName}
+                  </p>
+                  {/* Unread notification badge (expanded state) */}
+                  {unreadCount > 0 && (
+                    <span
+                      className="shrink-0 flex items-center justify-center rounded-full text-white text-[9px] font-bold px-1.5 h-4"
+                      style={{ background: "#EF4444", minWidth: 16 }}
+                    >
+                      {unreadCount > 9 ? "۹+" : unreadCount.toLocaleString("fa-IR")}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
+                  <span
+                    className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    style={{
+                      background:
+                        plan === "FREE"
+                          ? "var(--color-plan-free-bg)"
+                          : plan === "PRO"
+                          ? "var(--color-plan-pro-bg)"
+                          : "var(--color-plan-team-bg)",
+                      color:
+                        plan === "FREE"
+                          ? "var(--color-plan-free-text)"
+                          : plan === "PRO"
+                          ? "var(--color-plan-pro-text)"
+                          : "var(--color-plan-team-text)",
+                    }}
+                  >
+                    {isTrial ? "آزمایشی" : (PLAN_LABELS[plan] ?? plan)}
+                  </span>
+                </p>
+              </div>
+            )}
+          </button>
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
     <>
@@ -550,7 +552,7 @@ export function Sidebar({
         />
       )}
 
-      {/* Mobile: fixed overlay from right */}
+      {/* Mobile: fixed overlay from right — always expanded */}
       <aside
         className={cn(
           "fixed inset-y-0 right-0 z-30 lg:hidden",
@@ -564,7 +566,7 @@ export function Sidebar({
         }}
         aria-label="منوی اصلی"
       >
-        {sidebarContent}
+        {renderSidebarContent(false)}
       </aside>
 
       {/* Desktop: fixed right sidebar */}
@@ -578,7 +580,7 @@ export function Sidebar({
         }}
         aria-label="منوی اصلی"
       >
-        {sidebarContent}
+        {renderSidebarContent(collapsed)}
       </aside>
     </>
   )

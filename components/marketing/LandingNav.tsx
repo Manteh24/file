@@ -62,10 +62,10 @@ export function LandingNav() {
               ورود
             </Link>
             <Link
-              href="/register?plan=PRO"
+              href="/register"
               className="inline-flex h-9 items-center justify-center rounded-lg bg-[var(--color-teal-500)] px-5 text-sm font-semibold text-white transition-all hover:bg-[var(--color-teal-600)]"
             >
-              ثبت‌نام رایگان
+              ثبت‌نام
             </Link>
           </div>
 
@@ -119,11 +119,11 @@ export function LandingNav() {
               ورود
             </Link>
             <Link
-              href="/register?plan=PRO"
+              href="/register"
               className="inline-flex h-11 items-center justify-center rounded-lg bg-[var(--color-teal-500)] text-sm font-semibold text-white"
               onClick={() => setMenuOpen(false)}
             >
-              ثبت‌نام رایگان
+              ثبت‌نام
             </Link>
           </div>
         </div>

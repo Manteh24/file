@@ -73,7 +73,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
       createdBy: { select: { displayName: true } },
       contacts: true,
       photos: { orderBy: { order: "asc" } },
-      office: { select: { name: true } },
+      office: { select: { name: true, photoEnhancementMode: true, watermarkMode: true } },
       assignedAgents: {
         include: { user: { select: { id: true, displayName: true } } },
       },
@@ -188,6 +188,10 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
               }))}
               fileId={file.id}
               canEdit={canEdit}
+              photoProcessingMode={{
+                enhance: file.office.photoEnhancementMode as "ALWAYS" | "NEVER" | "ASK",
+                watermark: file.office.watermarkMode as "ALWAYS" | "NEVER" | "ASK",
+              }}
             />
           </CardContent>
         </Card>

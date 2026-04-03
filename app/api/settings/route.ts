@@ -25,7 +25,7 @@ export async function GET() {
     const [office, subscription] = await Promise.all([
       db.office.findUnique({
         where: { id: officeId },
-        select: { id: true, name: true, phone: true, email: true, address: true, city: true },
+        select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true },
       }),
       db.subscription.findUnique({
         where: { officeId },
@@ -86,7 +86,7 @@ export async function PATCH(request: Request) {
     )
   }
 
-  const { name, phone, email, address, city, officeBio } = parsed.data
+  const { name, phone, email, address, city, officeBio, photoEnhancementMode, watermarkMode } = parsed.data
 
   try {
     const office = await db.office.update({
@@ -99,6 +99,8 @@ export async function PATCH(request: Request) {
         address: address || null,
         city: city || null,
         officeBio: officeBio || null,
+        ...(photoEnhancementMode !== undefined && { photoEnhancementMode }),
+        ...(watermarkMode !== undefined && { watermarkMode }),
       },
       select: { id: true },
     })

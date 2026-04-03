@@ -175,7 +175,7 @@ export function PricingCards() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        تمام پلن‌های پولی با ۳۰ روز دوره آزمایشی کامل همراه هستند — بدون نیاز به کارت اعتباری
+        تمام پلن‌های پولی با ۳۰ روز دوره آزمایشی کامل همراه هستند
       </p>
     </div>
   )

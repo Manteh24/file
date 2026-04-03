@@ -7,12 +7,14 @@ const mockComposite = vi.fn().mockReturnThis()
 const mockJpeg = vi.fn().mockReturnThis()
 const mockResize = vi.fn().mockReturnThis()
 const mockRotate = vi.fn().mockReturnThis()
+const mockPng = vi.fn().mockReturnThis()
 
 const mockSharpInstance = {
   rotate: mockRotate,
   resize: mockResize,
   composite: mockComposite,
   jpeg: mockJpeg,
+  png: mockPng,
   toBuffer: mockToBuffer,
 }
 
@@ -31,6 +33,7 @@ describe("processPropertyPhoto", () => {
     mockResize.mockReturnValue(mockSharpInstance)
     mockComposite.mockReturnValue(mockSharpInstance)
     mockJpeg.mockReturnValue(mockSharpInstance)
+    mockPng.mockReturnValue(mockSharpInstance)
     mockToBuffer.mockResolvedValue(Buffer.from("processed-jpeg"))
   })
 
@@ -46,7 +49,7 @@ describe("processPropertyPhoto", () => {
     expect(mockRotate).toHaveBeenCalledWith()
   })
 
-  it("resizes to max 1200×900 with inside fit and no upscaling", async () => {
+  it("resizes to max 1200×900 with inside fit and no upscaling by default", async () => {
     await processPropertyPhoto(Buffer.from("img"))
     expect(mockResize).toHaveBeenCalledWith({
       width: 1200,
@@ -56,23 +59,28 @@ describe("processPropertyPhoto", () => {
     })
   })
 
+  it("skips resize when enhance is false", async () => {
+    await processPropertyPhoto(Buffer.from("img"), { enhance: false })
+    expect(mockResize).not.toHaveBeenCalled()
+  })
+
   it("outputs JPEG with quality 82 and progressive encoding", async () => {
     await processPropertyPhoto(Buffer.from("img"))
     expect(mockJpeg).toHaveBeenCalledWith({ quality: 82, progressive: true })
   })
 
-  it("does NOT add a watermark when officeName is not provided", async () => {
+  it("does NOT add a watermark when watermark is not provided", async () => {
     await processPropertyPhoto(Buffer.from("img"))
     expect(mockComposite).not.toHaveBeenCalled()
   })
 
-  it("does NOT add a watermark when officeName is an empty string", async () => {
-    await processPropertyPhoto(Buffer.from("img"), "")
+  it("does NOT add a watermark when watermark is false", async () => {
+    await processPropertyPhoto(Buffer.from("img"), { watermark: false })
     expect(mockComposite).not.toHaveBeenCalled()
   })
 
-  it("adds a composite watermark when officeName is provided", async () => {
-    await processPropertyPhoto(Buffer.from("img"), "دفتر مشاور")
+  it("adds a text composite watermark when watermark type is text", async () => {
+    await processPropertyPhoto(Buffer.from("img"), { watermark: { type: "text", name: "دفتر مشاور" } })
     expect(mockComposite).toHaveBeenCalledTimes(1)
     const [args] = mockComposite.mock.calls
     expect(args[0]).toHaveLength(1)
@@ -80,8 +88,8 @@ describe("processPropertyPhoto", () => {
     expect(args[0][0].input).toBeInstanceOf(Buffer)
   })
 
-  it("escapes XML special characters in the office name watermark", async () => {
-    await processPropertyPhoto(Buffer.from("img"), '<script>"hack"&</script>')
+  it("escapes XML special characters in the text watermark", async () => {
+    await processPropertyPhoto(Buffer.from("img"), { watermark: { type: "text", name: '<script>"hack"&</script>' } })
     expect(mockComposite).toHaveBeenCalledTimes(1)
     const svgBuffer = mockComposite.mock.calls[0][0][0].input as Buffer
     const svgString = svgBuffer.toString()
@@ -92,7 +100,15 @@ describe("processPropertyPhoto", () => {
   })
 
   it("still outputs JPEG when a watermark is applied", async () => {
-    await processPropertyPhoto(Buffer.from("img"), "Test Office")
+    await processPropertyPhoto(Buffer.from("img"), { watermark: { type: "text", name: "Test Office" } })
     expect(mockJpeg).toHaveBeenCalledWith({ quality: 82, progressive: true })
+  })
+
+  it("adds an image watermark when watermark type is image", async () => {
+    const logoBuffer = Buffer.from("fake-logo")
+    await processPropertyPhoto(Buffer.from("img"), { watermark: { type: "image", logoBuffer } })
+    expect(mockComposite).toHaveBeenCalledTimes(1)
+    const [args] = mockComposite.mock.calls
+    expect(args[0][0]).toMatchObject({ gravity: "southeast" })
   })
 })

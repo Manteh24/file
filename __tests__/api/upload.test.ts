@@ -74,7 +74,12 @@ describe("POST /api/upload", () => {
     mockDb.propertyFile.findFirst.mockResolvedValue({
       id: "file-1",
       officeId: "office-1",
-      office: { name: "دفتر تهران" },
+      office: {
+        name: "دفتر تهران",
+        logoUrl: null,
+        photoEnhancementMode: "ALWAYS",
+        watermarkMode: "ALWAYS",
+      },
     })
     mockDb.filePhoto.count.mockResolvedValue(0)
     mockProcessPhoto.mockResolvedValue(Buffer.from("processed"))
@@ -158,11 +163,14 @@ describe("POST /api/upload", () => {
     expect(body.data.url).toBe("https://storage.example.com/bucket/photos/key.jpg")
   })
 
-  it("calls processPropertyPhoto with raw buffer and office name", async () => {
+  it("calls processPropertyPhoto with raw buffer and options (ALWAYS mode uses text watermark)", async () => {
     await POST(makeRequest(makeFormData(makeJpegFile(), "file-1")))
     expect(mockProcessPhoto).toHaveBeenCalledWith(
       expect.any(Buffer),
-      "دفتر تهران"
+      expect.objectContaining({
+        enhance: true,
+        watermark: expect.objectContaining({ type: "text", name: "دفتر تهران" }),
+      })
     )
   })
 

@@ -40,6 +40,12 @@ enum AdminTier {
   FULL_ACCESS
 }
 
+enum PhotoProcessMode {
+  ALWAYS
+  NEVER
+  ASK
+}
+
 enum TicketCategory {
   BILLING
   TECHNICAL
@@ -108,6 +114,9 @@ model Office {
   // Office logo and bio — shown on public share pages
   logoUrl        String?
   officeBio      String?
+  // Photo processing preferences — defaults to ALWAYS enhance and ALWAYS watermark
+  photoEnhancementMode  PhotoProcessMode  @default(ALWAYS)
+  watermarkMode         PhotoProcessMode  @default(ALWAYS)
   // Bank details for referral commission payouts — filled in by the office manager
   cardNumber     String?
   shebaNumber    String?

@@ -5,19 +5,32 @@ import { ImagePlus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { FilePhoto } from "@/types"
 
+interface PhotoProcessingMode {
+  enhance: "ALWAYS" | "NEVER" | "ASK"
+  watermark: "ALWAYS" | "NEVER" | "ASK"
+}
+
 interface PhotoGalleryProps {
   initialPhotos: FilePhoto[]
   fileId: string
   canEdit: boolean
+  photoProcessingMode?: PhotoProcessingMode
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
-export function PhotoGallery({ initialPhotos, fileId, canEdit }: PhotoGalleryProps) {
+export function PhotoGallery({ initialPhotos, fileId, canEdit, photoProcessingMode }: PhotoGalleryProps) {
   const [photos, setPhotos] = useState<FilePhoto[]>(initialPhotos)
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  // ASK mode checkbox state — defaults to true (enhance + watermark on)
+  const [askEnhance, setAskEnhance] = useState(true)
+  const [askWatermark, setAskWatermark] = useState(true)
+
+  const showEnhanceCheckbox = photoProcessingMode?.enhance === "ASK"
+  const showWatermarkCheckbox = photoProcessingMode?.watermark === "ASK"
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -40,6 +53,9 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit }: PhotoGalleryPro
       const formData = new FormData()
       formData.append("file", file)
       formData.append("fileId", fileId)
+      // Send client hints for ASK mode (server ignores them for ALWAYS/NEVER)
+      formData.append("enhancePhoto", askEnhance ? "true" : "false")
+      formData.append("addWatermark", askWatermark ? "true" : "false")
 
       try {
         const res = await fetch("/api/upload", { method: "POST", body: formData })
@@ -133,6 +149,33 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit }: PhotoGalleryPro
       {/* Upload controls */}
       {canEdit && (
         <div className="space-y-2">
+          {/* ASK mode checkboxes — only shown when relevant mode is "ASK" */}
+          {(showEnhanceCheckbox || showWatermarkCheckbox) && (
+            <div className="flex flex-wrap gap-4 pb-1">
+              {showEnhanceCheckbox && (
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={askEnhance}
+                    onChange={(e) => setAskEnhance(e.target.checked)}
+                    className="accent-primary"
+                  />
+                  بهبود کیفیت عکس
+                </label>
+              )}
+              {showWatermarkCheckbox && (
+                <label className="flex items-center gap-1.5 cursor-pointer text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={askWatermark}
+                    onChange={(e) => setAskWatermark(e.target.checked)}
+                    className="accent-primary"
+                  />
+                  افزودن واترمارک لوگو
+                </label>
+              )}
+            </div>
+          )}
           <input
             ref={fileInputRef}
             type="file"

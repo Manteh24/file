@@ -499,7 +499,7 @@ export function HeroSection() {
               از ثبت فایل تا اشتراک‌گذاری با مشتری، از CRM تا گزارش مالی — همه در یک پلتفرم
             </p>
             <p className="text-[var(--color-text-tertiary)] text-sm mb-10">
-              ۱ ماه آزمایشی کاملاً رایگان · بدون کارت بانکی
+              ۱ ماه آزمایشی کاملاً رایگان
             </p>
 
             <AuthWidget />

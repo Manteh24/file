@@ -45,7 +45,11 @@ export async function POST(request: NextRequest) {
   // Verify fileId belongs to this office
   const propertyFile = await db.propertyFile.findFirst({
     where: { id: fileId, officeId },
-    include: { office: { select: { name: true } } },
+    include: {
+      office: {
+        select: { name: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true },
+      },
+    },
   })
   if (!propertyFile) {
     return NextResponse.json({ success: false, error: "فایل ملکی یافت نشد" }, { status: 404 })
@@ -60,13 +64,50 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Determine effective enhance/watermark based on office settings and client hints (for ASK mode)
+  const { name: officeName, logoUrl, photoEnhancementMode, watermarkMode } = propertyFile.office
+
+  const clientEnhance = formData.get("enhancePhoto")
+  const clientWatermark = formData.get("addWatermark")
+
+  const doEnhance =
+    photoEnhancementMode === "ALWAYS" ? true
+    : photoEnhancementMode === "NEVER" ? false
+    : clientEnhance === "true" // ASK → use client value
+
+  const doWatermark =
+    watermarkMode === "ALWAYS" ? true
+    : watermarkMode === "NEVER" ? false
+    : clientWatermark === "true" // ASK → use client value
+
+  // Resolve watermark option
+  type WatermarkArg = false | { type: "text"; name: string } | { type: "image"; logoBuffer: Buffer }
+  let watermarkArg: WatermarkArg = false
+  if (doWatermark) {
+    if (logoUrl) {
+      try {
+        const logoRes = await fetch(logoUrl)
+        const logoBuffer = Buffer.from(await logoRes.arrayBuffer())
+        watermarkArg = { type: "image", logoBuffer }
+      } catch {
+        // Logo fetch failed — fall back to text watermark
+        watermarkArg = { type: "text", name: officeName }
+      }
+    } else {
+      watermarkArg = { type: "text", name: officeName }
+    }
+  }
+
   // Read buffer and process with Sharp
   const arrayBuffer = await fileEntry.arrayBuffer()
   const rawBuffer = Buffer.from(arrayBuffer)
 
   let processedBuffer: Buffer
   try {
-    processedBuffer = await processPropertyPhoto(rawBuffer, propertyFile.office.name)
+    processedBuffer = await processPropertyPhoto(rawBuffer, {
+      enhance: doEnhance,
+      watermark: watermarkArg,
+    })
   } catch (err) {
     console.error("[POST /api/upload] image processing error:", { fileId, officeId }, err)
     return NextResponse.json({ success: false, error: "خطا در پردازش تصویر" }, { status: 500 })

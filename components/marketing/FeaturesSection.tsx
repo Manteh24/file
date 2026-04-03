@@ -1,4 +1,4 @@
-import { BarChart2, FolderOpen, Link2, MapPin, MessageSquare, Sparkles, Users } from "lucide-react"
+import { BarChart2, Building2, Camera, FolderOpen, Link2, MapPin, MessageSquare, Sparkles, Users } from "lucide-react"
 
 const mockFiles = [
   {
@@ -31,6 +31,7 @@ const smallFeatures = [
     icon: MapPin,
     title: "تحلیل موقعیت مکانی",
     description: "بررسی دسترسی‌ها و امکانات محله",
+    badge: "حرفه‌ای+",
   },
   {
     icon: MessageSquare,
@@ -52,6 +53,18 @@ const smallFeatures = [
     title: "گزارش‌های عملکرد",
     description: "تحلیل درآمد، عملکرد مشاوران و تصمیم‌گیری آگاهانه — با امکان تعیین هدف در پلن تیم",
     badge: "حرفه‌ای+",
+  },
+  {
+    icon: Camera,
+    title: "بهبود عکس‌ها و واترمارک لوگو",
+    description: "کیفیت تصاویر به‌صورت خودکار بهبود می‌یابد و لوگوی دفتر روی عکس‌ها چاپ می‌شود",
+    badge: "حرفه‌ای+",
+  },
+  {
+    icon: Building2,
+    title: "چند شعبه",
+    description: "مدیریت چند شعبه یا تیم فروش در یک پنل مشترک",
+    badge: "تیم",
   },
 ]
 
