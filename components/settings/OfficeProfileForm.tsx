@@ -89,44 +89,43 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
           )}
         />
 
-        {/* City + Phone — side by side on desktop */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>شهر</FormLabel>
-                <FormControl>
-                  <select
-                    {...field}
-                    className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  >
-                    <option value="">انتخاب شهر...</option>
-                    {IRANIAN_CITIES.map((city) => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* City */}
+        <FormField
+          control={form.control}
+          name="city"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>شهر</FormLabel>
+              <FormControl>
+                <select
+                  {...field}
+                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">انتخاب شهر...</option>
+                  {IRANIAN_CITIES.map((city) => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
+                </select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>تلفن دفتر</FormLabel>
-                <FormControl>
-                  <Input className="h-11" placeholder="۰۲۱۱۲۳۴۵۶۷۸" dir="ltr" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        {/* Phone */}
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>تلفن دفتر</FormLabel>
+              <FormControl>
+                <Input className="h-11" placeholder="۰۲۱۱۲۳۴۵۶۷۸" dir="ltr" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Email */}
         <FormField

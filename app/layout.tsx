@@ -53,6 +53,9 @@ export const metadata: Metadata = {
   title: "املاکبین",
   description: "سیستم مدیریت دفتر املاک",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/logo-black.ico",
+  },
 }
 
 export default function RootLayout({

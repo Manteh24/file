@@ -22,6 +22,7 @@ export default async function AdminDashboardPage() {
   const officeFilter = buildOfficeFilter(accessibleIds)
 
   const now = new Date()
+  const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000)
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
   const shamsiMonth = parseInt(format(now, "yyyyMM"), 10)
@@ -45,6 +46,7 @@ export default async function AdminDashboardPage() {
     filesCreatedThisMonth,
     activePayingCount,
     arpu_mrr,
+    onlineUserSessions,
     // Charts data
     recentOfficesList,
     freePlanCount,
@@ -68,6 +70,12 @@ export default async function AdminDashboardPage() {
       where: { office: officeFilter, plan: { in: ["PRO", "TEAM"] }, isTrial: false, status: { in: ["ACTIVE", "GRACE"] } },
     }),
     calculateMrr(officeFilter),
+    // Online users — count distinct users active in last 15 min (SUPER_ADMIN: all, MID_ADMIN: approximate)
+    db.userSession.findMany({
+      where: { lastActiveAt: { gte: fifteenMinutesAgo }, expiresAt: { gt: now } },
+      select: { userId: true },
+      distinct: ["userId"],
+    }),
     // Charts data
     db.office.findMany({
       where: { ...officeFilter, deletedAt: null, createdAt: { gte: twelveMonthsAgo } },
@@ -86,6 +94,7 @@ export default async function AdminDashboardPage() {
   ])
 
   const totalAiCallsCount = totalAiCalls._sum.count ?? 0
+  const onlineUsersCount = onlineUserSessions.length
   const arr = mrr * 12
   const arpu = activePayingCount > 0 ? Math.round(arpu_mrr / activePayingCount) : 0
 
@@ -215,7 +224,13 @@ export default async function AdminDashboardPage() {
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           سلامت پلتفرم
         </h2>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
+          <StatsCard
+            label="کاربران آنلاین"
+            value={onlineUsersCount.toLocaleString("fa-IR")}
+            subLabel="فعال در ۱۵ دقیقه اخیر"
+            accent={onlineUsersCount > 0 ? "green" : "default"}
+          />
           <StatsCard
             label="پرداخت‌های ناموفق (۳۰ روز)"
             value={paymentFailures30d.toLocaleString("fa-IR")}

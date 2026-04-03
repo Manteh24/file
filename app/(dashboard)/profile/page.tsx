@@ -3,22 +3,30 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { UserProfileForm } from "@/components/settings/UserProfileForm"
+import { ActiveSessionsPanel } from "@/components/settings/ActiveSessionsPanel"
 
 export default async function ProfilePage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      displayName: true,
-      email: true,
-      phone: true,
-      bio: true,
-      avatarUrl: true,
-      username: true,
-    },
-  })
+  const [user, sessions] = await Promise.all([
+    db.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        displayName: true,
+        email: true,
+        phone: true,
+        bio: true,
+        avatarUrl: true,
+        username: true,
+      },
+    }),
+    db.userSession.findMany({
+      where: { userId: session.user.id, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, createdAt: true, lastActiveAt: true, userAgent: true },
+    }),
+  ])
 
   if (!user) redirect("/login")
 
@@ -30,6 +38,11 @@ export default async function ProfilePage() {
       />
 
       <UserProfileForm initialData={user} />
+
+      <ActiveSessionsPanel
+        sessions={sessions}
+        currentSessionId={session.user.sessionId}
+      />
     </div>
   )
 }

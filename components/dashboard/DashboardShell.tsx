@@ -68,6 +68,16 @@ export function DashboardShell({
     return () => cancelAnimationFrame(id)
   }, [])
 
+  useEffect(() => {
+    // Heartbeat: update lastActiveAt every 5 minutes so admin can see online users
+    function ping() {
+      fetch("/api/auth/heartbeat", { method: "POST" }).catch(() => { /* non-critical */ })
+    }
+    ping() // fire immediately on mount
+    const interval = setInterval(ping, 5 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])
+
   function toggleDark() {
     setIsDark((prev) => {
       const next = !prev

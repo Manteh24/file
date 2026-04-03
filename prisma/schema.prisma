@@ -201,13 +201,17 @@ model User {
 // Tracks active sessions per user. Used to enforce the 2-session limit.
 // Does NOT replace the JWT — it is a secondary store for session counting and invalidation.
 model UserSession {
-  id        String   @id @default(cuid())
-  userId    String
+  id           String    @id @default(cuid())
+  userId       String
   // expiresAt matches the JWT maxAge (30 days). Used for automatic cleanup.
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  // lastActiveAt updated periodically (max every 5 min) for online-user tracking.
+  lastActiveAt DateTime?
+  // userAgent stored at login for device display in profile sessions panel.
+  userAgent    String?
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_sessions")
 }

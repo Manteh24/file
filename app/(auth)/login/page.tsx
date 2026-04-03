@@ -30,13 +30,14 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard"
+  const prefillIdentifier = searchParams.get("identifier") ?? ""
 
   const [isPending, startTransition] = useTransition()
   const [loginError, setLoginError] = useState<string | null>(null)
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { identifier: "", password: "" },
+    defaultValues: { identifier: prefillIdentifier, password: "" },
   })
 
   function onSubmit(values: LoginInput) {
@@ -49,7 +50,7 @@ function LoginForm() {
       })
 
       if (result?.error) {
-        setLoginError("نام کاربری یا رمز عبور اشتباه است")
+        setLoginError("ایمیل، شماره موبایل یا رمز عبور اشتباه است")
         return
       }
 
@@ -78,10 +79,10 @@ function LoginForm() {
               control={form.control}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>نام کاربری یا ایمیل</FormLabel>
+                  <FormLabel>ایمیل یا شماره موبایل</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="نام کاربری یا ایمیل"
+                      placeholder="ایمیل یا شماره موبایل"
                       dir="ltr"
                       {...field}
                     />

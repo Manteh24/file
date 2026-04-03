@@ -27,6 +27,7 @@ interface SystemStatusData {
     subscriptionBreakdown: { FREE: number; PRO: number; TEAM: number }
     stuckPayments: number
     lastAdminAction: { timestamp: string; action: string } | null
+    onlineUsers: number
   }
 }
 
@@ -293,6 +294,8 @@ export async function GET() {
   }
 
   // Fetch all DB stats and platform settings in a single parallel batch.
+  const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000)
+
   const [
     activeOffices,
     freeCount,
@@ -303,6 +306,7 @@ export async function GET() {
     maintenanceSetting,
     zarinpalSetting,
     avalaiSetting,
+    onlineSessions,
   ] = await Promise.all([
     db.office.count({ where: { deletedAt: null } }),
     db.subscription.count({ where: { plan: "FREE" } }),
@@ -316,6 +320,12 @@ export async function GET() {
     db.platformSetting.findUnique({ where: { key: "MAINTENANCE_MODE" } }),
     db.platformSetting.findUnique({ where: { key: "ZARINPAL_MODE" } }),
     db.platformSetting.findUnique({ where: { key: "AVALAI_MODEL" } }),
+    // Count distinct users with a session active in the last 15 minutes
+    db.userSession.findMany({
+      where: { lastActiveAt: { gte: fifteenMinutesAgo } },
+      select: { userId: true },
+      distinct: ["userId"],
+    }),
   ])
 
   const data: SystemStatusData = {
@@ -333,6 +343,7 @@ export async function GET() {
       lastAdminAction: lastLog
         ? { timestamp: lastLog.createdAt.toISOString(), action: lastLog.action }
         : null,
+      onlineUsers: onlineSessions.length,
     },
   }
 

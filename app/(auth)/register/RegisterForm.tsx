@@ -28,11 +28,20 @@ import { IRANIAN_CITIES } from "@/lib/cities"
 
 interface RegisterFormProps {
   initialRef?: string
+  initialIdentifier?: string
 }
 
-export function RegisterForm({ initialRef }: RegisterFormProps) {
+// Detect whether a string looks like a phone number (starts with 0 or 9, digits only)
+function isPhoneLike(val: string): boolean {
+  return /^0?9\d{8,9}$/.test(val.trim())
+}
+
+export function RegisterForm({ initialRef, initialIdentifier }: RegisterFormProps) {
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
+
+  const prefillPhone = initialIdentifier && isPhoneLike(initialIdentifier) ? initialIdentifier : ""
+  const prefillEmail = initialIdentifier && !isPhoneLike(initialIdentifier) ? initialIdentifier : ""
 
   const form = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
@@ -40,11 +49,11 @@ export function RegisterForm({ initialRef }: RegisterFormProps) {
       displayName: "",
       officeName: "",
       city: "",
-      email: "",
+      email: prefillEmail,
       password: "",
       confirmPassword: "",
       referralCode: initialRef ?? "",
-      phone: "",
+      phone: prefillPhone,
     },
   })
 

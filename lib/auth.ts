@@ -53,10 +53,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const { identifier, password } = parsed.data
 
-        // 3. Find user by username OR email (both are valid login identifiers)
+        // 3. Find user by email OR phone number
         const user = await db.user.findFirst({
           where: {
-            OR: [{ username: identifier }, { email: identifier }],
+            OR: [{ email: identifier }, { phone: identifier }],
           },
         })
 
@@ -70,7 +70,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!passwordValid) return null
 
         // 6. Enforce 2-session limit and create the new session record
-        const sessionId = await enforceSessionLimit(user.id)
+        const ua = req?.headers?.get("user-agent") ?? null
+        const sessionId = await enforceSessionLimit(user.id, ua)
 
         // 7. Record admin logins for audit purposes (fire-and-forget)
         if (user.role === "SUPER_ADMIN" || user.role === "MID_ADMIN") {
@@ -140,7 +141,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
  *    — the device holding that session's JWT effectively loses access on next DB validation
  * 4. Create and return the new session ID to embed in the JWT
  */
-async function enforceSessionLimit(userId: string): Promise<string> {
+async function enforceSessionLimit(userId: string, userAgent?: string | null): Promise<string> {
   const now = new Date()
 
   // Clean up expired sessions for this user
@@ -164,7 +165,7 @@ async function enforceSessionLimit(userId: string): Promise<string> {
   expiresAt.setDate(expiresAt.getDate() + SESSION_DURATION_DAYS)
 
   const newSession = await db.userSession.create({
-    data: { userId, expiresAt },
+    data: { userId, expiresAt, lastActiveAt: now, userAgent: userAgent ?? null },
   })
 
   return newSession.id

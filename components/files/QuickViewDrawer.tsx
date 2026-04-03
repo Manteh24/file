@@ -90,9 +90,8 @@ export function QuickViewDrawer({ file, onClose }: QuickViewDrawerProps) {
 
       {/* Drawer — opens from LEFT per spec (sidebar is on right) */}
       <div
-        className="fixed top-14 left-0 z-50 flex flex-col overflow-hidden"
+        className="fixed top-14 left-0 z-50 flex flex-col overflow-hidden w-full sm:w-[480px]"
         style={{
-          width: 480,
           height: "calc(100vh - 56px)",
           background: "var(--color-surface-1)",
           borderRight: "1px solid var(--color-border-subtle)",
