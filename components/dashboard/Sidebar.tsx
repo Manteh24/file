@@ -374,10 +374,9 @@ export function Sidebar({
           <div
             className="overlay absolute bottom-full mb-2 z-50"
             style={{
-              right: collapsed ? "auto" : 8,
+              right: 8,
               left: collapsed ? "auto" : 8,
-              width: collapsed ? 220 : "auto",
-              ...(collapsed ? { right: "100%", marginRight: 8, bottom: "auto", top: "auto", transform: "translateY(-50%)" } : {}),
+              width: collapsed ? 260 : "auto",
             }}
           >
             <div className="py-1">

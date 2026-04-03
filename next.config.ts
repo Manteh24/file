@@ -76,6 +76,17 @@ function buildCsp(): string {
 }
 
 const nextConfig: NextConfig = {
+  // Required for VPS deployment — outputs a self-contained Node.js server
+  // to .next/standalone/ instead of requiring the full node_modules tree.
+  output: "standalone",
+
+  // Prisma generates its client to app/generated/prisma (custom output path).
+  // Next.js standalone file tracing does not automatically detect the native
+  // query engine binary (.node file) there, so we force-include it.
+  outputFileTracingIncludes: {
+    "/**": ["./app/generated/prisma/**/*"],
+  },
+
   // Silence the "webpack config present but no turbopack config" error in dev.
   // next-pwa injects webpack config but is disabled in dev anyway.
   turbopack: {},
