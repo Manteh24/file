@@ -52,9 +52,10 @@ export function AppLoadingScreen({ visible }: AppLoadingScreenProps) {
       const dist = Math.sqrt(dx * dx + dy * dy)
       const activeRadius = 300
       if (dist < activeRadius) {
-        const scale = Math.min(dist / activeRadius, 1) * maxMove
-        targetX = (dx / dist) * scale
-        targetY = (dy / dist) * scale
+        const limitedDist = Math.min(dist, maxMove)
+        const angle = Math.atan2(dy, dx)
+        targetX = Math.cos(angle) * limitedDist
+        targetY = Math.sin(angle) * limitedDist
       } else {
         targetX = 0
         targetY = 0

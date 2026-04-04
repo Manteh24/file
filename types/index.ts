@@ -277,6 +277,7 @@ export interface OfficeProfile {
   logoUrl: string | null
   photoEnhancementMode: PhotoProcessMode
   watermarkMode: PhotoProcessMode
+  managerIsAgent: boolean
 }
 
 export interface SubscriptionInfo {

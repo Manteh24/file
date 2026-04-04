@@ -21,6 +21,9 @@ vi.mock("@/lib/db", () => ({
     activityLog: {
       create: vi.fn(),
     },
+    user: {
+      findFirst: vi.fn().mockResolvedValue({ canFinalizeContracts: false }),
+    },
     subscription: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -42,6 +45,7 @@ const mockDb = db as unknown as {
   propertyFile: { findFirst: MockFn; update: MockFn }
   shareLink: { updateMany: MockFn }
   activityLog: { create: MockFn }
+  user: { findFirst: MockFn }
   subscription: { findUnique: MockFn; update: MockFn }
   $transaction: MockFn
 }

@@ -22,11 +22,12 @@ export const createAgentSchema = z.object({
     .email("ایمیل معتبر وارد کنید")
     .optional()
     .or(z.literal("")),
+  canFinalizeContracts: z.boolean().optional().default(false),
 })
 
 export type CreateAgentInput = z.infer<typeof createAgentSchema>
 
-// Username cannot change after creation — only displayName and email are editable
+// Username cannot change after creation — only displayName, email, and canFinalizeContracts are editable
 export const updateAgentSchema = z.object({
   displayName: z
     .string()
@@ -38,6 +39,7 @@ export const updateAgentSchema = z.object({
     .email("ایمیل معتبر وارد کنید")
     .optional()
     .or(z.literal("")),
+  canFinalizeContracts: z.boolean().optional(),
 })
 
 export type UpdateAgentInput = z.infer<typeof updateAgentSchema>

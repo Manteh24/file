@@ -21,6 +21,7 @@ import {
   Settings,
   X,
 } from "lucide-react"
+import { WelcomeModal } from "@/components/settings/WelcomeModal"
 import { cn } from "@/lib/utils"
 import { signOutAction } from "@/app/(dashboard)/actions"
 import { activateProTrial } from "@/lib/trial-activation"
@@ -168,7 +169,9 @@ export function Sidebar({
   const router = useRouter()
   const [trialLoading, setTrialLoading] = useState(false)
   const [trialError, setTrialError] = useState<string | null>(null)
-  const popoverRef = useRef<HTMLDivElement>(null)
+  const [showWelcome, setShowWelcome] = useState(false)
+  const mobilePopoverRef = useRef<HTMLDivElement>(null)
+  const desktopPopoverRef = useRef<HTMLDivElement>(null)
   const unreadCount = useUnreadCount()
 
   const plan = subscription?.plan ?? "FREE"
@@ -179,11 +182,17 @@ export function Sidebar({
   // Initials for office card
   const officeInitials = officeName.slice(0, 2)
 
-  // Close popover on outside click
+  // Close popover on outside click.
+  // Two separate refs are needed because renderSidebarContent is called for both
+  // mobile and desktop — a single ref would always point to the last-rendered
+  // (desktop) div, causing the outside-click check to fail in responsive/mobile mode.
   useEffect(() => {
     if (!popoverOpen) return
     function handleClick(e: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const inMobile = mobilePopoverRef.current?.contains(target)
+      const inDesktop = desktopPopoverRef.current?.contains(target)
+      if (!inMobile && !inDesktop) {
         onPopoverChange(false)
       }
     }
@@ -197,6 +206,7 @@ export function Sidebar({
     const result = await activateProTrial()
     setTrialLoading(false)
     if (result.success) {
+      setShowWelcome(true)
       router.refresh()
     } else if ((result as { reason?: string }).reason === "phone_used") {
       setTrialError("این شماره موبایل قبلاً از دوره آزمایشی استفاده کرده است")
@@ -256,7 +266,12 @@ export function Sidebar({
     return <li key={item.href}>{itemContent}</li>
   }
 
-  function renderSidebarContent(effectiveCollapsed: boolean) {
+  function handlePopoverNav() {
+    onPopoverChange(false)
+    onClose()
+  }
+
+  function renderSidebarContent(effectiveCollapsed: boolean, ref: React.RefObject<HTMLDivElement>) {
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -351,7 +366,7 @@ export function Sidebar({
                   className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] border border-[var(--color-teal-500)] hover:bg-[var(--color-teal-50-a)] transition-colors disabled:opacity-60"
                 >
                   <ArrowUp className="h-4 w-4 shrink-0" />
-                  {trialLoading ? "در حال فعال‌سازی..." : "۳۰ روز آزمایش رایگان پرو ←"}
+                  {trialLoading ? "در حال فعال‌سازی..." : "۳۰ روز آزمایش رایگان پرو"}
                 </button>
                 {trialError && (
                   <p className="mt-1 px-1 text-[11px] text-[var(--color-danger-text)]">
@@ -368,7 +383,8 @@ export function Sidebar({
           className={cn(
             "relative shrink-0 border-t border-[var(--color-border-subtle)] p-2"
           )}
-          ref={popoverRef}
+          ref={ref}
+          style={{ background: "var(--color-surface-2)" }}
         >
           {/* Popover */}
           {popoverOpen && (
@@ -391,7 +407,7 @@ export function Sidebar({
                   {isManager && (plan === "FREE" || isTrial) && (
                     <Link
                       href="/settings#billing"
-                      onClick={() => onPopoverChange(false)}
+                      onClick={handlePopoverNav}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] hover:bg-[var(--color-surface-2)] transition-colors"
                     >
                       <CreditCard className="h-4 w-4 shrink-0" />
@@ -401,7 +417,7 @@ export function Sidebar({
                   {isManager && (
                     <Link
                       href="/referral"
-                      onClick={() => onPopoverChange(false)}
+                      onClick={handlePopoverNav}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
                     >
                       <Gift className="h-4 w-4 shrink-0" />
@@ -414,7 +430,7 @@ export function Sidebar({
                   {isManager && (
                     <Link
                       href="/settings"
-                      onClick={() => onPopoverChange(false)}
+                      onClick={handlePopoverNav}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
                     >
                       <Settings className="h-4 w-4 shrink-0" />
@@ -423,7 +439,7 @@ export function Sidebar({
                   )}
                   <Link
                     href="/guide"
-                    onClick={() => onPopoverChange(false)}
+                    onClick={handlePopoverNav}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
                   >
                     <BookOpen className="h-4 w-4 shrink-0" />
@@ -431,7 +447,7 @@ export function Sidebar({
                   </Link>
                   <Link
                     href="/support"
-                    onClick={() => onPopoverChange(false)}
+                    onClick={handlePopoverNav}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
                   >
                     <HelpCircle className="h-4 w-4 shrink-0" />
@@ -458,7 +474,7 @@ export function Sidebar({
           <button
             onClick={() => onPopoverChange(!popoverOpen)}
             className={cn(
-              "w-full flex items-center rounded-xl hover:bg-[var(--color-surface-2)] transition-colors text-start",
+              "w-full flex items-center rounded-xl hover:bg-[var(--color-surface-3)] transition-colors text-start",
               effectiveCollapsed ? "justify-center h-11 w-11 mx-auto" : "gap-3 px-2 py-2"
             )}
           >
@@ -468,9 +484,10 @@ export function Sidebar({
               style={{
                 width: effectiveCollapsed ? 40 : 36,
                 height: effectiveCollapsed ? 40 : 36,
-                background: "var(--color-teal-50)",
+                background: "var(--color-teal-100)",
                 color: "var(--color-teal-700)",
                 fontSize: effectiveCollapsed ? 14 : 12,
+                boxShadow: "0 0 0 1.5px var(--color-teal-200)",
               }}
             >
               {officeInitials}
@@ -566,7 +583,7 @@ export function Sidebar({
         }}
         aria-label="منوی اصلی"
       >
-        {renderSidebarContent(false)}
+        {renderSidebarContent(false, mobilePopoverRef)}
       </aside>
 
       {/* Desktop: fixed right sidebar */}
@@ -580,8 +597,10 @@ export function Sidebar({
         }}
         aria-label="منوی اصلی"
       >
-        {renderSidebarContent(collapsed)}
+        {renderSidebarContent(collapsed, desktopPopoverRef)}
       </aside>
+
+      {showWelcome && <WelcomeModal open />}
     </>
   )
 }

@@ -70,7 +70,7 @@ const smallFeatures = [
 
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-20 px-6" style={{ background: "var(--color-surface-2)" }}>
+    <section id="features" className="py-20 px-6" style={{ background: "#EEF9F6" }}>
       <div className="container mx-auto max-w-5xl">
         <h2
           className="font-semibold text-center text-[var(--color-text-primary)] mb-3"

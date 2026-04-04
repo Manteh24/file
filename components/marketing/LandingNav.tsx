@@ -8,8 +8,8 @@ import { AppLogo } from "./AppLogo"
 const navLinks = [
   { label: "ویژگی‌ها", href: "#features" },
   { label: "قیمت‌ها", href: "#pricing" },
-  { label: "درباره ما", href: "#about" },
-  { label: "تماس", href: "#contact" },
+  { label: "درباره ما", href: "/about" },
+  { label: "تماس", href: "/contact" },
 ]
 
 export function LandingNav() {

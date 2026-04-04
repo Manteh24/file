@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { AgentCard } from "@/components/agents/AgentCard"
 import { NewAgentButton } from "@/components/agents/NewAgentButton"
+import { Badge } from "@/components/ui/badge"
 import type { AgentSummary } from "@/types"
 
 export default async function AgentsPage() {
@@ -16,29 +17,60 @@ export default async function AgentsPage() {
 
   const { officeId } = session.user
 
-  const agents = await db.user.findMany({
-    where: { officeId, role: "AGENT" },
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      email: true,
-      isActive: true,
-      createdAt: true,
-      _count: { select: { fileAssignments: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  })
+  const [agents, office] = await Promise.all([
+    db.user.findMany({
+      where: { officeId, role: "AGENT" },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        isActive: true,
+        canFinalizeContracts: true,
+        createdAt: true,
+        _count: { select: { fileAssignments: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    db.office.findUnique({
+      where: { id: officeId! },
+      select: { managerIsAgent: true },
+    }),
+  ])
+
+  // When managerIsAgent is enabled, prepend the manager with a special flag
+  type AgentRow = (typeof agents)[number] & { isManager?: boolean }
+  let rows: AgentRow[] = agents
+  if (office?.managerIsAgent) {
+    const manager = await db.user.findFirst({
+      where: { officeId, role: "MANAGER", isActive: true },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        isActive: true,
+        canFinalizeContracts: true,
+        createdAt: true,
+        _count: { select: { fileAssignments: true } },
+      },
+    })
+    if (manager) {
+      rows = [{ ...manager, isManager: true }, ...agents]
+    }
+  }
+
+  const totalCount = rows.length
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="مشاوران"
-        description={`${agents.length.toLocaleString("fa-IR")} مشاور`}
+        description={`${totalCount.toLocaleString("fa-IR")} مشاور`}
         actions={<NewAgentButton />}
       />
 
-      {agents.length === 0 ? (
+      {rows.length === 0 ? (
         <EmptyState
           icon={<Users className="h-12 w-12" />}
           message="مشاوری ثبت نشده است"
@@ -48,8 +80,19 @@ export default async function AgentsPage() {
         />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {agents.map((agent) => (
-            <AgentCard key={agent.id} agent={agent as AgentSummary} />
+          {rows.map((agent) => (
+            <div key={agent.id} className="relative">
+              {agent.isManager && (
+                <div className="absolute top-2 start-2 z-10">
+                  <Badge variant="secondary" className="text-xs">مدیر دفتر</Badge>
+                </div>
+              )}
+              <AgentCard
+                agent={agent as AgentSummary}
+                // Manager row: no edit/delete — manager edits their own profile at /profile
+                readOnly={agent.isManager ?? false}
+              />
+            </div>
           ))}
         </div>
       )}

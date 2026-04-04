@@ -53,10 +53,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const { identifier, password } = parsed.data
 
-        // 3. Find user by email OR phone number
+        // 3. Find user by email, phone, or username (username used by admin accounts)
         const user = await db.user.findFirst({
           where: {
-            OR: [{ email: identifier }, { phone: identifier }],
+            OR: [{ email: identifier }, { phone: identifier }, { username: identifier }],
           },
         })
 

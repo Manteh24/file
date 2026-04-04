@@ -10,11 +10,13 @@ import { Input } from "@/components/ui/input"
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { Switch } from "@/components/ui/switch"
 import { UpgradePrompt } from "@/components/shared/UpgradePrompt"
 import type { AgentDetail } from "@/types"
 
@@ -38,6 +40,9 @@ export function AgentForm({ initialData, agentId }: AgentFormProps) {
       displayName: initialData?.displayName ?? "",
       password: "",
       email: initialData?.email ?? "",
+      canFinalizeContracts:
+        (initialData as { canFinalizeContracts?: boolean } | undefined)?.canFinalizeContracts ??
+        false,
     },
   })
 
@@ -45,9 +50,13 @@ export function AgentForm({ initialData, agentId }: AgentFormProps) {
     const url = isEdit ? `/api/agents/${agentId}` : "/api/agents"
     const method = isEdit ? "PATCH" : "POST"
 
-    // In edit mode, only send the editable fields
+    // In edit mode, only send the editable fields (including canFinalizeContracts)
     const body = isEdit
-      ? { displayName: values.displayName, email: values.email }
+      ? {
+          displayName: values.displayName,
+          email: values.email,
+          canFinalizeContracts: values.canFinalizeContracts,
+        }
       : values
 
     const response = await fetch(url, {
@@ -150,6 +159,28 @@ export function AgentForm({ initialData, agentId }: AgentFormProps) {
                 <Input placeholder="example@email.com" dir="ltr" {...field} />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* canFinalizeContracts — permission toggle */}
+        <FormField
+          control={form.control}
+          name="canFinalizeContracts"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <FormLabel className="text-base">اجازه بستن قرارداد</FormLabel>
+                <FormDescription>
+                  این مشاور می‌تواند قراردادها را نهایی کند
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
             </FormItem>
           )}
         />

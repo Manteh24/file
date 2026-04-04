@@ -56,14 +56,29 @@ export async function GET() {
 
 // ─── POST /api/contracts ────────────────────────────────────────────────────────
 // Finalizes a deal: creates the contract, transitions the file status,
-// and deactivates all share links. Manager-only. Atomic transaction.
+// and deactivates all share links.
+// Accessible to: MANAGER, or AGENT with canFinalizeContracts=true.
+// Atomic transaction.
 
 export async function POST(request: Request) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+
+  const { officeId, id: userId, role } = session.user
+  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+
+  // For agents, check the canFinalizeContracts permission from DB
+  if (role === "AGENT") {
+    const agentUser = await db.user.findFirst({
+      where: { id: userId, officeId },
+      select: { canFinalizeContracts: true },
+    })
+    if (!agentUser?.canFinalizeContracts) {
+      return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
+    }
+  } else if (role !== "MANAGER") {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 
@@ -79,9 +94,6 @@ export async function POST(request: Request) {
     const firstError = parsed.error.issues[0]?.message ?? "داده نامعتبر است"
     return NextResponse.json({ success: false, error: firstError }, { status: 400 })
   }
-
-  const { officeId, id: userId } = session.user
-  if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
     await requireWriteAccess(officeId)

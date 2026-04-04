@@ -46,7 +46,7 @@ export function FaqSection() {
   }
 
   return (
-    <section id="faq" className="py-20 px-6" style={{ background: "var(--color-base)" }}>
+    <section id="faq" className="py-20 px-6" style={{ background: "#F4F6F8" }}>
       <div className="container mx-auto max-w-3xl">
         <h2
           className="font-semibold text-center text-[var(--color-text-primary)] mb-3"

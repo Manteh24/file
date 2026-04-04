@@ -32,6 +32,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
         displayName: true,
         email: true,
         isActive: true,
+        canFinalizeContracts: true,
         officeId: true,
         createdAt: true,
         updatedAt: true,

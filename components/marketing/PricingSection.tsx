@@ -26,7 +26,7 @@ export function PricingSection() {
   const [cycle, setCycle] = useState<BillingCycle>("MONTHLY")
 
   return (
-    <section id="pricing" className="py-20 px-6 bg-[var(--color-surface-1)]">
+    <section id="pricing" className="py-20 px-6" style={{ background: "#FFFFFF" }}>
       <div className="container mx-auto max-w-5xl">
         <h2
           className="font-semibold text-center text-[var(--color-text-primary)] mb-3"

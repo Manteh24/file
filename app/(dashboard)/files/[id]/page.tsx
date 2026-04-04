@@ -61,6 +61,15 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
   const { officeId, role, id: userId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 
+  // For agents, fetch contract finalization permission
+  const agentPermissions =
+    role === "AGENT"
+      ? await db.user.findUnique({
+          where: { id: userId },
+          select: { canFinalizeContracts: true },
+        })
+      : null
+
   const file = await db.propertyFile.findFirst({
     where: {
       id,
@@ -152,17 +161,18 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
         </div>
 
         <div className="flex shrink-0 gap-2">
-          {role === "MANAGER" && file.status === "ACTIVE" && (
-            <>
-              <ArchiveFileButton fileId={file.id} />
-              <Button asChild variant="outline">
-                <Link href={`/contracts/new?fileId=${file.id}`}>
-                  <FileCheck className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
-                  بستن قرارداد
-                </Link>
-              </Button>
-            </>
-          )}
+          {file.status === "ACTIVE" &&
+            (role === "MANAGER" || agentPermissions?.canFinalizeContracts) && (
+              <>
+                {role === "MANAGER" && <ArchiveFileButton fileId={file.id} />}
+                <Button asChild variant="outline">
+                  <Link href={`/contracts/new?fileId=${file.id}`}>
+                    <FileCheck className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
+                    بستن قرارداد
+                  </Link>
+                </Button>
+              </>
+            )}
           {canEdit && (
             <Button asChild>
               <Link href={`/files/${file.id}/edit`}>

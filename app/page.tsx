@@ -9,6 +9,8 @@ import { LandingFooter } from "@/components/marketing/LandingFooter"
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--color-base)" }} dir="rtl">
+      {/* Remove dark class before paint — overrides root layout's localStorage script */}
+      <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.remove('dark')` }} />
       <LandingNav />
       <main>
         <HeroSection />

@@ -13,14 +13,15 @@
 4. [PostgreSQL setup](#4-postgresql-setup)
 5. [Nginx setup — both domains](#5-nginx-setup--both-domains)
 6. [SSL certificates](#6-ssl-certificates)
-7. [Deploy the app — first time](#7-deploy-the-app--first-time)
+7. [Deploy the app — first time (upload via rsync, no GitHub needed)](#7-deploy-the-app--first-time)
 8. [Environment variables](#8-environment-variables)
 9. [Database migration + seed admin](#9-database-migration--seed-admin)
 10. [Start the app with PM2](#10-start-the-app-with-pm2)
 11. [Cron job](#11-cron-job)
 12. [Verify everything is working](#12-verify-everything-is-working)
-13. [Every subsequent deploy](#13-every-subsequent-deploy)
-14. [Troubleshooting](#14-troubleshooting)
+13. [Every subsequent deploy (rsync from local machine)](#13-every-subsequent-deploy)
+14. [Editing code after deployment](#14-editing-code-after-deployment)
+15. [Troubleshooting](#15-troubleshooting)
 
 ---
 
@@ -33,12 +34,25 @@ These were fixed in the codebase before you deploy — no action needed:
 | `next.config.ts` | Added `output: "standalone"` | Required to build a self-contained server for VPS |
 | `next.config.ts` | Added `outputFileTracingIncludes` for Prisma | Ensures the Prisma native query engine binary is included in the standalone build |
 | `.env.example` | Removed `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Seed-only credentials — env validator was incorrectly requiring them at runtime |
+| `prisma.config.ts` | Contains `datasource.url` + dotenv import | Prisma v7 reads DATABASE_URL from `prisma.config.ts`, not from `schema.prisma` |
 
 ---
 
 ## 2. What to prepare before you start
 
 Have all of these ready **before** touching the VPS. You will need them offline.
+
+### VPS spec — capacity guide
+
+| Spec | Handles | Notes |
+|------|---------|-------|
+| **2 vCPU / 8 GB RAM** | ~150–200 active offices | Good for launch. Photo uploads are single-threaded under Sharp — 2 cores is fine at low-to-mid load. |
+| **4 vCPU / 8 GB RAM** | ~300–400 active offices | Recommended once you grow past 200 offices or if you have heavy concurrent photo uploads. |
+| **4 vCPU / 16 GB RAM** | 400–600+ active offices | Upgrade to this if PostgreSQL starts to grow large (100K+ files). |
+
+**Minimum to start:** 2 vCPU / 8 GB RAM — this is fine for launch. Upgrade to 4 vCPU when you hit consistent slowness on photo uploads.
+
+**OS: Ubuntu 24.04 LTS** — Storage: 80 GB NVMe SSD — Bandwidth: 200 Mbps or higher
 
 ### Service accounts to create first:
 - **Parspack (or IranServer)** account — VPS, PostgreSQL, Object Storage
@@ -51,13 +65,6 @@ Have all of these ready **before** touching the VPS. You will need them offline.
 - Point your main domain (e.g. `amlakbin.ir`) A record → VPS IP
 - Point share subdomain (e.g. `view.amlakbin.ir`) A record → same VPS IP
 - DNS propagation takes 0–24 hours. Do this early.
-
-### VPS spec to order:
-- **OS:** Ubuntu 24.04 LTS
-- **CPU:** 4 vCPU
-- **RAM:** 8 GB
-- **Storage:** 80 GB NVMe SSD
-- **Bandwidth:** 200 Mbps or higher
 
 ### Object Storage bucket:
 - Create an S3-compatible bucket on Parspack/IranServer
@@ -102,19 +109,19 @@ ssh root@YOUR_VPS_IP
 apt update && apt upgrade -y
 ```
 
-### 3.2 Install Node.js 20
+### 3.2 Install Node.js 22 LTS
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt install -y nodejs
-node --version   # should print v20.x.x
+node --version   # should print v22.x.x
 npm --version    # should print 10.x.x
 ```
 
 ### 3.3 Install system tools
 
 ```bash
-apt install -y git nginx certbot python3-certbot-nginx ufw
+apt install -y git nginx certbot python3-certbot-nginx ufw rsync
 ```
 
 ### 3.4 Install PM2 globally
@@ -298,42 +305,98 @@ systemctl status certbot.timer
 
 ## 7. Deploy the app — first time
 
-### 7.1 Clone the repository on VPS
+> **You do not need GitHub access on the VPS.**
+> You upload the code directly from your **local machine** to the VPS using `rsync`.
+> Run rsync commands from your local machine (with VPN on, or using your local internet).
+
+### 7.1 Create the app directory on VPS
+
+On VPS:
 
 ```bash
-mkdir -p /var/www
-cd /var/www
-git clone YOUR_GIT_REPO_URL amlakbin
-cd /var/www/amlakbin
+mkdir -p /var/www/amlakbin
 ```
 
-If your repo is private (which it should be), either:
-- Set up an SSH deploy key: `ssh-keygen -t ed25519 -C "vps-deploy"` → add public key to GitHub/GitLab as deploy key
-- Or use HTTPS with a personal access token
+### 7.2 Upload code from your local machine
 
-### 7.2 Install dependencies
+On your **local machine** (run this in the project directory):
+
+```bash
+rsync -avz \
+  --exclude=node_modules \
+  --exclude=.next \
+  --exclude="app/generated/prisma" \
+  --exclude=".env*" \
+  --exclude="ecosystem.config.js" \
+  --exclude="scripts/reports" \
+  ./ deploy@YOUR_VPS_IP:/var/www/amlakbin/
+```
+
+> This sends all source files except secrets and build artifacts.
+> `deploy` is the user you created in step 3.5 — or use `root` if you skipped that.
+
+### 7.3 Install dependencies on VPS
+
+On VPS:
 
 ```bash
 cd /var/www/amlakbin
 npm ci
 ```
 
-> `npm ci` is like `npm install` but faster and stricter — uses exact versions from `package-lock.json`. Always use this on the server.
+> `npm ci` uses exact versions from `package-lock.json`. Always use this on the server, never `npm install`.
 
-### 7.3 Set environment variables before build
+### 7.4 Create environment file
 
-The build process needs some env vars (especially `NEXT_PUBLIC_*` vars are baked in at build time):
+On VPS:
 
 ```bash
-cp .env.example .env.local
-nano .env.local
+cd /var/www/amlakbin
+nano .env
 ```
 
-Fill in ALL values. Save with Ctrl+X, Y, Enter.
+Paste and fill in ALL values:
 
-### 7.4 Build the app
+```
+DATABASE_URL=postgresql://amlakbin_user:YOUR_DB_PASSWORD@localhost:5432/amlakbin
+NEXTAUTH_SECRET=YOUR_32_CHAR_SECRET
+NEXTAUTH_URL=https://amlakbin.ir
+
+AVALAI_API_KEY=YOUR_AVALAI_KEY
+NESHAN_API_KEY=YOUR_NESHAN_KEY
+NEXT_PUBLIC_NESHAN_MAP_KEY=YOUR_NESHAN_KEY
+
+KAVENEGAR_API_KEY=YOUR_KAVENEGAR_KEY
+ZARINPAL_MERCHANT_ID=YOUR_ZARINPAL_UUID
+
+STORAGE_ENDPOINT=https://s3.parspack.com
+STORAGE_ACCESS_KEY=YOUR_STORAGE_ACCESS_KEY
+STORAGE_SECRET_KEY=YOUR_STORAGE_SECRET_KEY
+STORAGE_BUCKET_NAME=YOUR_BUCKET_NAME
+
+NEXT_PUBLIC_SHARE_DOMAIN=https://view.amlakbin.ir
+
+CRON_SECRET=YOUR_CRON_SECRET
+NODE_ENV=production
+```
+
+Save with Ctrl+X, Y, Enter.
+
+> **Why `.env` and not `.env.local`?**
+> This project uses Prisma v7 with `prisma.config.ts`. When you run CLI commands like `npx prisma migrate deploy`,
+> Prisma reads the database URL via dotenv which loads `.env` by default.
+> Next.js also reads `.env`. Using `.env` means both work without any extra steps.
+
+Protect the file:
 
 ```bash
+chmod 600 /var/www/amlakbin/.env
+```
+
+### 7.5 Build the app
+
+```bash
+cd /var/www/amlakbin
 npm run build
 ```
 
@@ -342,7 +405,7 @@ This takes 2–4 minutes. It outputs:
 - `.next/static/` — static assets (JS, CSS)
 - `public/` — your public files
 
-After build, you must manually copy static files into the standalone directory (Next.js requires this):
+After build, copy static files into the standalone directory (Next.js requires this):
 
 ```bash
 cp -r .next/static .next/standalone/.next/static
@@ -351,17 +414,15 @@ cp -r public .next/standalone/public
 
 ---
 
-## 8. Environment variables
+## 8. Environment variables (PM2 ecosystem file)
 
-The app is run by PM2 using the standalone server. The cleanest way to handle env vars is via a PM2 ecosystem file.
-
-Create it:
+The app is run by PM2 using the standalone server. Create the PM2 ecosystem file to pass env vars to the running process:
 
 ```bash
 nano /var/www/amlakbin/ecosystem.config.js
 ```
 
-Paste and fill in ALL values:
+Paste and fill in ALL values (same values as your `.env` file):
 
 ```js
 module.exports = {
@@ -404,49 +465,59 @@ module.exports = {
 }
 ```
 
-> **Security:** `ecosystem.config.js` contains secrets. Make sure it is not in your git repo.
-> Confirm it is in `.gitignore`:
+> **Security:** `ecosystem.config.js` contains secrets. It is already in `.gitignore`.
+> Confirm with: `grep ecosystem .gitignore` — if it prints nothing, add it manually:
 > ```bash
-> echo "ecosystem.config.js" >> .gitignore
+> echo "ecosystem.config.js" >> /var/www/amlakbin/.gitignore
 > ```
+
+Protect the file:
+
+```bash
+chmod 600 /var/www/amlakbin/ecosystem.config.js
+```
 
 ---
 
 ## 9. Database migration + seed admin
 
-### 9.1 Run migrations
+> Prisma v7 note: DATABASE_URL is read from `.env` by `prisma.config.ts` automatically.
+> Make sure your `.env` file is in place (step 7.4) before running these commands.
+
+### 9.1 Generate Prisma client
 
 ```bash
 cd /var/www/amlakbin
+npx prisma generate
+```
 
-# Check what migrations are pending
+> This generates `app/generated/prisma/` with the correct native binary for this server's OS/architecture.
+> Run this once after first deploy, and again any time you change the schema.
+
+### 9.2 Check pending migrations
+
+```bash
 npm run migrate:check
+```
 
-# Apply all pending migrations
+### 9.3 Apply all migrations
+
+```bash
 npx prisma migrate deploy
 ```
 
 > `prisma migrate deploy` applies any pending migrations in order. It never rolls back.
 > Run this on every deploy if `migrate:check` reports pending migrations.
 
-### 9.2 Generate Prisma client
-
-```bash
-npx prisma generate
-```
-
-> This regenerates `app/generated/prisma/` with the correct binaries for this server's OS/architecture.
-> Run this once after first deploy, and again any time you change the schema.
-
-### 9.3 Validate environment variables
+### 9.4 Validate environment variables
 
 ```bash
 npm run env:validate
 ```
 
-All checks must pass. If any fail, fix the value in `ecosystem.config.js` and re-run.
+All checks must pass. If any fail, fix the value in `.env` and `ecosystem.config.js` and re-run.
 
-### 9.4 Seed the super admin (first deploy only)
+### 9.5 Seed the super admin (first deploy only)
 
 ```bash
 ADMIN_USERNAME=your_admin_username ADMIN_PASSWORD=your_strong_password npm run seed:admin
@@ -514,7 +585,7 @@ Add this line at the bottom:
 */5 * * * * curl -s -X POST -H "x-cron-secret: YOUR_CRON_SECRET" http://127.0.0.1:3000/api/cron/lock-expired-trials >> /var/log/amlakbin-cron.log 2>&1
 ```
 
-> Replace `YOUR_CRON_SECRET` with the same value you set in `ecosystem.config.js`.
+> Replace `YOUR_CRON_SECRET` with the same value you set in `ecosystem.config.js` and `.env`.
 > This runs every 5 minutes. The log goes to `/var/log/amlakbin-cron.log`.
 
 Verify cron is working after 5 minutes:
@@ -554,46 +625,117 @@ All 6 should be green: DB, Storage, AvalAI, KaveNegar, Neshan, Zarinpal.
 
 ## 13. Every subsequent deploy
 
-Each time you push changes and want to deploy:
+Each time you make code changes locally and want to deploy:
+
+### Step 1 — On your local machine (VPN on or local internet):
+
+```bash
+# From your local project directory:
+rsync -avz \
+  --exclude=node_modules \
+  --exclude=.next \
+  --exclude="app/generated/prisma" \
+  --exclude=".env*" \
+  --exclude="ecosystem.config.js" \
+  --exclude="scripts/reports" \
+  ./ deploy@YOUR_VPS_IP:/var/www/amlakbin/
+```
+
+### Step 2 — On VPS (SSH in):
 
 ```bash
 cd /var/www/amlakbin
 
-# 1. Pull latest code
-git pull
-
-# 2. Install any new dependencies
+# Install any new dependencies
 npm ci
 
-# 3. Check for pending migrations
+# Check for pending migrations
 npm run migrate:check
 
-# 4. Apply migrations if any were reported
+# Apply migrations if any were reported
 npx prisma migrate deploy
 
-# 5. Regenerate Prisma client (only needed if schema changed — safe to always run)
+# Regenerate Prisma client (safe to always run — only needed if schema changed)
 npx prisma generate
 
-# 6. Build
+# Build
 npm run build
 
-# 7. Copy static files into standalone output
+# Copy static files into standalone output
 cp -r .next/static .next/standalone/.next/static
 cp -r public .next/standalone/public
 
-# 8. Restart the app (zero-downtime reload)
+# Restart the app (zero-downtime reload)
 pm2 reload amlakbin
 
-# 9. Verify
+# Verify
 pm2 status
 pm2 logs amlakbin --lines 20
 ```
 
-> Steps 4 and 5 are safe to always run — they're idempotent. Skip step 4 only if you're certain no schema changes were made.
+> Steps 4 and 5 (migrate deploy + generate) are safe to always run — they are idempotent.
 
 ---
 
-## 14. Troubleshooting
+## 14. Editing code after deployment
+
+> Since GitHub may be inaccessible from Iran without VPN, all code editing and deploying
+> is done on your **local machine**, then pushed to VPS via rsync. You never need GitHub on the VPS.
+
+### Normal workflow:
+
+1. **Edit code locally** — make your changes, test with `npm run dev`
+2. **Run tests locally** — `npm test` — make sure all tests pass
+3. **rsync to VPS** — use the rsync command from Section 13 Step 1
+4. **Build and restart on VPS** — follow Section 13 Step 2
+
+### If you want to edit a file quickly on the VPS directly (emergency fix):
+
+```bash
+ssh deploy@YOUR_VPS_IP
+cd /var/www/amlakbin
+
+# Edit the file with nano:
+nano app/api/some-route/route.ts
+
+# Rebuild and restart:
+npm run build
+cp -r .next/static .next/standalone/.next/static
+cp -r public .next/standalone/public
+pm2 reload amlakbin
+```
+
+> **Warning:** If you edit files directly on VPS, remember to copy those changes back to your
+> local machine too, or they will be overwritten the next time you rsync. Always keep local as source of truth.
+
+### If you set up a local Git server (optional):
+
+If you want proper git history without GitHub, you can run a bare git repo on the VPS:
+
+```bash
+# On VPS — create a bare repo to receive pushes:
+mkdir -p /home/deploy/repos/amlakbin.git
+cd /home/deploy/repos/amlakbin.git
+git init --bare
+```
+
+```bash
+# On your LOCAL machine — add VPS as a remote:
+git remote add vps deploy@YOUR_VPS_IP:/home/deploy/repos/amlakbin.git
+git push vps main
+```
+
+```bash
+# On VPS — after git push, pull into the app directory:
+cd /var/www/amlakbin
+git pull /home/deploy/repos/amlakbin.git main
+```
+
+This is optional. rsync is simpler for solo development.
+
+---
+
+## 15. Troubleshooting
 
 ### App won't start — "Cannot find module" error
 
@@ -611,7 +753,16 @@ pm2 restart amlakbin
 ```bash
 # Test the connection string directly:
 psql "YOUR_DATABASE_URL"
-# If it fails, the password, host, or port is wrong in ecosystem.config.js
+# If it fails, the password, host, or port is wrong in .env / ecosystem.config.js
+```
+
+### `npx prisma migrate deploy` says "no DATABASE_URL"
+
+The `.env` file is missing or malformed. Check:
+
+```bash
+cat /var/www/amlakbin/.env | grep DATABASE_URL
+# If empty, re-create the .env file (step 7.4)
 ```
 
 ### Nginx returns 502 Bad Gateway
@@ -648,7 +799,7 @@ If wrong IP or empty, fix the DNS A record in your domain registrar panel and wa
 npm run build 2>&1 | head -50
 ```
 
-Fix the error in the code, commit, push, then `git pull` on VPS and rebuild.
+Fix the error in the code locally, rsync to VPS, and rebuild.
 
 ### After reboot, app is not running
 
@@ -712,4 +863,19 @@ npx prisma studio                   # GUI for DB (runs on port 5555)
 npm run health                      # check all 6 external services
 npm run env:validate                # check all env vars are set
 npm run migrate:check               # check for unapplied migrations
+npx prisma migrate deploy           # apply pending migrations
+npx prisma generate                 # regenerate Prisma client after schema change
+```
+
+### rsync from local machine (run from your local project folder):
+
+```bash
+rsync -avz \
+  --exclude=node_modules \
+  --exclude=.next \
+  --exclude="app/generated/prisma" \
+  --exclude=".env*" \
+  --exclude="ecosystem.config.js" \
+  --exclude="scripts/reports" \
+  ./ deploy@YOUR_VPS_IP:/var/www/amlakbin/
 ```

@@ -106,7 +106,7 @@ export async function POST(request: Request) {
   }
 
   const { contacts, salePrice, depositAmount, rentAmount, ...restFileData } = parsed.data
-  const { officeId, id: userId } = session.user
+  const { officeId, id: userId, role } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
   try {
@@ -117,6 +117,17 @@ export async function POST(request: Request) {
     }
     console.error("[POST /api/files] requireWriteAccess unexpected error:", { officeId }, err)
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
+  }
+
+  // Determine if the creator should be auto-assigned to the new file.
+  // Agents are always auto-assigned. Managers only when managerIsAgent is true.
+  let shouldAutoAssign = role === "AGENT"
+  if (role === "MANAGER") {
+    const officeSettings = await db.office.findUnique({
+      where: { id: officeId },
+      select: { managerIsAgent: true },
+    })
+    shouldAutoAssign = officeSettings?.managerIsAgent ?? true
   }
 
   // Enforce per-plan active file limit
@@ -160,6 +171,13 @@ export async function POST(request: Request) {
         },
         select: { id: true },
       })
+
+      // Auto-assign the creator to the new file when applicable
+      if (shouldAutoAssign) {
+        await tx.fileAssignment.create({
+          data: { fileId: newFile.id, userId },
+        })
+      }
 
       // Log the creation action in the activity log
       await tx.activityLog.create({

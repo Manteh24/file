@@ -38,6 +38,12 @@ export async function PUT(
   const { agentIds } = parsed.data
 
   try {
+    // Fetch office settings to know if manager can be assigned to files
+    const office = await db.office.findUnique({
+      where: { id: officeId },
+      select: { managerIsAgent: true },
+    })
+
     // 1. Verify the file belongs to this office; also fetch current agents for the activity log diff
     const file = await db.propertyFile.findFirst({
       where: { id: fileId, officeId },
@@ -53,11 +59,20 @@ export async function PUT(
       return NextResponse.json({ success: false, error: "فایل یافت نشد" }, { status: 404 })
     }
 
-    // 2. Validate all agentIds: must belong to this office, have AGENT role, and be active
+    // 2. Validate all agentIds: must belong to this office, be active, and have
+    //    AGENT role OR be the manager when managerIsAgent is enabled.
     let newAgentNames: string[] = []
     if (agentIds.length > 0) {
       const validAgents = await db.user.findMany({
-        where: { id: { in: agentIds }, officeId, role: "AGENT", isActive: true },
+        where: {
+          id: { in: agentIds },
+          officeId,
+          isActive: true,
+          OR: [
+            { role: "AGENT" },
+            ...(office?.managerIsAgent ? [{ role: "MANAGER" as const }] : []),
+          ],
+        },
         select: { id: true, displayName: true },
       })
 

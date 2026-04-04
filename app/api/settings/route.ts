@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { updateOfficeProfileSchema } from "@/lib/validations/settings"
+import { getEffectiveSubscription } from "@/lib/subscription"
+import { z } from "zod"
 
 export async function GET() {
   const session = await auth()
@@ -25,7 +27,7 @@ export async function GET() {
     const [office, subscription] = await Promise.all([
       db.office.findUnique({
         where: { id: officeId },
-        select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true },
+        select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true, managerIsAgent: true },
       }),
       db.subscription.findUnique({
         where: { officeId },
@@ -78,7 +80,12 @@ export async function PATCH(request: Request) {
     )
   }
 
-  const parsed = updateOfficeProfileSchema.safeParse(body)
+  // Extend the schema to accept managerIsAgent
+  const extendedSchema = updateOfficeProfileSchema.extend({
+    managerIsAgent: z.boolean().optional(),
+  })
+
+  const parsed = extendedSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
       { success: false, error: parsed.error.issues[0]?.message ?? "اطلاعات نامعتبر" },
@@ -86,7 +93,19 @@ export async function PATCH(request: Request) {
     )
   }
 
-  const { name, phone, email, address, city, officeBio, photoEnhancementMode, watermarkMode } = parsed.data
+  const { name, phone, email, address, city, officeBio, photoEnhancementMode, watermarkMode, managerIsAgent } = parsed.data
+
+  // managerIsAgent can only be changed on PRO/TEAM plans — FREE plan is always true
+  let resolvedManagerIsAgent: boolean | undefined = undefined
+  if (managerIsAgent !== undefined) {
+    const sub = await getEffectiveSubscription(officeId)
+    if (!sub || sub.plan === "FREE") {
+      // FREE plan: silently ignore the change (always stays true)
+      resolvedManagerIsAgent = undefined
+    } else {
+      resolvedManagerIsAgent = managerIsAgent
+    }
+  }
 
   try {
     const office = await db.office.update({
@@ -101,6 +120,7 @@ export async function PATCH(request: Request) {
         officeBio: officeBio || null,
         ...(photoEnhancementMode !== undefined && { photoEnhancementMode }),
         ...(watermarkMode !== undefined && { watermarkMode }),
+        ...(resolvedManagerIsAgent !== undefined && { managerIsAgent: resolvedManagerIsAgent }),
       },
       select: { id: true },
     })

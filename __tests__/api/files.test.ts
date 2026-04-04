@@ -22,6 +22,12 @@ vi.mock("@/lib/db", () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    office: {
+      findUnique: vi.fn().mockResolvedValue({ managerIsAgent: true }),
+    },
+    fileAssignment: {
+      create: vi.fn(),
+    },
     $transaction: vi.fn(),
     platformSetting: {
       findUnique: vi.fn().mockResolvedValue(null),
@@ -44,6 +50,8 @@ const mockDb = db as unknown as {
     count: MockFn
   }
   activityLog: { create: MockFn }
+  office: { findUnique: MockFn }
+  fileAssignment: { create: MockFn }
   subscription: { findUnique: MockFn; update: MockFn }
   $transaction: MockFn
   platformSetting: { findUnique: MockFn }

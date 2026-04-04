@@ -20,21 +20,51 @@ export async function GET() {
   const { officeId } = session.user
 
   try {
-    const agents = await db.user.findMany({
-      where: { officeId, role: "AGENT" },
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        email: true,
-        isActive: true,
-        createdAt: true,
-        _count: { select: { fileAssignments: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    })
+    const [agents, office] = await Promise.all([
+      db.user.findMany({
+        where: { officeId, role: "AGENT" },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          email: true,
+          isActive: true,
+          canFinalizeContracts: true,
+          createdAt: true,
+          _count: { select: { fileAssignments: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      db.office.findUnique({
+        where: { id: officeId! },
+        select: { managerIsAgent: true },
+      }),
+    ])
 
-    return NextResponse.json({ success: true, data: agents })
+    // When managerIsAgent is enabled, prepend the manager to the list with an
+    // isManager flag so the UI can show a "مدیر دفتر" badge and hide edit/delete.
+    type AgentEntry = (typeof agents)[number] & { isManager?: boolean }
+    let result: AgentEntry[] = agents
+    if (office?.managerIsAgent) {
+      const manager = await db.user.findFirst({
+        where: { officeId, role: "MANAGER", isActive: true },
+        select: {
+          id: true,
+          username: true,
+          displayName: true,
+          email: true,
+          isActive: true,
+          canFinalizeContracts: true,
+          createdAt: true,
+          _count: { select: { fileAssignments: true } },
+        },
+      })
+      if (manager) {
+        result = [{ ...manager, isManager: true }, ...agents]
+      }
+    }
+
+    return NextResponse.json({ success: true, data: result })
   } catch (err) {
     console.error("[GET /api/agents] db error:", err)
     return NextResponse.json(
@@ -70,7 +100,7 @@ export async function POST(request: Request) {
   }
 
   const { officeId } = session.user
-  const { username, displayName, password, email } = parsed.data
+  const { username, displayName, password, email, canFinalizeContracts } = parsed.data
 
   try {
     await requireWriteAccess(officeId!)
@@ -131,6 +161,7 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         role: "AGENT",
         officeId,
+        canFinalizeContracts: canFinalizeContracts ?? false,
       },
       select: { id: true },
     })

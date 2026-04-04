@@ -13,6 +13,9 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       count: vi.fn(),
     },
+    office: {
+      findUnique: vi.fn().mockResolvedValue({ managerIsAgent: false }),
+    },
     subscription: {
       findUnique: vi.fn(),
       update: vi.fn(),

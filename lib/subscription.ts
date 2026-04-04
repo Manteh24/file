@@ -204,11 +204,12 @@ export async function incrementAiUsage(officeId: string): Promise<void> {
 // ─── Plan Limit Helpers ───────────────────────────────────────────────────────
 
 /**
- * Returns the number of active users (managers + agents) in the office.
+ * Returns the number of active agents in the office.
+ * The manager is excluded — they never consume an agent slot regardless of managerIsAgent setting.
  */
 export async function getUserCount(officeId: string): Promise<number> {
   return db.user.count({
-    where: { officeId, isActive: true },
+    where: { officeId, isActive: true, role: "AGENT" },
   })
 }
 

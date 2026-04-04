@@ -14,18 +14,32 @@ interface NewContractPageProps {
 export default async function NewContractPage({ searchParams }: NewContractPageProps) {
   const session = await auth()
   if (!session) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
 
-  const { officeId } = session.user
+  const { officeId, id: userId, role } = session.user
   if (!officeId) redirect("/admin/dashboard")
+
+  // Agents must have canFinalizeContracts permission; managers always have access
+  if (role === "AGENT") {
+    const agentUser = await db.user.findUnique({
+      where: { id: userId },
+      select: { canFinalizeContracts: true },
+    })
+    if (!agentUser?.canFinalizeContracts) redirect("/dashboard")
+  } else if (role !== "MANAGER") {
+    redirect("/dashboard")
+  }
+
   const { fileId: initialFileId } = await searchParams
 
-  // Only fetch ACTIVE files that don't have a contract yet
+  // For agents: only show files they are assigned to; managers see all office active files
   const activeFiles = await db.propertyFile.findMany({
     where: {
       officeId,
       status: "ACTIVE",
       contract: null,
+      ...(role === "AGENT" && {
+        assignedAgents: { some: { userId } },
+      }),
     },
     select: {
       id: true,

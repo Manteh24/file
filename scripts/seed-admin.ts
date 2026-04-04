@@ -17,7 +17,15 @@ import { PrismaClient } from "../app/generated/prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
 import pg from "pg"
 
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
+if (!process.env.DATABASE_URL) {
+  console.error("❌  DATABASE_URL is not set")
+  process.exit(1)
+}
+
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+  connectionTimeoutMillis: 10000,
+})
 const adapter = new PrismaPg(pool)
 const db = new PrismaClient({ adapter })
 
@@ -59,4 +67,7 @@ main()
     console.error("❌  Seed failed:", err)
     process.exit(1)
   })
-  .finally(() => db.$disconnect())
+  .finally(async () => {
+    await db.$disconnect()
+    await pool.end()
+  })

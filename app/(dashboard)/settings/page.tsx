@@ -8,6 +8,8 @@ import { OfficeProfileForm } from "@/components/settings/OfficeProfileForm"
 import { SubscriptionCard } from "@/components/settings/SubscriptionCard"
 import { UserPhoneForm } from "@/components/settings/UserPhoneForm"
 import { PlanUsageSummary } from "@/components/dashboard/PlanUsageSummary"
+import { WelcomeModal } from "@/components/settings/WelcomeModal"
+import { ManagerIsAgentToggle } from "@/components/settings/ManagerIsAgentToggle"
 import type { OfficeProfile, SubscriptionInfo } from "@/types"
 
 interface SettingsPageProps {
@@ -71,7 +73,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const [office, subscription, currentUser] = await Promise.all([
     db.office.findUnique({
       where: { id: officeId },
-      select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true },
+      select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true, managerIsAgent: true },
     }),
     db.subscription.findUnique({
       where: { officeId },
@@ -95,6 +97,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         description="مدیریت پروفایل دفتر و اشتراک"
       />
 
+      {params.payment === "success" && (
+        <WelcomeModal open />
+      )}
+
       {params.payment && (
         <PaymentStatusBanner status={params.payment} />
       )}
@@ -107,6 +113,12 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </h2>
         </div>
         <OfficeProfileForm initialData={officeProfile} />
+        <div className="mt-6">
+          <ManagerIsAgentToggle
+            initialValue={officeProfile.managerIsAgent}
+            plan={subscriptionInfo?.plan ?? "FREE"}
+          />
+        </div>
       </section>
 
       {/* Section: User profile (phone for password reset) */}

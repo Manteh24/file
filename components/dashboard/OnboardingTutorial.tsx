@@ -62,12 +62,19 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
       setSpotlightRect(null)
       return
     }
-    const el = document.querySelector<HTMLElement>(
+    // Use querySelectorAll so we can skip elements that are hidden (e.g. the
+    // mobile sidebar's copy of the nav item, which has display:none on desktop
+    // via lg:hidden and therefore returns zero-dimension rects).
+    const candidates = document.querySelectorAll<HTMLElement>(
       `[data-tutorial-id="${step.targetId}"]`
     )
+    let el: HTMLElement | null = null
+    for (const candidate of candidates) {
+      const r = candidate.getBoundingClientRect()
+      if (r.width > 0 && r.height > 0) { el = candidate; break }
+    }
     if (!el) { setSpotlightRect(null); return }
     const r = el.getBoundingClientRect()
-    if (r.width === 0 || r.height === 0) { setSpotlightRect(null); return }
     setSpotlightRect({ top: r.top, left: r.left, width: r.width, height: r.height })
   }, [step.targetId])
 

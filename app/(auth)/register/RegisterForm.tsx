@@ -74,7 +74,7 @@ export function RegisterForm({ initialRef, initialIdentifier }: RegisterFormProp
       <CardHeader>
         <CardTitle>ثبت‌نام دفتر</CardTitle>
         <CardDescription>
-          ثبت‌نام رایگان — بدون نیاز به کارت بانکی
+          حساب دفتر خود را بسازید
         </CardDescription>
       </CardHeader>
       <CardContent>

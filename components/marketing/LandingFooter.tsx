@@ -32,7 +32,7 @@ const footerLinks = [
       { label: "ویژگی‌ها", href: "#features" },
       { label: "قیمت‌گذاری", href: "#pricing" },
       { label: "سوالات متداول", href: "#faq" },
-      { label: "بلاگ", href: "#" },
+      { label: "بلاگ", href: "/blog" },
     ],
   },
   {
@@ -46,11 +46,11 @@ const footerLinks = [
   {
     heading: "شرکت",
     links: [
-      { label: "درباره ما", href: "#about" },
-      { label: "تماس با ما", href: "#contact" },
-      { label: "پشتیبانی", href: "/login" },
-      { label: "حریم خصوصی", href: "#" },
-      { label: "شرایط استفاده", href: "#" },
+      { label: "درباره ما", href: "/about" },
+      { label: "تماس با ما", href: "/contact" },
+      { label: "پشتیبانی", href: "/contact" },
+      { label: "حریم خصوصی", href: "/privacy" },
+      { label: "شرایط استفاده", href: "/terms" },
     ],
   },
 ]

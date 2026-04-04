@@ -123,6 +123,9 @@ model Office {
   cardHolderName String?
   // Referral code entered at registration — identifies the referrer, not this office.
   referralCode String?
+  // When true, the manager appears in the agents list and can be assigned to files.
+  // Default true preserves existing behavior. Only changeable on PRO/TEAM plans.
+  managerIsAgent Boolean @default(true)
   // Soft delete — null means active, set means archived. Data is never hard-deleted.
   deletedAt    DateTime?
   createdAt    DateTime      @default(now())
@@ -173,6 +176,8 @@ model User {
   bio          String?
   // Internal admin note (not visible to the user)
   adminNote    String?
+  // When true, this agent is allowed to finalize contracts (normally manager-only).
+  canFinalizeContracts Boolean @default(false)
   // Nullable: SUPER_ADMIN and MID_ADMIN users have no tenant office (officeId = null)
   officeId     String?
   // Nullable: links user to a specific branch (Team plan multi-branch, hidden until month 4)
