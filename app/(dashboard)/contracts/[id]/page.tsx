@@ -188,6 +188,8 @@ export default async function ContractPage({ params }: ContractPageProps) {
 
       {/* SMS actions — rating request and rent follow-up */}
       <ContractSmsActions
+        contractId={contract.id}
+        finalizedAt={contract.finalizedAt.toISOString()}
         contacts={contract.file.contacts}
         agentName={contract.finalizedBy.displayName}
         officeName={contract.office.name}

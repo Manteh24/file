@@ -151,6 +151,7 @@ model Office {
   referralEarningSnapshots ReferralMonthlyEarningOffice[]
   // One-time trial phone record — prevents the same mobile from starting multiple trials
   trialPhone       TrialPhone?
+  scheduledSms     ScheduledSms[]
 
   @@map("offices")
 }
@@ -460,6 +461,7 @@ model Contract {
   office       Office       @relation(fields: [officeId], references: [id])
   file         PropertyFile @relation(fields: [fileId], references: [id])
   finalizedBy  User         @relation("FinalizedContracts", fields: [finalizedById], references: [id])
+  scheduledSms ScheduledSms?
 
   @@index([officeId])
   @@map("contracts")
@@ -799,6 +801,28 @@ model TicketMessage {
 
   @@index([ticketId])
   @@map("ticket_messages")
+}
+
+// A rent follow-up SMS scheduled to be sent automatically on a future date.
+// Created when the manager chooses to schedule a follow-up on a LONG_TERM_RENT contract.
+// One record per contract — replaced (not stacked) if the manager reschedules.
+model ScheduledSms {
+  id          String    @id @default(cuid())
+  officeId    String
+  contractId  String    @unique
+  phone       String
+  message     String    @db.Text
+  scheduledAt DateTime
+  sentAt      DateTime?
+  failedAt    DateTime?
+  errorMsg    String?
+  createdAt   DateTime  @default(now())
+
+  office      Office    @relation(fields: [officeId], references: [id])
+  contract    Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledAt])
+  @@map("scheduled_sms")
 }
 
 // One record per office that starts a paid trial (PRO or TEAM).

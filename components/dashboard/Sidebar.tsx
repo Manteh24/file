@@ -70,6 +70,12 @@ const PLAN_LABELS: Record<string, string> = {
 function Tooltip({ label, children }: { label: string; children: React.ReactNode }) {
   const [pos, setPos] = useState<{ top: number; right: number } | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
+
+  // Clear tooltip on navigation so it doesn't linger after a link click
+  useEffect(() => {
+    setPos(null)
+  }, [pathname])
 
   function handleEnter() {
     if (ref.current) {
@@ -83,12 +89,12 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
   }
 
   return (
-    <div ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setPos(null)}>
+    <div ref={ref} onMouseEnter={handleEnter} onMouseLeave={() => setPos(null)} onClick={() => setPos(null)}>
       {children}
       {pos &&
         createPortal(
           <div
-            className="overlay pointer-events-none whitespace-nowrap px-3 py-1.5 text-sm font-medium text-[var(--color-text-primary)]"
+            className="pointer-events-none whitespace-nowrap px-2.5 py-1.5 text-sm font-medium text-[var(--color-text-primary)]"
             style={{
               position: "fixed",
               top: pos.top,
@@ -96,6 +102,9 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
               transform: "translateY(-50%)",
               borderRadius: 8,
               zIndex: 9999,
+              background: "var(--color-overlay-bg)",
+              border: "1px solid var(--color-overlay-border)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
             }}
             role="tooltip"
           >
@@ -156,7 +165,6 @@ interface SidebarProps {
 export function Sidebar({
   role,
   officeName,
-  userName,
   subscription,
   isOpen,
   onClose,
@@ -215,7 +223,7 @@ export function Sidebar({
     }
   }
 
-  function renderNavItem(item: NavItem, idx: number, effectiveCollapsed: boolean) {
+  function renderNavItem(item: NavItem, _idx: number, effectiveCollapsed: boolean) {
     if (item.managerOnly && !isManager) return null
 
     const isActive =
@@ -271,7 +279,7 @@ export function Sidebar({
     onClose()
   }
 
-  function renderSidebarContent(effectiveCollapsed: boolean, ref: React.RefObject<HTMLDivElement>) {
+  function renderSidebarContent(effectiveCollapsed: boolean, ref: React.RefObject<HTMLDivElement | null>) {
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
