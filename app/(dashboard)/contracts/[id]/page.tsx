@@ -51,6 +51,7 @@ export default async function ContractPage({ params }: ContractPageProps) {
       agentShare: true,
       officeShare: true,
       notes: true,
+      leaseDurationMonths: true,
       finalizedAt: true,
       office: { select: { name: true } },
       file: {
@@ -194,6 +195,7 @@ export default async function ContractPage({ params }: ContractPageProps) {
         agentName={contract.finalizedBy.displayName}
         officeName={contract.office.name}
         transactionType={contract.transactionType}
+        leaseDurationMonths={contract.leaseDurationMonths}
       />
     </div>
   )

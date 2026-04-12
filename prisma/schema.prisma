@@ -101,6 +101,12 @@ enum CustomerType {
   LANDLORD
 }
 
+enum MessageChannel {
+  SMS
+  NOTIFICATION
+  EMAIL
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 // Office is the tenant root. Every other entity belongs to an office via officeId.
@@ -152,6 +158,7 @@ model Office {
   // One-time trial phone record — prevents the same mobile from starting multiple trials
   trialPhone       TrialPhone?
   scheduledSms     ScheduledSms[]
+  officeMessages   OfficeMessage[]
 
   @@map("offices")
 }
@@ -209,6 +216,7 @@ model User {
   createdTickets      SupportTicket[]  @relation("TicketCreator")
   ticketMessages      TicketMessage[]
   passwordResetTokens PasswordResetToken[]
+  sentMessages        OfficeMessage[]      @relation("SentMessages")
 
   @@map("users")
 }
@@ -398,7 +406,7 @@ model PriceHistory {
   @@map("price_history")
 }
 
-// CRM customer — a buyer, renter, seller, or landlord tracked by the office.
+// CRM customer — can be buyer, renter, seller, and/or landlord (multi-type).
 model Customer {
   id          String         @id @default(cuid())
   officeId    String
@@ -406,15 +414,18 @@ model Customer {
   name        String
   phone       String
   email       String?
-  type        CustomerType
+  // Multi-type: a customer can be BUYER and RENTER simultaneously
+  types       CustomerType[]
   // Internal notes about this customer
   notes       String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  office      Office         @relation(fields: [officeId], references: [id])
-  createdBy   User           @relation("CreatedCustomers", fields: [createdById], references: [id])
-  contactLogs CustomerNote[]
+  office             Office            @relation(fields: [officeId], references: [id])
+  createdBy          User              @relation("CreatedCustomers", fields: [createdById], references: [id])
+  contactLogs        CustomerNote[]
+  shareLinks         ShareLink[]
+  contractCustomers  ContractCustomer[]
 
   @@index([officeId])
   @@map("customers")
@@ -433,6 +444,21 @@ model CustomerNote {
 
   @@index([customerId])
   @@map("customer_notes")
+}
+
+// Links a CRM customer to a contract with their role in that transaction.
+model ContractCustomer {
+  id         String       @id @default(cuid())
+  contractId String
+  customerId String
+  // The customer's role in this specific contract (BUYER, TENANT/RENTER, etc.)
+  role       CustomerType
+
+  contract   Contract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  customer   Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, customerId])
+  @@map("contract_customers")
 }
 
 // A finalized deal. Created by the manager when a transaction closes.
@@ -454,14 +480,17 @@ model Contract {
   agentShare       BigInt
   officeShare      BigInt
   notes           String?
+  // Months the lease runs. Only set for LONG_TERM_RENT contracts. Used to derive lease-end date.
+  leaseDurationMonths Int?
   finalizedAt     DateTime        @default(now())
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  office       Office       @relation(fields: [officeId], references: [id])
-  file         PropertyFile @relation(fields: [fileId], references: [id])
-  finalizedBy  User         @relation("FinalizedContracts", fields: [finalizedById], references: [id])
-  scheduledSms ScheduledSms?
+  office            Office            @relation(fields: [officeId], references: [id])
+  file              PropertyFile      @relation(fields: [fileId], references: [id])
+  finalizedBy       User              @relation("FinalizedContracts", fields: [finalizedById], references: [id])
+  scheduledSms      ScheduledSms?
+  contractCustomers ContractCustomer[]
 
   @@index([officeId])
   @@map("contracts")
@@ -485,9 +514,13 @@ model ShareLink {
   isActive    Boolean      @default(true)
   createdAt   DateTime     @default(now())
 
+  // Optional CRM customer this link was sent to
+  customerId  String?
+
   file        PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
   createdBy   User         @relation("ShareLinkCreator", fields: [createdById], references: [id])
   agent       User?        @relation("ShareLinkAgent", fields: [agentId], references: [id])
+  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@index([token])
   @@map("share_links")
@@ -837,4 +870,25 @@ model TrialPhone {
   office    Office   @relation(fields: [officeId], references: [id])
 
   @@map("trial_phones")
+}
+
+// A message sent by a manager to agents (notification) or customers (SMS/email).
+// Saved as a history record after each send.
+model OfficeMessage {
+  id             String         @id @default(cuid())
+  officeId       String
+  senderId       String
+  channel        MessageChannel
+  subject        String?        // used for EMAIL channel
+  body           String         @db.Text
+  recipientCount Int
+  // Human-readable description of the audience: "همه مشاوران", "مشتریان (خریدار)", etc.
+  filterLabel    String?
+  createdAt      DateTime       @default(now())
+
+  office         Office         @relation(fields: [officeId], references: [id])
+  sender         User           @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([officeId])
+  @@map("office_messages")
 }

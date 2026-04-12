@@ -100,7 +100,7 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
   const crmCustomers =
     file.status === "ACTIVE"
       ? await db.customer.findMany({
-          where: { officeId, type: { in: ["BUYER", "RENTER"] } },
+          where: { officeId, types: { hasSome: ["BUYER", "RENTER"] } },
           select: { name: true, phone: true },
           orderBy: { name: "asc" },
         })

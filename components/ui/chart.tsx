@@ -106,6 +106,15 @@ const ChartTooltip = RechartsPrimitive.Tooltip
 // Re-usable tooltip body styled for RTL/Persian use.
 // Callers typically pass a custom `content` prop to <ChartTooltip> instead of
 // using this directly — see individual chart components for custom tooltips.
+interface TooltipPayloadItem {
+  dataKey?: string | number
+  name?: string | number
+  value?: unknown
+  color?: string
+  fill?: string
+  payload?: Record<string, unknown>
+}
+
 function ChartTooltipContent({
   active,
   payload,
@@ -115,14 +124,15 @@ function ChartTooltipContent({
   labelFormatter,
   hideLabel = false,
   indicator = "dot",
-}: React.ComponentProps<"div"> &
-  Pick<
-    React.ComponentProps<typeof RechartsPrimitive.Tooltip>,
-    "active" | "payload" | "label" | "formatter" | "labelFormatter"
-  > & {
-    hideLabel?: boolean
-    indicator?: "dot" | "line" | "dashed"
-  }) {
+}: React.ComponentProps<"div"> & {
+  active?: boolean
+  payload?: readonly TooltipPayloadItem[]
+  label?: unknown
+  formatter?: (value: unknown, name: unknown) => React.ReactNode
+  labelFormatter?: (label: unknown, payload: readonly TooltipPayloadItem[]) => React.ReactNode
+  hideLabel?: boolean
+  indicator?: "dot" | "line" | "dashed"
+}) {
   const { config } = useChart()
 
   if (!active || !payload?.length) return null
@@ -137,7 +147,7 @@ function ChartTooltipContent({
     >
       {!hideLabel && (
         <div className="font-medium">
-          {labelFormatter ? labelFormatter(label, payload) : label}
+          {labelFormatter ? labelFormatter(label, payload) : (label as React.ReactNode)}
         </div>
       )}
       <div className="grid gap-1">
@@ -164,7 +174,7 @@ function ChartTooltipContent({
               </div>
               <span className="font-mono font-medium tabular-nums">
                 {formatter
-                  ? formatter(item.value as number, String(item.name), item, i, payload)
+                  ? formatter(item.value, item.name)
                   : String(item.value)}
               </span>
             </div>
@@ -179,14 +189,21 @@ function ChartTooltipContent({
 
 const ChartLegend = RechartsPrimitive.Legend
 
+interface LegendPayloadItem {
+  value?: unknown
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dataKey?: string | number | ((obj: any) => any)
+  color?: string
+}
+
 function ChartLegendContent({
   payload,
   className,
   nameKey,
-}: React.ComponentProps<"div"> &
-  Pick<RechartsPrimitive.LegendProps, "payload"> & {
-    nameKey?: string
-  }) {
+}: React.ComponentProps<"div"> & {
+  payload?: readonly LegendPayloadItem[]
+  nameKey?: string
+}) {
   const { config } = useChart()
   if (!payload?.length) return null
 
@@ -196,7 +213,8 @@ function ChartLegendContent({
       style={{ direction: "rtl" }}
     >
       {payload.map((item) => {
-        const key = String(nameKey ?? item.dataKey ?? "value")
+        const dataKey = typeof item.dataKey === "function" ? undefined : item.dataKey
+        const key = String(nameKey ?? dataKey ?? "value")
         const itemConfig = config[key]
         return (
           <div key={String(item.value)} className="flex items-center gap-1.5">
@@ -204,7 +222,7 @@ function ChartLegendContent({
               className="inline-block h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: item.color }}
             />
-            <span>{itemConfig?.label ?? item.value}</span>
+            <span>{itemConfig?.label ?? (item.value as React.ReactNode)}</span>
           </div>
         )
       })}
@@ -212,6 +230,7 @@ function ChartLegendContent({
   )
 }
 
+export type { TooltipPayloadItem }
 export {
   ChartContainer,
   ChartTooltip,

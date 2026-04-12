@@ -33,13 +33,13 @@ export default async function CRMPage({ searchParams }: CRMPageProps) {
   const customers = await db.customer.findMany({
     where: {
       officeId,
-      ...(typeFilter && { type: typeFilter }),
+      ...(typeFilter && { types: { hasSome: [typeFilter] } }),
     },
     select: {
       id: true,
       name: true,
       phone: true,
-      type: true,
+      types: true,
       createdAt: true,
       _count: { select: { contactLogs: true } },
     },

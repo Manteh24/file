@@ -111,8 +111,10 @@ export async function POST(
     )
   }
 
-  // Validate that the selected agent is actually assigned to this file
-  if (agentId) {
+  // Validate the agentId.
+  // Agents: can only attribute their own ID and must be assigned to this file.
+  // Managers: free to attribute any active office agent (no assignment required).
+  if (agentId && role === "AGENT") {
     const isAssigned = await db.fileAssignment.findFirst({
       where: { fileId, userId: agentId },
     })
@@ -121,6 +123,12 @@ export async function POST(
         { success: false, error: "مشاور انتخاب‌شده به این فایل دسترسی ندارد" },
         { status: 400 }
       )
+    }
+  }
+  if (agentId && role === "MANAGER") {
+    const agentExists = await db.user.findFirst({ where: { id: agentId, officeId, isActive: true } })
+    if (!agentExists) {
+      return NextResponse.json({ success: false, error: "مشاور یافت نشد" }, { status: 400 })
     }
   }
 

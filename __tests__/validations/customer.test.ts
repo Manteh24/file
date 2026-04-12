@@ -12,11 +12,15 @@ describe("createCustomerSchema", () => {
   const validInput = {
     name: "علی رضایی",
     phone: "09121234567",
-    type: "BUYER",
+    types: ["BUYER"],
   }
 
-  it("accepts minimal valid input (name, phone, type)", () => {
+  it("accepts minimal valid input (name, phone, types)", () => {
     expect(createCustomerSchema.safeParse(validInput).success).toBe(true)
+  })
+
+  it("accepts multiple types", () => {
+    expect(createCustomerSchema.safeParse({ ...validInput, types: ["BUYER", "RENTER"] }).success).toBe(true)
   })
 
   it("accepts all optional fields", () => {
@@ -58,18 +62,22 @@ describe("createCustomerSchema", () => {
     ).toBe(true)
   })
 
-  it("rejects missing type", () => {
-    const { type: _, ...body } = validInput
+  it("rejects missing types", () => {
+    const { types: _, ...body } = validInput
     expect(createCustomerSchema.safeParse(body).success).toBe(false)
   })
 
-  it("rejects invalid type value", () => {
-    expect(createCustomerSchema.safeParse({ ...validInput, type: "UNKNOWN" }).success).toBe(false)
+  it("rejects empty types array", () => {
+    expect(createCustomerSchema.safeParse({ ...validInput, types: [] }).success).toBe(false)
+  })
+
+  it("rejects invalid type value in array", () => {
+    expect(createCustomerSchema.safeParse({ ...validInput, types: ["UNKNOWN"] }).success).toBe(false)
   })
 
   it("accepts all valid type values", () => {
     for (const type of ["BUYER", "RENTER", "SELLER", "LANDLORD"]) {
-      expect(createCustomerSchema.safeParse({ ...validInput, type }).success).toBe(true)
+      expect(createCustomerSchema.safeParse({ ...validInput, types: [type] }).success).toBe(true)
     }
   })
 
@@ -109,8 +117,8 @@ describe("updateCustomerSchema", () => {
     expect(updateCustomerSchema.safeParse({ phone: "abc" }).success).toBe(false)
   })
 
-  it("rejects invalid type when provided", () => {
-    expect(updateCustomerSchema.safeParse({ type: "INVALID" }).success).toBe(false)
+  it("rejects invalid type in types array when provided", () => {
+    expect(updateCustomerSchema.safeParse({ types: ["INVALID"] }).success).toBe(false)
   })
 })
 
@@ -163,7 +171,7 @@ describe("customerFiltersSchema", () => {
 // ─── createCustomerSchema — phone edge cases ──────────────────────────────────
 
 describe("createCustomerSchema — phone edge cases", () => {
-  const base = { name: "علی", type: "BUYER" as const }
+  const base = { name: "علی", types: ["BUYER"] }
 
   it("accepts 11-digit mobile starting with 09", () => {
     expect(createCustomerSchema.safeParse({ ...base, phone: "09121234567" }).success).toBe(true)
@@ -189,8 +197,8 @@ describe("createCustomerSchema — phone edge cases", () => {
 // ─── updateCustomerSchema — valid partial updates ─────────────────────────────
 
 describe("updateCustomerSchema — valid partial updates", () => {
-  it("accepts updating only type", () => {
-    expect(updateCustomerSchema.safeParse({ type: "SELLER" }).success).toBe(true)
+  it("accepts updating types array", () => {
+    expect(updateCustomerSchema.safeParse({ types: ["SELLER"] }).success).toBe(true)
   })
 
   it("accepts updating only email", () => {

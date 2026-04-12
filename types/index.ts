@@ -7,6 +7,7 @@ import type { DefaultSession } from "next-auth"
 export type Role = "SUPER_ADMIN" | "MID_ADMIN" | "MANAGER" | "AGENT"
 export type AdminTier = "SUPPORT" | "FINANCE" | "FULL_ACCESS"
 export type CustomerType = "BUYER" | "RENTER" | "SELLER" | "LANDLORD"
+export type MessageChannel = "SMS" | "NOTIFICATION" | "EMAIL"
 export type Plan = "FREE" | "PRO" | "TEAM"
 export type BillingCycle = "MONTHLY" | "ANNUAL"
 export type SubStatus = "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED"
@@ -98,6 +99,13 @@ export interface PropertyFileDetail {
   hasStorage: boolean
   hasBalcony: boolean
   hasSecurity: boolean
+  hasGym: boolean
+  hasPool: boolean
+  hasWesternToilet: boolean
+  hasSmartHome: boolean
+  hasSauna: boolean
+  hasJacuzzi: boolean
+  hasRoofGarden: boolean
   notes: string | null
   createdAt: Date
   updatedAt: Date
@@ -164,7 +172,7 @@ export interface CustomerSummary {
   id: string
   name: string
   phone: string
-  type: CustomerType
+  types: CustomerType[]
   createdAt: Date
   _count: { contactLogs: number }
 }
@@ -176,12 +184,53 @@ export interface CustomerDetail {
   name: string
   phone: string
   email: string | null
-  type: CustomerType
+  types: CustomerType[]
   notes: string | null
   createdAt: Date
   updatedAt: Date
   createdBy: { displayName: string }
   contactLogs: CustomerNote[]
+}
+
+// Share link summary for customer history
+export interface CustomerShareLinkSummary {
+  id: string
+  token: string
+  isActive: boolean
+  viewCount: number
+  createdAt: Date
+  file: {
+    id: string
+    address: string | null
+    neighborhood: string | null
+    transactionType: TransactionType
+  }
+}
+
+// Contract summary for customer history
+export interface CustomerContractSummary {
+  id: string
+  transactionType: TransactionType
+  finalizedAt: Date
+  leaseDurationMonths: number | null
+  role: CustomerType
+  file: {
+    id: string
+    address: string | null
+    neighborhood: string | null
+  }
+}
+
+// Office message history item
+export interface OfficeMessageSummary {
+  id: string
+  channel: MessageChannel
+  subject: string | null
+  body: string
+  recipientCount: number
+  filterLabel: string | null
+  createdAt: Date
+  sender: { displayName: string }
 }
 
 // ─── NextAuth Type Augmentation ───────────────────────────────────────────────

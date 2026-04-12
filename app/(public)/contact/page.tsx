@@ -2,7 +2,7 @@ import { LandingNav } from "@/components/marketing/LandingNav"
 import { LandingFooter } from "@/components/marketing/LandingFooter"
 import { MessageSquare, Mail, Clock } from "lucide-react"
 
-export const metadata = { title: "تماس با ما — املاکبین" }
+export const metadata = { title: "تماس با ما — املاک‌بین" }
 
 function TelegramIcon({ className }: { className?: string }) {
   return (
@@ -15,18 +15,18 @@ function TelegramIcon({ className }: { className?: string }) {
 const channels = [
   {
     icon: TelegramIcon,
-    title: "تلگرام",
-    desc: "سریع‌ترین راه پاسخگویی — معمولاً ظرف چند ساعت",
-    action: "ارتباط از طریق تلگرام",
-    href: "#",
+    title: "تیکت پشتیبانی",
+    desc: "سریع‌ترین راه پاسخگویی",
+    action: "ورود و ارسال تیکت",
+    href: "/login",
     teal: true,
   },
   {
     icon: Mail,
     title: "ایمیل",
     desc: "برای درخواست‌های رسمی و مستندات فنی",
-    action: "support@amlakbin.ir",
-    href: "mailto:support@amlakbin.ir",
+    action: "support@amlakbin.com",
+    href: "mailto:support@amlakbin.com",
     teal: false,
   },
   {

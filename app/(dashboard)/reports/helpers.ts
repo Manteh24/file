@@ -1,4 +1,10 @@
 import type { TransactionType } from "@/types"
+import { format } from "date-fns-jalali"
+
+const JALALI_MONTH_SHORT = [
+  "", "فرو", "ارد", "خرد", "تیر", "مرد", "شهر",
+  "مهر", "آبا", "آذر", "دی", "بهم", "اسف",
+]
 
 export type ReportPeriod = "this_month" | "last_3_months" | "this_year" | "all"
 
@@ -77,4 +83,62 @@ export const ACTIVITY_ACTION_LABELS: Record<string, string> = {
 /** Falls back to the raw action string for unknown future action types. */
 export function getActivityActionLabel(action: string): string {
   return ACTIVITY_ACTION_LABELS[action] ?? action
+}
+
+export const FILE_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "فعال",
+  SOLD: "فروخته شده",
+  RENTED: "اجاره داده شده",
+  ARCHIVED: "آرشیو",
+  EXPIRED: "منقضی شده",
+}
+
+export const PROPERTY_TYPE_LABELS: Record<string, string> = {
+  APARTMENT: "آپارتمان",
+  HOUSE: "خانه",
+  VILLA: "ویلا",
+  LAND: "زمین",
+  COMMERCIAL: "تجاری",
+  OFFICE: "اداری",
+  OTHER: "سایر",
+}
+
+/**
+ * Groups an array of items by Jalali year/month key (e.g. "1404/02").
+ * dateKey must be a field name that contains a Date or ISO string value.
+ * Returns entries sorted chronologically by key.
+ */
+export function groupByJalaliMonth<T extends Record<string, unknown>>(
+  items: T[],
+  dateKey: keyof T
+): { key: string; label: string; items: T[] }[] {
+  const map = new Map<string, { label: string; items: T[] }>()
+  for (const item of items) {
+    const raw = item[dateKey]
+    const date = raw instanceof Date ? raw : new Date(raw as string)
+    const key = format(date, "yyyy/MM") // Jalali sort key
+    const monthNum = parseInt(format(date, "M"), 10)
+    const label = JALALI_MONTH_SHORT[monthNum] ?? String(monthNum)
+    if (!map.has(key)) map.set(key, { label, items: [] })
+    map.get(key)!.items.push(item)
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, v]) => ({ key, label: v.label, items: v.items }))
+}
+
+/** Returns delta between current and previous values as a number and direction string. */
+export function calcDelta(
+  current: number,
+  previous: number
+): { delta: number; percent: number; direction: "up" | "down" | "same" } {
+  if (previous === 0 && current === 0) return { delta: 0, percent: 0, direction: "same" }
+  if (previous === 0) return { delta: current, percent: 100, direction: "up" }
+  const delta = current - previous
+  const percent = Math.round((delta / previous) * 100)
+  return {
+    delta,
+    percent: Math.abs(percent),
+    direction: delta > 0 ? "up" : delta < 0 ? "down" : "same",
+  }
 }

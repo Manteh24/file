@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: "خطای سرور" }, { status: 500 })
   }
 
-  const { fileId, finalPrice, commissionAmount, agentShare, notes } = parsed.data
+  const { fileId, finalPrice, commissionAmount, agentShare, notes, leaseDurationMonths, customerLinks, newCustomers } = parsed.data
   // officeShare is not sent by the client — derived here to ensure integrity
   const officeShare = commissionAmount - agentShare
 
@@ -148,6 +148,7 @@ export async function POST(request: Request) {
           agentShare: BigInt(agentShare),
           officeShare: BigInt(officeShare),
           notes: notes || null,
+          leaseDurationMonths: leaseDurationMonths ?? null,
         },
         select: { id: true },
       })
@@ -164,7 +165,43 @@ export async function POST(request: Request) {
         data: { isActive: false },
       })
 
-      // 4. Log the status change
+      // 4. Create new CRM customers and link them (if provided)
+      if (newCustomers && newCustomers.length > 0) {
+        for (const nc of newCustomers) {
+          const newCustomer = await tx.customer.create({
+            data: {
+              officeId,
+              createdById: userId,
+              name: nc.name,
+              phone: nc.phone,
+              types: nc.types,
+            },
+            select: { id: true },
+          })
+          await tx.contractCustomer.create({
+            data: { contractId: created.id, customerId: newCustomer.id, role: nc.role },
+          })
+        }
+      }
+
+      // 5. Link existing CRM customers (if provided)
+      if (customerLinks && customerLinks.length > 0) {
+        // Verify all customerIds belong to this office
+        const validCustomers = await tx.customer.findMany({
+          where: { id: { in: customerLinks.map((c) => c.customerId) }, officeId },
+          select: { id: true },
+        })
+        const validIds = new Set(validCustomers.map((c) => c.id))
+        for (const link of customerLinks) {
+          if (validIds.has(link.customerId)) {
+            await tx.contractCustomer.create({
+              data: { contractId: created.id, customerId: link.customerId, role: link.role },
+            })
+          }
+        }
+      }
+
+      // 6. Log the status change
       await tx.activityLog.create({
         data: {
           fileId,

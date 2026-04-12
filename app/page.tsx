@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
 import { LandingNav } from "@/components/marketing/LandingNav"
 import { HeroSection } from "@/components/marketing/HeroSection"
 import { FeaturesSection } from "@/components/marketing/FeaturesSection"
@@ -6,7 +8,10 @@ import { TrustStrip } from "@/components/marketing/TrustStrip"
 import { FaqSection } from "@/components/marketing/FaqSection"
 import { LandingFooter } from "@/components/marketing/LandingFooter"
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth()
+  if (session) redirect("/dashboard")
+
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "var(--color-base)" }} dir="rtl">
       {/* Remove dark class before paint — overrides root layout's localStorage script */}

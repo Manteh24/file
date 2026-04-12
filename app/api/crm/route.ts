@@ -6,6 +6,7 @@ import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
 
 // ─── GET /api/crm ───────────────────────────────────────────────────────────────
 // Returns all customers for the authenticated user's office.
+// Filter by ?type=BUYER uses hasSome (array contains) since types is now an array.
 
 export async function GET(request: Request) {
   const session = await auth()
@@ -30,13 +31,14 @@ export async function GET(request: Request) {
     const customers = await db.customer.findMany({
       where: {
         officeId,
-        ...(filters.type && { type: filters.type }),
+        // hasSome: customer has at least one of these types (array overlap)
+        ...(filters.type && { types: { hasSome: [filters.type] } }),
       },
       select: {
         id: true,
         name: true,
         phone: true,
-        type: true,
+        types: true,
         createdAt: true,
         _count: { select: { contactLogs: true } },
       },

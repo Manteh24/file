@@ -15,27 +15,14 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import type { CustomerDetail } from "@/types"
+import { CustomerTypeSelector } from "@/components/crm/CustomerTypeSelector"
+import type { CustomerDetail, CustomerType } from "@/types"
 
 interface CustomerFormProps {
   // When provided, the form is in edit mode
   initialData?: Partial<CustomerDetail>
   customerId?: string
 }
-
-const CUSTOMER_TYPE_OPTIONS = [
-  { value: "BUYER", label: "خریدار" },
-  { value: "RENTER", label: "مستأجر" },
-  { value: "SELLER", label: "فروشنده" },
-  { value: "LANDLORD", label: "موجر" },
-] as const
 
 export function CustomerForm({ initialData, customerId }: CustomerFormProps) {
   const router = useRouter()
@@ -49,7 +36,7 @@ export function CustomerForm({ initialData, customerId }: CustomerFormProps) {
       name: initialData?.name ?? "",
       phone: initialData?.phone ?? "",
       email: initialData?.email ?? "",
-      type: (initialData?.type as CreateCustomerInput["type"]) ?? "BUYER",
+      types: (initialData?.types as CustomerType[]) ?? ["BUYER"],
       notes: initialData?.notes ?? "",
     },
   })
@@ -118,28 +105,19 @@ export function CustomerForm({ initialData, customerId }: CustomerFormProps) {
           )}
         />
 
-        {/* Type */}
+        {/* Multi-type selector */}
         <FormField
           control={form.control}
-          name="type"
+          name="types"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>نوع مشتری *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="انتخاب کنید" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {CUSTOMER_TYPE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
+              <FormControl>
+                <CustomerTypeSelector
+                  value={field.value ?? []}
+                  onChange={field.onChange}
+                  error={form.formState.errors.types?.message}
+                />
+              </FormControl>
             </FormItem>
           )}
         />

@@ -253,7 +253,7 @@ export async function calculateReferralKpis(
     where: { yearMonth },
     _sum: { commissionAmount: true },
   })
-  const commissionThisMonth = Number(earningsAgg._sum.commissionAmount ?? 0n)
+  const commissionThisMonth = Number(earningsAgg._sum.commissionAmount ?? BigInt(0))
 
   return {
     participationRate,

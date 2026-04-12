@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { ActiveFileSummary, TransactionType } from "@/types"
+import { CustomerPicker } from "@/components/contracts/CustomerPicker"
+import type { ActiveFileSummary, TransactionType, CustomerType } from "@/types"
 
 const transactionTypeLabels: Record<TransactionType, string> = {
   SALE: "فروش",
@@ -92,6 +93,10 @@ interface ContractFormProps {
 export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) {
   const router = useRouter()
 
+  // Customer linking state — separate from form schema for cleaner UX
+  const [customerLinks, setCustomerLinks] = useState<{ customerId: string; role: CustomerType }[]>([])
+  const [newCustomers, setNewCustomers] = useState<{ name: string; phone: string; types: CustomerType[]; role: CustomerType }[]>([])
+
   // UI-only percentage fields — not sent to the API.
   // Each has a matching ref so that cascade handlers always read the latest
   // value even when called before React has re-rendered (stale closure guard).
@@ -128,6 +133,7 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
       commissionAmount: 0,
       agentShare: 0,
       notes: "",
+      leaseDurationMonths: undefined,
     },
   })
 
@@ -238,7 +244,11 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
       method: "POST",
       headers: { "Content-Type": "application/json" },
       // officeShare is not in the schema — the API computes it
-      body: JSON.stringify(values),
+      body: JSON.stringify({
+        ...values,
+        customerLinks: customerLinks.length > 0 ? customerLinks : undefined,
+        newCustomers: newCustomers.length > 0 ? newCustomers : undefined,
+      }),
     })
 
     const data: { success: boolean; data?: { id: string }; error?: string } =
@@ -325,6 +335,19 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
           </div>
         )}
 
+        {/* Customer picker — only shown when a file is selected */}
+        {selectedFileId && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">مشتریان قرارداد</label>
+            <p className="text-xs text-muted-foreground">مشتریانی که در این معامله شرکت داشته‌اند را انتخاب کنید.</p>
+            <CustomerPicker
+              fileId={selectedFileId}
+              onCustomerLinksChange={setCustomerLinks}
+              onNewCustomersChange={setNewCustomers}
+            />
+          </div>
+        )}
+
         {/* Final price */}
         <FormField
           control={form.control}
@@ -346,6 +369,36 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
             </FormItem>
           )}
         />
+
+        {/* Lease duration — only for LONG_TERM_RENT */}
+        {selectedFile?.transactionType === "LONG_TERM_RENT" && (
+          <FormField
+            control={form.control}
+            name="leaseDurationMonths"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>مدت قرارداد اجاره *</FormLabel>
+                <FormControl>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={120}
+                      dir="ltr"
+                      className="w-28"
+                      placeholder="۱۲"
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                    />
+                    <span className="text-sm text-muted-foreground">ماه</span>
+                  </div>
+                </FormControl>
+                <p className="text-xs text-muted-foreground">مدت زمان اجاره به ماه (برای محاسبه تاریخ پایان قرارداد)</p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {/* Commission rate (UI-only) + commission amount */}
         <div className="grid grid-cols-2 gap-4">

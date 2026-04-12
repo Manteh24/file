@@ -244,6 +244,8 @@ Never trust client-supplied `officeId` — always derive it from the authenticat
 **Minimum to save:** transaction type + location pin + 1 contact with phone number.
 Everything else optional. File is immediately visible in manager's panel.
 
+**Quick-create UI:** `FileForm` in create mode shows only the 3 essential sections by default (Transaction Type, Location, Contacts). A dashed "تکمیل فایل" toggle button reveals the optional sections (Property Details, Price, Amenities, Description). Submit label is "ایجاد سریع فایل" when collapsed, "ایجاد فایل" when expanded. Edit mode always shows all sections.
+
 ### File Editing Model
 - Single shared file. Last edit wins. No branching.
 - Full activity log on every change (field-level diff).
@@ -254,6 +256,7 @@ Everything else optional. File is immediately visible in manager's panel.
 - Links live at `view.[appname].ir/[token]` (separate domain).
 - Link is valid only while file status is `ACTIVE`.
 - When file is archived/closed → all its share links deactivate automatically.
+- **`agentId` on a share link:** Managers may attribute any active office agent without that agent being pre-assigned to the file — the API verifies the agent belongs to the same office (`isActive: true`). Agents may only attribute themselves, and only when assigned to the file. Route: `POST /api/files/[id]/share-links`.
 
 ### File Status Lifecycle
 ```
@@ -493,7 +496,8 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | Store dates in Jalali format in DB | Store ISO 8601, display as Jalali |
 | Trust client-supplied `officeId` | Always derive from authenticated session |
 | Use WebSockets | Use PWA push + 30s polling |
-| Add Redux or any heavy state library | Use React Context + SWR/React Query |
+| Add Redux or any heavy state library | Use React Context + `useState`/`useEffect`/`fetch` |
+| Use `useSWR` for data fetching | SWR is NOT installed — use `useState`/`useEffect`/`fetch` pattern |
 | Skip loading/error/empty states | Always handle all three UI states |
 | Write god functions (100+ lines) | Break into small, named, single-purpose functions |
 | Use `any` in TypeScript | Use proper types or `unknown` |
@@ -537,6 +541,27 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | `scripts/generate-report.ts` | Weekly operational snapshot: queries all key metrics and writes JSON + Markdown to `scripts/reports/`. Uses Jalali date arithmetic to derive grace/locked counts fresh (not from cached status column). |
 | `scripts/migrate-check.ts` | Pre-deploy migration gate — **run this first in every deploy**. Exits 0 if schema is up to date, exits 1 with migration names if not. |
 | `app/api/admin/system-status/route.ts` | SUPER_ADMIN-only live system status: 5 parallel service checks (DB, storage, AvalAI, KaveNegar, Neshan) with 5 s timeouts + DB stats (active offices, subscription breakdown, stuck payments, last admin action) + live platform settings. Always returns 200 per-service; returns 500 only if DB is unreachable. |
+| `lib/email.ts` | Nodemailer SMTP email sending — `sendEmail()` (never throws), `buildBroadcastEmail()`, `buildWelcomeEmail()`, `buildTrialReminderEmail()`. Requires `npm install nodemailer` on first deploy. Uses dynamic `require` to compile without package present. |
+| `app/api/crm/[id]/contracts/route.ts` | GET — returns ContractCustomer records for a CRM customer (contract type, file address, finalized date, lease end date) |
+| `app/api/crm/[id]/share-links/route.ts` | GET — returns ShareLink records linked to a CRM customer |
+| `app/api/crm/[id]/share-to-agent/route.ts` | POST `{ agentId }` — creates CUSTOMER_SHARED notification for an agent |
+| `app/api/dashboard/expiring-contracts/route.ts` | GET `?days=60` — LONG_TERM_RENT contracts whose lease end is within N days. Manager: all office; Agent: own files only. |
+| `app/api/messages/route.ts` | GET — OfficeMessage history (manager-only) |
+| `app/api/messages/notify-agents/route.ts` | POST — send in-app notification to all/selected agents; saves OfficeMessage |
+| `app/api/messages/sms-customers/route.ts` | POST — bulk SMS to filtered CRM customers; **TEAM plan only**; saves OfficeMessage |
+| `app/api/messages/email-customers/route.ts` | POST — bulk email to filtered CRM customers via SMTP; saves OfficeMessage (email tab removed from UI) |
+| `app/api/files/[id]/contacts-with-crm-match/route.ts` | GET — returns file contacts cross-referenced against CRM customers by phone |
+| `components/crm/CustomerTypeSelector.tsx` | Checkbox pill group for multi-type CRM customer selection |
+| `components/crm/CustomerContractsSection.tsx` | Customer detail section: contracts linked via ContractCustomer, with lease days-remaining chip |
+| `components/crm/CustomerShareLinksSection.tsx` | Customer detail section: share links where customer is linked |
+| `components/crm/ShareCustomerButton.tsx` | Dropdown to share a CRM customer to an agent (creates notification) |
+| `components/crm/CustomerSmsButton.tsx` | Button + Dialog popup to send SMS to a CRM customer (appears in customer detail page header actions) |
+| `components/contracts/CustomerPicker.tsx` | Step in ContractForm: auto-suggests CRM customers from file contacts, allows inline new customer creation |
+| `components/dashboard/ExpiringContractsWidget.tsx` | Dashboard card: LONG_TERM_RENT contracts expiring soon (color-coded) |
+| `components/messages/AgentMessageForm.tsx` | In-app notification form for manager → agents |
+| `components/messages/CustomerSmsForm.tsx` | Bulk SMS form: message + customer type filter |
+| `components/messages/CustomerEmailForm.tsx` | Bulk email form: subject + body + customer type filter |
+| `components/messages/MessageHistoryList.tsx` | OfficeMessage history list with channel icon + filter label |
 
 ---
 
@@ -607,11 +632,16 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Jalali calendar for admin payments date range filter (replaces native Gregorian `<input type="date">`) | ✅ | ✅ |
 | — | Subscription Tier Enforcement Refinement (SMS split gate, map enrichment gate, SmsUsageLog, usePlanStatus hook, TrialFeatureWarning, PlanUsageSummary, pre-flight UI limit checks) | ✅ | ✅ |
 | — | Dashboard UX polish (profile page, guide page, sidebar RTL arrows, dark-mode banners) | ✅ | — |
+| — | CRM redesign (multi-type Customer, CustomerPicker in ContractForm, ContractCustomer join table, share-to-agent notification) | ✅ | — |
+| — | Message Center (manager-only: notify agents, bulk SMS to customers [TEAM-only], history log — email tab removed) | ✅ | — |
+| — | Dashboard expiring contracts widget (LONG_TERM_RENT leases expiring within 60 days, color-coded days remaining) | ✅ | — |
+| — | Email infrastructure (lib/email.ts, Nodemailer SMTP, broadcast/welcome/trial-reminder templates) | ✅ | — |
+| — | Bug fixes + FileForm quick-create redesign (share link manager agentId fix, topbar UserCircle avatar, sidebar TEAM label, dark-mode popover hover, FileForm collapse/expand) | ✅ | — |
 
 ### Current Status
-- **Last completed:** Dashboard UX polish — topbar avatar → `/profile` page (all roles), `/guide` page (FAQ + tutorials + tips), sidebar popover separates راهنما/پشتیبانی, RTL-correct collapse/expand arrows, SubscriptionBanner dark-mode colors
-- **Up next:** Production deployment — run `npx prisma migrate deploy` on VPS
-- **Total tests:** 676 passing, 0 failing (47 test files)
+- **Last completed:** Bug fixes + quick-create redesign — share link manager agent attribution fixed, topbar avatar → UserCircle with ring, sidebar "تیم" label, dark-mode popover hover fix, FileForm quick-create mode (3 essentials shown by default, "تکمیل فایل" toggle expands optional sections)
+- **Up next:** Run `npx prisma migrate deploy` + manual test; update tests that mock `customer.type` → `customer.types[]`
+- **Total tests:** 676 passing, 0 failing (47 test files) — pre-migration snapshot; tests using `customer.type` need updating
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write
 
 ### Reference Docs

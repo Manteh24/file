@@ -31,9 +31,14 @@ export function CustomerCard({ customer }: CustomerCardProps) {
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
             <p className="text-sm font-medium text-foreground truncate">{customer.name}</p>
-            <Badge variant={customerTypeVariants[customer.type]} className="shrink-0">
-              {customerTypeLabels[customer.type]}
-            </Badge>
+            {/* Multiple type badges — wrap if needed */}
+            <div className="flex flex-wrap gap-1 justify-end">
+              {customer.types.map((t) => (
+                <Badge key={t} variant={customerTypeVariants[t]} className="shrink-0 text-xs">
+                  {customerTypeLabels[t]}
+                </Badge>
+              ))}
+            </div>
           </div>
 
           {/* Phone */}

@@ -83,7 +83,7 @@ export default async function AdminViewAsPage({
     }),
     db.customer.findMany({
       where: { officeId },
-      select: { id: true, name: true, phone: true, type: true, createdAt: true },
+      select: { id: true, name: true, phone: true, types: true, createdAt: true },
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
@@ -240,7 +240,7 @@ export default async function AdminViewAsPage({
                   <tr key={c.id}>
                     <td className="px-4 py-2.5 font-medium">{c.name}</td>
                     <td className="px-4 py-2.5 font-mono text-xs">{c.phone}</td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{c.type}</td>
+                    <td className="px-4 py-2.5 text-muted-foreground">{c.types.join("، ")}</td>
                   </tr>
                 ))}
               </tbody>

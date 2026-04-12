@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { formatJalali, formatToman } from "@/lib/utils"
 import { FileStatusRing } from "@/components/dashboard/FileStatusRing"
+import { ExpiringContractsWidget } from "@/components/dashboard/ExpiringContractsWidget"
 import type { Plan, SubStatus } from "@/types"
 
 const planLabels: Record<Plan, string> = {
@@ -177,6 +178,9 @@ export default async function DashboardPage() {
           <ThisMonthCard deals={monthDeals} commission={monthCommission} />
         </div>
       )}
+
+      {/* Expiring leases widget — visible to both manager and agent */}
+      <ExpiringContractsWidget />
     </div>
   )
 }

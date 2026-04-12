@@ -7,6 +7,7 @@ import {
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
+  type TooltipPayloadItem,
 } from "@/components/ui/chart"
 import { formatTomanAxis, formatToman } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -56,14 +57,13 @@ export function CommissionChart({ data }: Props) {
               content={({ active, payload, label }) => (
                 <ChartTooltipContent
                   active={active}
-                  payload={payload}
+                  payload={payload as unknown as TooltipPayloadItem[]}
                   label={label}
                   formatter={(value) => formatToman(value as number)}
-                  labelFormatter={(_, p) => {
-                    const deals =
-                      (p?.[0]?.payload as MonthlyDataPoint | undefined)
-                        ?.deals ?? 0
-                    return `${_} · ${deals.toLocaleString("fa-IR")} معامله`
+                  labelFormatter={(label, p) => {
+                    const arr = p as { payload?: MonthlyDataPoint }[] | undefined
+                    const deals = arr?.[0]?.payload?.deals ?? 0
+                    return `${String(label)} · ${deals.toLocaleString("fa-IR")} معامله`
                   }}
                 />
               )}

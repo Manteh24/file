@@ -11,14 +11,12 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { formatToman, formatJalali } from "@/lib/utils"
-import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CommissionChart, type MonthlyDataPoint } from "@/components/reports/CommissionChart"
 import { TypeBreakdownChart } from "@/components/reports/TypeBreakdownChart"
 import { AgentPerformanceChart } from "@/components/reports/AgentPerformanceChart"
-import { TrialFeatureWarning } from "@/components/shared/TrialFeatureWarning"
 import {
   normalisePeriod,
   getDateFilter,
@@ -59,11 +57,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const from = getDateFilter(activePeriod)
   const dateWhere = from ? { gte: from } : undefined
 
-  const [subscription, contracts, activityLogs] = await Promise.all([
-    db.subscription.findUnique({
-      where: { officeId },
-      select: { isTrial: true, trialEndsAt: true },
-    }),
+  const [contracts, activityLogs] = await Promise.all([
     db.contract.findMany({
       where: {
         officeId,
@@ -190,18 +184,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="گزارشات"
-        description="عملکرد مالی و فعالیت‌های دفتر"
-      />
-
-      {subscription && (
-        <TrialFeatureWarning
-          feature="hasReports"
-          subscription={subscription}
-        />
-      )}
-
       {/* Period filter tabs */}
       <div className="flex gap-1 overflow-x-auto pb-1">
         {PERIOD_OPTIONS.map((opt) => {

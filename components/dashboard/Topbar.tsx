@@ -1,9 +1,11 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Menu, Sun, Moon } from "lucide-react"
+import { Menu, Sun, Moon, Search, UserCircle } from "lucide-react"
 import { NotificationBell } from "@/components/dashboard/NotificationBell"
+import type { Role } from "@/types"
 
 const ROUTE_TITLES: Record<string, string> = {
   "/dashboard": "داشبورد",
@@ -35,6 +37,8 @@ interface TopbarProps {
   isDark: boolean
   onMenuClick: () => void
   onToggleDark: () => void
+  onSearchOpen: () => void
+  role: Role
 }
 
 export function Topbar({
@@ -43,10 +47,17 @@ export function Topbar({
   isDark,
   onMenuClick,
   onToggleDark,
+  onSearchOpen,
 }: TopbarProps) {
   const pathname = usePathname()
   const pageTitle = getPageTitle(pathname)
   const initial = userName.charAt(0)
+
+  // Detect Mac to show ⌘K vs Ctrl+K — resolved client-side after hydration
+  const [isMac, setIsMac] = useState(false)
+  useEffect(() => {
+    setIsMac(navigator.platform.includes("Mac") || navigator.userAgent.includes("Mac"))
+  }, [])
 
   return (
     <header
@@ -73,6 +84,40 @@ export function Topbar({
       {/* Spacer */}
       <div className="flex-1" />
 
+      {/* Search pill — desktop */}
+      <button
+        onClick={onSearchOpen}
+        className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors"
+        style={{
+          color: "var(--color-text-tertiary)",
+          borderColor: "var(--color-border-subtle)",
+          background: "var(--color-surface-2)",
+        }}
+        aria-label="جستجو"
+      >
+        <Search className="h-4 w-4 shrink-0" />
+        <span>جستجو...</span>
+        <kbd
+          className="text-xs px-1.5 py-0.5 rounded border font-mono"
+          style={{
+            background: "var(--color-surface-1)",
+            borderColor: "var(--color-border-subtle)",
+          }}
+        >
+          {isMac ? "⌘K" : "Ctrl+K"}
+        </kbd>
+      </button>
+
+      {/* Search icon — mobile only */}
+      <button
+        onClick={onSearchOpen}
+        className="md:hidden h-9 w-9 flex items-center justify-center rounded-lg transition-colors"
+        style={{ color: "var(--color-text-tertiary)" }}
+        aria-label="جستجو"
+      >
+        <Search className="h-5 w-5" />
+      </button>
+
       {/* Left side: theme toggle, bell, avatar */}
       <div className="flex items-center gap-1">
         {/* Theme toggle */}
@@ -91,17 +136,13 @@ export function Topbar({
         {/* Avatar — navigates to profile page */}
         <Link
           href="/profile"
-          className="h-8 w-8 flex items-center justify-center rounded-full overflow-hidden font-semibold text-xs shrink-0 hover:ring-2 transition-all"
-          style={{
-            background: "var(--color-teal-50)",
-            color: "var(--color-teal-700)",
-          }}
+          className="h-8 w-8 flex items-center justify-center rounded-full overflow-hidden shrink-0 hover:ring-2 transition-all ring-1 ring-[var(--color-teal-200)]"
           aria-label="ویرایش پروفایل"
         >
           {avatarUrl ? (
             <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
           ) : (
-            initial
+            <UserCircle className="h-7 w-7 text-[var(--color-teal-600)]" />
           )}
         </Link>
       </div>

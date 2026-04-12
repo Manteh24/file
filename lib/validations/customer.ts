@@ -1,5 +1,9 @@
 import { z } from "zod"
 
+// ─── Customer Type Enum ─────────────────────────────────────────────────────────
+
+export const CustomerTypeEnum = z.enum(["BUYER", "RENTER", "SELLER", "LANDLORD"])
+
 // ─── Customer Create Schema ─────────────────────────────────────────────────────
 
 export const createCustomerSchema = z.object({
@@ -10,9 +14,8 @@ export const createCustomerSchema = z.object({
     .min(1, "شماره تماس الزامی است")
     .regex(/^(\+98|0)?[0-9]{9,11}$/, "شماره تماس معتبر نیست"),
   email: z.string().email("ایمیل معتبر نیست").optional().or(z.literal("")),
-  type: z.enum(["BUYER", "RENTER", "SELLER", "LANDLORD"], {
-    error: "نوع مشتری الزامی است",
-  }),
+  // Multi-type: at least one type required
+  types: z.array(CustomerTypeEnum).min(1, "حداقل یک نوع مشتری انتخاب کنید"),
   notes: z.string().max(2000).optional().or(z.literal("")),
 })
 

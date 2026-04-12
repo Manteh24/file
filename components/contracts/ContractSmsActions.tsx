@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SmsPanel } from "@/components/shared/SmsPanel"
 import { buildRatingRequestMessage, buildRentFollowupMessage } from "@/lib/sms"
-import { format, addMonths, addDays } from "date-fns-jalali"
+import { format, addMonths, subMonths } from "date-fns-jalali"
 
 interface Contact {
   name: string | null
@@ -30,10 +30,10 @@ interface ContractSmsActionsProps {
   agentName: string
   officeName: string
   transactionType: string
+  leaseDurationMonths: number | null
 }
 
 type ActivePanel = "rating" | "rentFollowup" | null
-type DelayUnit = "month" | "day"
 
 export function ContractSmsActions({
   contractId,
@@ -42,14 +42,21 @@ export function ContractSmsActions({
   agentName,
   officeName,
   transactionType,
+  leaseDurationMonths,
 }: ContractSmsActionsProps) {
   const [activePanel, setActivePanel] = useState<ActivePanel>(null)
 
   // ── Scheduling state ──────────────────────────────────────────────────────
   const [schedule, setSchedule] = useState<ScheduledSmsRecord | null | undefined>(undefined) // undefined = loading
   const [showScheduleForm, setShowScheduleForm] = useState(false)
+
+  // New state: months before lease end (used when leaseDurationMonths is set)
+  const [monthsBefore, setMonthsBefore] = useState(1)
+
+  // Fallback state for when leaseDurationMonths is null: delay from finalizedAt
   const [delayAmount, setDelayAmount] = useState(11)
-  const [delayUnit, setDelayUnit] = useState<DelayUnit>("month")
+  const [delayUnit, setDelayUnit] = useState<"month" | "day">("month")
+
   const [schedulePhone, setSchedulePhone] = useState(contacts[0]?.phone ?? "")
   const [scheduleMessage, setScheduleMessage] = useState(buildRentFollowupMessage({ officeName }))
   const [submitting, setSubmitting] = useState(false)
@@ -61,11 +68,25 @@ export function ContractSmsActions({
     setActivePanel((prev) => (prev === panel ? null : panel))
   }
 
-  // Compute the preview scheduled date
+  // Compute lease end date (only when leaseDurationMonths is set)
+  const leaseEndDate = leaseDurationMonths
+    ? addMonths(new Date(finalizedAt), leaseDurationMonths)
+    : null
+
+  // Compute scheduled date
   const computedScheduledAt = (() => {
+    if (leaseEndDate) {
+      // Clamp monthsBefore so it never goes past the lease end date
+      const clamped = Math.min(monthsBefore, leaseDurationMonths! - 1)
+      return subMonths(leaseEndDate, Math.max(1, clamped))
+    }
+    // Fallback: delay from finalizedAt
     const base = new Date(finalizedAt)
     if (delayUnit === "month") return addMonths(base, delayAmount)
-    return addDays(base, delayAmount)
+    // day fallback
+    const d = new Date(base)
+    d.setDate(d.getDate() + delayAmount)
+    return d
   })()
 
   const loadSchedule = useCallback(async () => {
@@ -280,32 +301,69 @@ export function ContractSmsActions({
 
               {showScheduleForm && (
                 <div className="space-y-3 pt-1">
-                  {/* Delay picker */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-muted-foreground">ارسال بعد از</label>
-                    <div className="flex gap-2 items-center">
-                      <input
-                        type="number"
-                        min={1}
-                        max={delayUnit === "month" ? 24 : 730}
-                        value={delayAmount}
-                        onChange={(e) => setDelayAmount(Math.max(1, Number(e.target.value)))}
-                        className="w-20 rounded-md border bg-background px-2 py-1 text-sm text-center"
-                        dir="ltr"
-                      />
-                      <select
-                        value={delayUnit}
-                        onChange={(e) => setDelayUnit(e.target.value as DelayUnit)}
-                        className="rounded-md border bg-background px-2 py-1 text-sm"
-                      >
-                        <option value="month">ماه</option>
-                        <option value="day">روز</option>
-                      </select>
-                      <span className="text-xs text-muted-foreground">
-                        → {format(computedScheduledAt, "yyyy/MM/dd")}
-                      </span>
+                  {/* Schedule picker — smart when leaseDurationMonths is set */}
+                  {leaseEndDate ? (
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        ارسال پیامک پیگیری
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={1}
+                          max={Math.max(1, leaseDurationMonths! - 1)}
+                          value={monthsBefore}
+                          onChange={(e) => setMonthsBefore(Math.max(1, Number(e.target.value)))}
+                          className="w-20 rounded-md border bg-background px-2 py-1 text-sm text-center"
+                          dir="ltr"
+                        />
+                        <span className="text-sm text-muted-foreground">ماه قبل از پایان قرارداد</span>
+                      </div>
+                      <div className="rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground space-y-0.5">
+                        <p>
+                          تاریخ پایان قرارداد:{" "}
+                          <span className="font-medium text-foreground">
+                            {format(leaseEndDate, "yyyy/MM/dd")}
+                          </span>
+                        </p>
+                        <p>
+                          تاریخ ارسال پیامک:{" "}
+                          <span className="font-medium text-foreground">
+                            {format(computedScheduledAt, "yyyy/MM/dd")}
+                          </span>
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <label className="text-xs text-muted-foreground">ارسال بعد از</label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="number"
+                          min={1}
+                          max={delayUnit === "month" ? 24 : 730}
+                          value={delayAmount}
+                          onChange={(e) => setDelayAmount(Math.max(1, Number(e.target.value)))}
+                          className="w-20 rounded-md border bg-background px-2 py-1 text-sm text-center"
+                          dir="ltr"
+                        />
+                        <select
+                          value={delayUnit}
+                          onChange={(e) => setDelayUnit(e.target.value as "month" | "day")}
+                          className="rounded-md border bg-background px-2 py-1 text-sm"
+                        >
+                          <option value="month">ماه</option>
+                          <option value="day">روز</option>
+                        </select>
+                        <span className="text-xs text-muted-foreground">
+                          → {format(computedScheduledAt, "yyyy/MM/dd")}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        مدت اجاره در این قرارداد ثبت نشده — تاریخ ارسال را دستی وارد کنید
+                      </p>
+                    </div>
+                  )}
 
                   {/* Contact selector */}
                   {contacts.length > 1 && (

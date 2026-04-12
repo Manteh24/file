@@ -25,7 +25,7 @@ export default async function EditCustomerPage({ params }: EditCustomerPageProps
       name: true,
       phone: true,
       email: true,
-      type: true,
+      types: true,
       notes: true,
       createdAt: true,
       updatedAt: true,

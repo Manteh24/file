@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useFieldArray, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
-import { Plus, Trash2, Sparkles, MapPin, Wifi, WifiOff } from "lucide-react"
+import { Plus, Trash2, Sparkles, MapPin, Wifi, WifiOff, ChevronDown } from "lucide-react"
 import { createFileSchema, type CreateFileInput } from "@/lib/validations/file"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -72,6 +72,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
   const router = useRouter()
   const isEdit = !!fileId
 
+  const [isExpanded, setIsExpanded] = useState(false)
   const [aiTone, setAiTone] = useState<DescriptionTone>("standard")
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -441,8 +442,8 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           />
         </section>
 
-        {/* Property Details */}
-        <section className="space-y-4">
+        {/* Property Details — optional in create mode */}
+        {(isExpanded || isEdit) && <section className="space-y-4">
           <h2 className="text-base font-semibold">مشخصات ملک</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <FormField
@@ -568,10 +569,10 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
               )}
             />
           </div>
-        </section>
+        </section>}
 
-        {/* Price */}
-        <section className="space-y-4">
+        {/* Price — optional in create mode */}
+        {(isExpanded || isEdit) && <section className="space-y-4">
           <h2 className="text-base font-semibold">قیمت</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {showSalePrice && (
@@ -634,7 +635,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
               </>
             )}
           </div>
-        </section>
+        </section>}
 
         {/* Location */}
         <section className="space-y-4">
@@ -693,8 +694,8 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           )}
         </section>
 
-        {/* Amenities */}
-        <section className="space-y-4">
+        {/* Amenities — optional in create mode */}
+        {(isExpanded || isEdit) && <section className="space-y-4">
           <h2 className="text-base font-semibold">امکانات</h2>
           <div className="flex flex-wrap gap-3">
             {(
@@ -733,7 +734,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
               />
             ))}
           </div>
-        </section>
+        </section>}
 
         {/* Contacts */}
         <section className="space-y-4">
@@ -830,8 +831,20 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           )}
         </section>
 
-        {/* Description */}
-        <section className="space-y-4">
+        {/* Expand toggle — create mode only */}
+        {!isEdit && (
+          <button
+            type="button"
+            onClick={() => setIsExpanded((v) => !v)}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[var(--color-border-default)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] transition-colors"
+          >
+            <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+            {isExpanded ? "بستن جزئیات" : "تکمیل فایل"}
+          </button>
+        )}
+
+        {/* Description — optional in create mode */}
+        {(isExpanded || isEdit) && <section className="space-y-4">
           <h2 className="text-base font-semibold">توضیحات</h2>
 
           {/* AI description generator */}
@@ -916,7 +929,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
               </FormItem>
             )}
           />
-        </section>
+        </section>}
 
         {/* Plan limit hit on file creation — show upgrade prompt */}
         {filePlanLimit && <UpgradePrompt reason="files" role={role} />}
@@ -953,7 +966,9 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
               : isEdit
               ? "ذخیره تغییرات"
               : isOnline
-              ? "ثبت فایل"
+              ? isExpanded
+                ? "ایجاد فایل"
+                : "ایجاد سریع فایل"
               : "ذخیره محلی"}
           </Button>
         </div>

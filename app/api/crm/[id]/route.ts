@@ -30,7 +30,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
         name: true,
         phone: true,
         email: true,
-        type: true,
+        types: true,
         notes: true,
         createdAt: true,
         updatedAt: true,

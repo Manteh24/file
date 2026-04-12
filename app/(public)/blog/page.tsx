@@ -2,7 +2,7 @@ import { LandingNav } from "@/components/marketing/LandingNav"
 import { LandingFooter } from "@/components/marketing/LandingFooter"
 import { BookOpen } from "lucide-react"
 
-export const metadata = { title: "بلاگ — املاکبین" }
+export const metadata = { title: "بلاگ — املاک‌بین" }
 
 export default function BlogPage() {
   return (

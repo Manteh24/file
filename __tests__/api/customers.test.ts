@@ -88,7 +88,7 @@ const managerSession = {
 const validCustomerBody = {
   name: "علی رضایی",
   phone: "09121234567",
-  type: "BUYER",
+  types: ["BUYER"],
 }
 
 // ─── GET /api/crm ───────────────────────────────────────────────────────────────
@@ -105,7 +105,7 @@ describe("GET /api/crm", () => {
 
   it("returns customer list for authenticated user", async () => {
     mockAuth.mockResolvedValue(managerSession)
-    const mockList = [{ id: "cust-1", name: "علی", type: "BUYER" }]
+    const mockList = [{ id: "cust-1", name: "علی", types: ["BUYER"] }]
     mockDb.customer.findMany.mockResolvedValue(mockList)
 
     const res = await listCustomers(makeListRequest())
@@ -132,7 +132,7 @@ describe("GET /api/crm", () => {
     await listCustomers(makeListRequest("?type=BUYER"))
 
     const args = mockDb.customer.findMany.mock.calls[0][0]
-    expect(args.where.type).toBe("BUYER")
+    expect(args.where.types).toEqual({ hasSome: ["BUYER"] })
   })
 
   it("rejects invalid type filter", async () => {
@@ -153,14 +153,14 @@ describe("GET /api/crm", () => {
     expect(data.data).toEqual([])
   })
 
-  it("omits type from where clause when no filter provided", async () => {
+  it("omits types from where clause when no filter provided", async () => {
     mockAuth.mockResolvedValue(managerSession)
     mockDb.customer.findMany.mockResolvedValue([])
 
     await listCustomers(makeListRequest())
 
     const args = mockDb.customer.findMany.mock.calls[0][0]
-    expect(args.where.type).toBeUndefined()
+    expect(args.where.types).toBeUndefined()
   })
 
   it("returns 500 when DB throws", async () => {
@@ -269,9 +269,9 @@ describe("POST /api/crm", () => {
     expect(createArgs.data.notes).toBeNull()
   })
 
-  it("returns 400 for missing type", async () => {
+  it("returns 400 for missing types", async () => {
     mockAuth.mockResolvedValue(managerSession)
-    const { type: _, ...body } = validCustomerBody
+    const { types: _, ...body } = validCustomerBody
     const res = await createCustomer(makePostRequest(body))
     expect(res.status).toBe(400)
   })

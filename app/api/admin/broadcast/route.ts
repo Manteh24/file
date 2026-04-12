@@ -120,7 +120,7 @@ export async function POST(request: Request) {
       body: msgBody,
       targetType,
       targetOfficeId: targetOfficeId ?? null,
-      targetFilter: targetFilter ?? null,
+      targetFilter: (targetFilter ?? undefined) as object | undefined,
       recipientCount: managers.length,
       sendSms: doSms,
       sentByAdminId: session.user.id,

@@ -11,6 +11,7 @@ import {
   UserCheck,
   FileText,
   BarChart2,
+  MessageSquare,
   ChevronLeft,
   ArrowUp,
   LogOut,
@@ -53,6 +54,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/agents", label: "مشاوران", icon: UserCheck, managerOnly: true, tutorialId: "nav-agents" },
       { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
       { href: "/reports", label: "گزارش‌ها", icon: BarChart2, managerOnly: true },
+      { href: "/messages", label: "مرکز پیام", icon: MessageSquare, managerOnly: true },
     ],
   },
 ]
@@ -62,7 +64,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
 const PLAN_LABELS: Record<string, string> = {
   FREE: "رایگان",
   PRO: "حرفه‌ای",
-  TEAM: "تیمی",
+  TEAM: "تیم",
 }
 
 /* ─── Tooltip (fixed-positioned portal to escape overflow:hidden parents) ── */
@@ -108,7 +110,7 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
             }}
             role="tooltip"
           >
-            {label}
+            <span>{label}</span>
           </div>,
           document.body
         )}
@@ -416,7 +418,7 @@ export function Sidebar({
                     <Link
                       href="/settings#billing"
                       onClick={handlePopoverNav}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] hover:bg-[var(--color-surface-2)] transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] hover:bg-[var(--color-surface-2)] dark:hover:bg-[var(--color-surface-3)] transition-colors"
                     >
                       <CreditCard className="h-4 w-4 shrink-0" />
                       ارتقا اشتراک
@@ -426,7 +428,7 @@ export function Sidebar({
                     <Link
                       href="/referral"
                       onClick={handlePopoverNav}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] dark:hover:bg-[var(--color-surface-3)] transition-colors"
                     >
                       <Gift className="h-4 w-4 shrink-0" />
                       کسب درآمد و کد معرفی
@@ -439,7 +441,7 @@ export function Sidebar({
                     <Link
                       href="/settings"
                       onClick={handlePopoverNav}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] dark:hover:bg-[var(--color-surface-3)] transition-colors"
                     >
                       <Settings className="h-4 w-4 shrink-0" />
                       تنظیمات
@@ -448,7 +450,7 @@ export function Sidebar({
                   <Link
                     href="/guide"
                     onClick={handlePopoverNav}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] dark:hover:bg-[var(--color-surface-3)] transition-colors"
                   >
                     <BookOpen className="h-4 w-4 shrink-0" />
                     راهنمای استفاده
@@ -456,7 +458,7 @@ export function Sidebar({
                   <Link
                     href="/support"
                     onClick={handlePopoverNav}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] dark:hover:bg-[var(--color-surface-3)] transition-colors"
                   >
                     <HelpCircle className="h-4 w-4 shrink-0" />
                     پشتیبانی

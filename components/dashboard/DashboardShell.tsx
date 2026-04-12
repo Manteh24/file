@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react"
 import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
+import { SearchDialog } from "./SearchDialog"
 import { SubscriptionBanner } from "./SubscriptionBanner"
 import { TrialActivationBanner } from "./TrialActivationBanner"
 import { OnboardingTutorial } from "./OnboardingTutorial"
@@ -35,6 +36,9 @@ export function DashboardShell({
   // Mobile sidebar open/close
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const openSidebar = useCallback(() => setSidebarOpen(true), [])
+
+  // Global search dialog
+  const [searchOpen, setSearchOpen] = useState(false)
 
   // Office popover — shared between sidebar card and topbar avatar
   const [popoverOpen, setPopoverOpen] = useState(false)
@@ -76,6 +80,19 @@ export function DashboardShell({
     ping() // fire immediately on mount
     const interval = setInterval(ping, 5 * 60 * 1000)
     return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    // ⌘K / Ctrl+K — open search
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
   }, [])
 
   function toggleDark() {
@@ -127,6 +144,8 @@ export function DashboardShell({
           isDark={isDark}
           onMenuClick={() => setSidebarOpen(true)}
           onToggleDark={toggleDark}
+          onSearchOpen={() => setSearchOpen(true)}
+          role={role}
         />
 
         {trialBannerProps && (
@@ -144,11 +163,12 @@ export function DashboardShell({
           />
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 [&>*]:mx-auto">{children}</main>
       </div>
 
       {showOnboarding && <OnboardingTutorial onOpenSidebar={openSidebar} />}
       <PWAInstallPrompt />
+      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} role={role} />
     </div>
   )
 }
