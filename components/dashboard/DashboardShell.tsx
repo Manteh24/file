@@ -85,7 +85,7 @@ export function DashboardShell({
   useEffect(() => {
     // ⌘K / Ctrl+K — open search
     function handleKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.code === "KeyK")) {
         e.preventDefault()
         setSearchOpen(true)
       }

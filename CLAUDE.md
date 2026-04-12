@@ -639,7 +639,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Bug fixes + FileForm quick-create redesign (share link manager agentId fix, topbar UserCircle avatar, sidebar TEAM label, dark-mode popover hover, FileForm collapse/expand) | ✅ | — |
 
 ### Current Status
-- **Last completed:** Bug fixes + quick-create redesign — share link manager agent attribution fixed, topbar avatar → UserCircle with ring, sidebar "تیم" label, dark-mode popover hover fix, FileForm quick-create mode (3 essentials shown by default, "تکمیل فایل" toggle expands optional sections)
+- **Last completed:** UX improvements + bug fixes — FileForm: price section always visible (no longer behind expand toggle), inline photo upload after creation (with success banner + "رفتن به فایل" button instead of immediate redirect); PhotoGallery: added "دوربین" button (`capture="environment"`) for mobile camera + "انتخاب از گالری" for file picker; report charts: fixed height container moved inside CardContent div; phone validation: stricter regex requiring exactly 11 digits (`0[0-9]{10}` or `+98[0-9]{10}`); dark overlay color: solid #1A2540 instead of glass; Ctrl+K search shortcut: fixed for Persian keyboard layouts by using `e.code === "KeyK"` in addition to `e.key === "k"`
 - **Up next:** Run `npx prisma migrate deploy` + manual test; update tests that mock `customer.type` → `customer.types[]`
 - **Total tests:** 676 passing, 0 failing (47 test files) — pre-migration snapshot; tests using `customer.type` need updating
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write

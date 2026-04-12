@@ -5,11 +5,12 @@ import { z } from "zod"
 export const contactSchema = z.object({
   type: z.enum(["OWNER", "TENANT", "LANDLORD", "BUYER"]),
   name: z.string().max(100).optional().or(z.literal("")),
-  // Iranian phone: 11 digits starting with 09, or 10-digit landline
+  // Iranian phone: 11-digit starting with 0 (mobile: 09..., landline: 021..., etc.)
+  // or +98 followed by 10 digits
   phone: z
     .string()
     .min(1, "شماره تماس الزامی است")
-    .regex(/^(\+98|0)?[0-9]{9,11}$/, "شماره تماس معتبر نیست"),
+    .regex(/^(0[0-9]{10}|\+98[0-9]{10})$/, "شماره تماس باید ۱۱ رقم باشد (مثال: ۰۹۱۲۱۲۳۴۵۶۷ یا ۰۲۱۱۲۳۴۵۶۷۸۹)"),
   notes: z.string().max(500).optional().or(z.literal("")),
 })
 

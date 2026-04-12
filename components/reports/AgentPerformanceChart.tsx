@@ -30,7 +30,8 @@ export function AgentPerformanceChart({ data }: Props) {
       <CardHeader>
         <CardTitle>عملکرد مشاوران</CardTitle>
       </CardHeader>
-      <CardContent style={{ height: data.length === 0 ? 100 : chartHeight }}>
+      <CardContent>
+        <div style={{ height: data.length === 0 ? 100 : chartHeight }}>
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-muted-foreground">
@@ -89,6 +90,7 @@ export function AgentPerformanceChart({ data }: Props) {
             </BarChart>
           </ResponsiveContainer>
         )}
+        </div>
       </CardContent>
     </Card>
   )

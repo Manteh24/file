@@ -30,7 +30,8 @@ export function TypeBreakdownChart({ data }: Props) {
       <CardHeader>
         <CardTitle>بر اساس نوع معامله</CardTitle>
       </CardHeader>
-      <CardContent style={{ height: 260 }}>
+      <CardContent>
+        <div style={{ height: 260 }}>
         {data.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <p className="text-sm text-muted-foreground">
@@ -100,6 +101,7 @@ export function TypeBreakdownChart({ data }: Props) {
             </PieChart>
           </ResponsiveContainer>
         )}
+        </div>
       </CardContent>
     </Card>
   )

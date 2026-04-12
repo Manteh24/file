@@ -199,9 +199,9 @@ html.dark {
   --color-plan-team-bg:    rgba(29, 78, 216, 0.15);
   --color-plan-team-text:  #93C5FD;
 
-  /* Overlay — glass effect on dark */
-  --color-overlay-bg:     rgba(19, 28, 46, 0.85);
-  --color-overlay-border: rgba(255, 255, 255, 0.10);
+  /* Overlay — solid dark background for readability */
+  --color-overlay-bg:     #1A2540;
+  --color-overlay-border: rgba(255, 255, 255, 0.12);
 
   /* Shadows (less visible on dark) */
   --shadow-sm:    0 1px 2px 0 rgba(0, 0, 0, 0.30);

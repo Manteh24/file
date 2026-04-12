@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { ImagePlus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Camera, ImagePlus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { FilePhoto } from "@/types"
 
@@ -33,6 +33,7 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit, photoProcessingMo
   const showWatermarkCheckbox = photoProcessingMode?.watermark === "ASK"
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   // ── Upload ──────────────────────────────────────────────────────────────────
 
@@ -186,16 +187,39 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit, photoProcessingMo
               if (e.target.files?.length) handleFilesSelected(e.target.files)
             }}
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={uploading}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <ImagePlus className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
-            {uploading ? "در حال بارگذاری..." : "افزودن تصویر"}
-          </Button>
+          {/* Camera input — capture="environment" triggers device camera on mobile */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.length) handleFilesSelected(e.target.files)
+            }}
+          />
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploading}
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <Camera className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
+              دوربین
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={uploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImagePlus className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
+              {uploading ? "در حال بارگذاری..." : "انتخاب از گالری"}
+            </Button>
+          </div>
           {uploadError && (
             <p className="text-xs text-destructive">{uploadError}</p>
           )}

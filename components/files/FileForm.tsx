@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, useFieldArray, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
-import { Plus, Trash2, Sparkles, MapPin, Wifi, WifiOff, ChevronDown } from "lucide-react"
+import { Plus, Trash2, Sparkles, MapPin, Wifi, WifiOff, ChevronDown, CheckCircle2 } from "lucide-react"
 import { createFileSchema, type CreateFileInput } from "@/lib/validations/file"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,6 +23,7 @@ import { useDraft } from "@/hooks/useDraft"
 import { usePlanStatus } from "@/hooks/usePlanStatus"
 import { toFarsiDigits, parseFarsiNumber } from "@/lib/utils"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
+import { PhotoGallery } from "@/components/files/PhotoGallery"
 import type { PropertyFileDetail, LocationAnalysis } from "@/types"
 import type { DescriptionTone } from "@/lib/ai"
 
@@ -73,6 +74,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
   const isEdit = !!fileId
 
   const [isExpanded, setIsExpanded] = useState(false)
+  const [fileCreated, setFileCreated] = useState(false)
   const [aiTone, setAiTone] = useState<DescriptionTone>("standard")
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -89,6 +91,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
   const [draftBannerDismissed, setDraftBannerDismissed] = useState(false)
   const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hasDraftRef = useRef(false)
+  const propertyDetailsSectionRef = useRef<HTMLElement>(null)
 
   const { draft, isLoading: draftLoading, hasDraft, saveDraft, clearDraft } = useDraft(userId)
   const { isAtLimit: isPlanAtLimit, isNearLimit: isPlanNearLimit } = usePlanStatus()
@@ -116,6 +119,15 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
       window.removeEventListener("offline", handleOffline)
     }
   }, [isEdit]) // isEdit is stable — effect runs once
+
+  // Scroll to property details section when expanding so user sees the new fields
+  useEffect(() => {
+    if (isExpanded) {
+      requestAnimationFrame(() => {
+        propertyDetailsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      })
+    }
+  }, [isExpanded])
 
   const form = useForm<CreateFileInput>({
     // Cast needed: standardSchemaResolver's return type has a different third generic
@@ -240,8 +252,13 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
     // Clear the local draft after a successful server save
     if (!isEdit) await clearDraft()
 
-    router.push(`/files/${targetId}`)
-    router.refresh()
+    if (isEdit) {
+      router.push(`/files/${targetId}`)
+      router.refresh()
+    } else {
+      // File created — activate inline photo upload section
+      setFileCreated(true)
+    }
   }
 
   async function handlePinDrop(lat: number, lng: number) {
@@ -442,8 +459,76 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           />
         </section>
 
+        {/* Price — always visible so users can enter price immediately after picking transaction type */}
+        {(showSalePrice || showRentFields) && (
+          <section className="space-y-4">
+            <h2 className="text-base font-semibold">قیمت</h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {showSalePrice && (
+                <FormField
+                  control={form.control}
+                  name="salePrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>قیمت فروش (تومان)</FormLabel>
+                      <FormControl>
+                        <PriceInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="مثال: ۵۰۰,۰۰۰,۰۰۰"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              {showRentFields && (
+                <>
+                  {transactionType === "LONG_TERM_RENT" && (
+                    <FormField
+                      control={form.control}
+                      name="depositAmount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>رهن (تومان)</FormLabel>
+                          <FormControl>
+                            <PriceInput
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="مثال: ۱۰۰,۰۰۰,۰۰۰"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                  <FormField
+                    control={form.control}
+                    name="rentAmount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>اجاره ماهانه (تومان)</FormLabel>
+                        <FormControl>
+                          <PriceInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="مثال: ۵,۰۰۰,۰۰۰"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Property Details — optional in create mode */}
-        {(isExpanded || isEdit) && <section className="space-y-4">
+        {(isExpanded || isEdit) && <section ref={propertyDetailsSectionRef} className="space-y-4">
           <h2 className="text-base font-semibold">مشخصات ملک</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <FormField
@@ -568,72 +653,6 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
                 </FormItem>
               )}
             />
-          </div>
-        </section>}
-
-        {/* Price — optional in create mode */}
-        {(isExpanded || isEdit) && <section className="space-y-4">
-          <h2 className="text-base font-semibold">قیمت</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {showSalePrice && (
-              <FormField
-                control={form.control}
-                name="salePrice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>قیمت فروش (تومان)</FormLabel>
-                    <FormControl>
-                      <PriceInput
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="مثال: ۵۰۰,۰۰۰,۰۰۰"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            {showRentFields && (
-              <>
-                {transactionType === "LONG_TERM_RENT" && (
-                  <FormField
-                    control={form.control}
-                    name="depositAmount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>رهن (تومان)</FormLabel>
-                        <FormControl>
-                          <PriceInput
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="مثال: ۱۰۰,۰۰۰,۰۰۰"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-                <FormField
-                  control={form.control}
-                  name="rentAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>اجاره ماهانه (تومان)</FormLabel>
-                      <FormControl>
-                        <PriceInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="مثال: ۵,۰۰۰,۰۰۰"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
-            )}
           </div>
         </section>}
 
@@ -806,7 +825,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
                       <FormControl>
                         <Input
                           type="tel"
-                          placeholder="مثال: ۰۹۱۲۱۲۳۴۵۶۷"
+                          placeholder="۰۹۱۲۱۲۳۴۵۶۷ یا ۰۲۱۱۲۳۴۵۶۷۸۹"
                           dir="ltr"
                           {...f}
                         />
@@ -931,6 +950,30 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           />
         </section>}
 
+        {/* Photos — always shown in create mode; activates after file is saved */}
+        {!isEdit && (
+          <section className="space-y-3">
+            <h2 className="text-base font-semibold">تصاویر ملک</h2>
+            {savedFileId ? (
+              <PhotoGallery initialPhotos={[]} fileId={savedFileId} canEdit={true} />
+            ) : (
+              <div className="rounded-lg border border-dashed border-[var(--color-border-default)] bg-[var(--color-surface-2)] px-4 py-6 text-center text-sm text-muted-foreground">
+                پس از ثبت فایل می‌توانید تصاویر ملک را آپلود کنید یا با دوربین عکس بگیرید.
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Success banner after file creation */}
+        {!isEdit && fileCreated && (
+          <div className="flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm dark:border-emerald-800 dark:bg-emerald-950/30">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <p className="text-emerald-800 dark:text-emerald-200">
+              فایل با موفقیت ثبت شد. می‌توانید تصاویر اضافه کنید یا به فایل بروید.
+            </p>
+          </div>
+        )}
+
         {/* Plan limit hit on file creation — show upgrade prompt */}
         {filePlanLimit && <UpgradePrompt reason="files" role={role} />}
 
@@ -951,26 +994,49 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           </div>
         )}
 
-        {/* Submit */}
+        {/* Submit / navigation */}
         <div className="flex gap-3 justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.back()}
-          >
-            انصراف
-          </Button>
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting
-              ? "در حال ذخیره..."
-              : isEdit
-              ? "ذخیره تغییرات"
-              : isOnline
-              ? isExpanded
-                ? "ایجاد فایل"
-                : "ایجاد سریع فایل"
-              : "ذخیره محلی"}
-          </Button>
+          {!isEdit && fileCreated && savedFileId ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+              >
+                بازگشت
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  router.push(`/files/${savedFileId}`)
+                  router.refresh()
+                }}
+              >
+                رفتن به فایل
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+              >
+                انصراف
+              </Button>
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting
+                  ? "در حال ذخیره..."
+                  : isEdit
+                  ? "ذخیره تغییرات"
+                  : isOnline
+                  ? isExpanded
+                    ? "ایجاد فایل"
+                    : "ایجاد سریع فایل"
+                  : "ذخیره محلی"}
+              </Button>
+            </>
+          )}
         </div>
       </form>
     </Form>
