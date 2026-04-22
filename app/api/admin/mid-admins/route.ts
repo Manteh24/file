@@ -24,7 +24,7 @@ export async function GET() {
       isActive: true,
       adminTier: true,
       createdAt: true,
-      _count: { select: { adminAssignments: true } },
+      _count: { select: { adminAssignments: true, adminAccessRules: true } },
     },
     orderBy: { createdAt: "desc" },
   })

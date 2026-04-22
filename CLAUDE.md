@@ -218,7 +218,8 @@ Helper: `canAdminDo(user, capability)` in `lib/admin.ts` — use this in every a
 - **AdminBroadcast** — platform-wide messages sent to all offices by admin.
 - **PlatformSetting** — key-value runtime config store. Keys: `MAINTENANCE_MODE`, `ZARINPAL_MODE`, `AVALAI_MODEL`, `FREE_MAX_USERS`, `FREE_MAX_FILES`, `FREE_MAX_AI_MONTH`.
 - **AdminLoginLog** — records each admin login (userId, IP, userAgent, timestamp). Fire-and-forget in auth.ts.
-- **AdminOfficeAssignment** — maps a MID_ADMIN user to the offices they can access.
+- **AdminOfficeAssignment** — maps a MID_ADMIN user to specific offices they can access (static list).
+- **AdminAccessRule** — dynamic access rule for a MID_ADMIN. Stores filters (`cities: String[]`, `plans: Plan[]`, `trialFilter: ANY | TRIAL_ONLY | PAID_ONLY`). Evaluated live in `getAccessibleOfficeIds` so newly-registered offices matching the filter are auto-accessible without re-assignment. Within one rule: city AND plan AND trial. Multiple rules are OR'd, and rule-matched offices are unioned with explicit `AdminOfficeAssignment` entries. Empty `cities[]` / `plans[]` = no constraint on that dimension.
 
 ### Multi-tenancy Pattern
 Every model that contains tenant data has an `officeId` field.
@@ -637,6 +638,7 @@ NEXT_PUBLIC_SHARE_DOMAIN=
 | — | Dashboard expiring contracts widget (LONG_TERM_RENT leases expiring within 60 days, color-coded days remaining) | ✅ | — |
 | — | Email infrastructure (lib/email.ts, Nodemailer SMTP, broadcast/welcome/trial-reminder templates) | ✅ | — |
 | — | Bug fixes + FileForm quick-create redesign (share link manager agentId fix, topbar UserCircle avatar, sidebar TEAM label, dark-mode popover hover, FileForm collapse/expand) | ✅ | — |
+| — | Admin dynamic access rules (`AdminAccessRule` model: city + plan + trial filters, live-evaluated in `getAccessibleOfficeIds`, union with explicit assignments, UI in create + edit mid-admin flows) | ✅ | — |
 
 ### Current Status
 - **Last completed:** UX improvements + bug fixes — FileForm: price section always visible (no longer behind expand toggle), inline photo upload after creation (with success banner + "رفتن به فایل" button instead of immediate redirect); PhotoGallery: added "دوربین" button (`capture="environment"`) for mobile camera + "انتخاب از گالری" for file picker; report charts: fixed height container moved inside CardContent div; phone validation: stricter regex requiring exactly 11 digits (`0[0-9]{10}` or `+98[0-9]{10}`); dark overlay color: solid #1A2540 instead of glass; Ctrl+K search shortcut: fixed for Persian keyboard layouts by using `e.code === "KeyK"` in addition to `e.key === "k"`

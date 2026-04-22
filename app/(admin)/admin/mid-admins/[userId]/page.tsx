@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import { format } from "date-fns-jalali"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { EditAssignmentsForm, EditTierForm, EditProfileForm } from "@/components/admin/MidAdminForm"
+import { EditAccessRulesForm, EditAssignmentsForm, EditTierForm, EditProfileForm } from "@/components/admin/MidAdminForm"
 
 export default async function MidAdminAssignmentsPage({
   params,
@@ -15,7 +15,7 @@ export default async function MidAdminAssignmentsPage({
 
   const { userId } = await params
 
-  const [midAdmin, offices, assignments, loginHistory] = await Promise.all([
+  const [midAdmin, offices, assignments, accessRules, loginHistory] = await Promise.all([
     db.user.findFirst({
       where: { id: userId, role: "MID_ADMIN" },
       select: { id: true, displayName: true, username: true, email: true, isActive: true, adminTier: true },
@@ -43,6 +43,11 @@ export default async function MidAdminAssignmentsPage({
         assignedAt: true,
         office: { select: { id: true, name: true, city: true } },
       },
+    }),
+    db.adminAccessRule.findMany({
+      where: { adminUserId: userId },
+      select: { id: true, cities: true, plans: true, trialFilter: true, createdAt: true },
+      orderBy: { createdAt: "asc" },
     }),
     db.adminLoginLog.findMany({
       where: { adminId: userId },
@@ -80,13 +85,20 @@ export default async function MidAdminAssignmentsPage({
 
       <div className="rounded-xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold mb-4">
-          دفاتر مجاز ({assignments.length.toLocaleString("fa-IR")} انتخاب شده)
+          دفاتر خاص ({assignments.length.toLocaleString("fa-IR")} انتخاب شده)
         </h2>
         <EditAssignmentsForm
           adminId={midAdmin.id}
           offices={offices}
           currentAssignments={assignments}
         />
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-5">
+        <h2 className="text-sm font-semibold mb-4">
+          قوانین دسترسی خودکار ({accessRules.length.toLocaleString("fa-IR")} قانون)
+        </h2>
+        <EditAccessRulesForm adminId={midAdmin.id} currentRules={accessRules} />
       </div>
 
       {/* Login History */}

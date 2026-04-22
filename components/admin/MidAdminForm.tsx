@@ -3,7 +3,186 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import type { AdminOfficeSummary, AdminTier, MidAdminAssignment } from "@/types"
+import { IRANIAN_CITIES } from "@/lib/cities"
+import type {
+  AdminAccessRuleInput,
+  AdminAccessRuleSummary,
+  AdminOfficeSummary,
+  AdminTier,
+  MidAdminAssignment,
+  Plan,
+  TrialFilter,
+} from "@/types"
+
+// ─── Access rule primitives ──────────────────────────────────────────────────
+
+const PLAN_LABELS: Record<Plan, string> = {
+  FREE: "رایگان",
+  PRO: "حرفه‌ای",
+  TEAM: "تیمی",
+}
+
+const TRIAL_FILTER_OPTIONS: { value: TrialFilter; label: string }[] = [
+  { value: "ANY", label: "همه (آزمایشی + پرداختی)" },
+  { value: "TRIAL_ONLY", label: "فقط دوره آزمایشی" },
+  { value: "PAID_ONLY", label: "فقط اشتراک پرداختی" },
+]
+
+function emptyRule(): AdminAccessRuleInput {
+  return { cities: [], plans: [], trialFilter: "ANY" }
+}
+
+function ruleIsEmpty(r: AdminAccessRuleInput): boolean {
+  return r.cities.length === 0 && r.plans.length === 0 && r.trialFilter === "ANY"
+}
+
+interface AccessRulesEditorProps {
+  rules: AdminAccessRuleInput[]
+  onChange: (next: AdminAccessRuleInput[]) => void
+}
+
+function AccessRulesEditor({ rules, onChange }: AccessRulesEditorProps) {
+  function updateRule(index: number, patch: Partial<AdminAccessRuleInput>) {
+    onChange(rules.map((r, i) => (i === index ? { ...r, ...patch } : r)))
+  }
+
+  function removeRule(index: number) {
+    onChange(rules.filter((_, i) => i !== index))
+  }
+
+  function toggleCity(index: number, city: string) {
+    const rule = rules[index]
+    const next = rule.cities.includes(city)
+      ? rule.cities.filter((c) => c !== city)
+      : [...rule.cities, city]
+    updateRule(index, { cities: next })
+  }
+
+  function togglePlan(index: number, plan: Plan) {
+    const rule = rules[index]
+    const next = rule.plans.includes(plan)
+      ? rule.plans.filter((p) => p !== plan)
+      : [...rule.plans, plan]
+    updateRule(index, { plans: next })
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground leading-5">
+        با تعریف قوانین دسترسی، همه دفاتر مطابق با فیلترها (شهر / پلن / وضعیت آزمایشی) به صورت خودکار
+        در دسترس این کاربر قرار می‌گیرند — حتی دفاتری که در آینده ثبت می‌شوند. چند قانون به صورت «یا»
+        ترکیب می‌شوند و هر قانون درون خود «و» است.
+      </p>
+
+      {rules.length === 0 && (
+        <p className="text-xs text-muted-foreground">هنوز قانونی تعریف نشده است.</p>
+      )}
+
+      {rules.map((rule, i) => {
+        const incomplete = ruleIsEmpty(rule)
+        return (
+          <div
+            key={i}
+            className={`rounded-lg border p-4 space-y-3 ${
+              incomplete ? "border-amber-300 bg-amber-50/40 dark:bg-amber-900/10" : "border-border bg-muted/20"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground">
+                قانون {(i + 1).toLocaleString("fa-IR")}
+              </span>
+              <button
+                type="button"
+                onClick={() => removeRule(i)}
+                className="text-xs text-red-600 hover:underline"
+              >
+                حذف قانون
+              </button>
+            </div>
+
+            {/* Cities */}
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1.5">
+                شهرها ({rule.cities.length > 0 ? `${rule.cities.length.toLocaleString("fa-IR")} انتخاب شده` : "همه"})
+              </label>
+              <div className="max-h-32 overflow-y-auto rounded-md border border-border bg-background p-2 grid grid-cols-2 sm:grid-cols-3 gap-1">
+                {IRANIAN_CITIES.map((city) => (
+                  <label key={city} className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 rounded px-1.5 py-1">
+                    <input
+                      type="checkbox"
+                      checked={rule.cities.includes(city)}
+                      onChange={() => toggleCity(i, city)}
+                      className="h-3.5 w-3.5"
+                    />
+                    <span>{city}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Plans */}
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1.5">
+                پلن اشتراک ({rule.plans.length > 0 ? "انتخابی" : "همه"})
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {(["FREE", "PRO", "TEAM"] as Plan[]).map((plan) => (
+                  <label
+                    key={plan}
+                    className={`flex items-center gap-2 rounded-full border px-3 py-1 text-xs cursor-pointer ${
+                      rule.plans.includes(plan)
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:bg-muted/40"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={rule.plans.includes(plan)}
+                      onChange={() => togglePlan(i, plan)}
+                      className="h-3 w-3"
+                    />
+                    {PLAN_LABELS[plan]}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Trial filter */}
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1.5">وضعیت اشتراک</label>
+              <select
+                value={rule.trialFilter}
+                onChange={(e) => updateRule(i, { trialFilter: e.target.value as TrialFilter })}
+                className="w-full sm:w-auto rounded-md border border-border bg-background px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-ring"
+              >
+                {TRIAL_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {incomplete && (
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                این قانون هیچ فیلتری ندارد — لطفاً حداقل یک شهر، پلن، یا وضعیت اشتراک انتخاب کنید.
+              </p>
+            )}
+          </div>
+        )
+      })}
+
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => onChange([...rules, emptyRule()])}
+      >
+        + افزودن قانون جدید
+      </Button>
+    </div>
+  )
+}
 
 // ─── Tier labels & descriptions ──────────────────────────────────────────────
 
@@ -35,6 +214,7 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
   })
   const [tier, setTier] = useState<AdminTier | "">("")
   const [selectedOfficeIds, setSelectedOfficeIds] = useState<string[]>([])
+  const [rules, setRules] = useState<AdminAccessRuleInput[]>([])
 
   function toggleOffice(id: string) {
     setSelectedOfficeIds((prev) =>
@@ -44,6 +224,13 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Reject any empty rule before hitting the API
+    if (rules.some(ruleIsEmpty)) {
+      setError("قوانین دسترسی بدون فیلتر وجود دارد — آن‌ها را حذف یا تکمیل کنید")
+      return
+    }
+
     setLoading(true)
     setError("")
     try {
@@ -70,11 +257,21 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
         })
       }
 
+      // 3. Save access rules if any defined
+      if (rules.length > 0) {
+        await fetch(`/api/admin/mid-admins/${newId}/access-rules`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rules }),
+        })
+      }
+
       router.refresh()
       setOpen(false)
       setFields({ username: "", displayName: "", email: "", password: "" })
       setTier("")
       setSelectedOfficeIds([])
+      setRules([])
     } finally {
       setLoading(false)
     }
@@ -189,7 +386,7 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
           {/* Office assignment multi-select */}
           <div>
             <label className="block text-xs text-muted-foreground mb-2">
-              دفاتر مجاز ({selectedOfficeIds.length} انتخاب شده)
+              دفاتر خاص ({selectedOfficeIds.length} انتخاب شده)
             </label>
             <div className="max-h-48 overflow-y-auto rounded-lg border border-border divide-y divide-border">
               {offices.map((office) => (
@@ -210,6 +407,14 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
                 </label>
               ))}
             </div>
+          </div>
+
+          {/* Dynamic access rules */}
+          <div>
+            <label className="block text-xs text-muted-foreground mb-2">
+              قوانین دسترسی خودکار ({rules.length.toLocaleString("fa-IR")} قانون)
+            </label>
+            <AccessRulesEditor rules={rules} onChange={setRules} />
           </div>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
@@ -492,6 +697,70 @@ export function EditAssignmentsForm({
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={loading} size="sm">
           {loading ? "در حال ذخیره..." : `ذخیره (${selectedOfficeIds.length} دفتر)`}
+        </Button>
+        {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
+        {error && <span className="text-xs text-red-600">{error}</span>}
+      </div>
+    </div>
+  )
+}
+
+// ─── Edit access rules for an existing MID_ADMIN ─────────────────────────────
+
+interface EditAccessRulesFormProps {
+  adminId: string
+  currentRules: AdminAccessRuleSummary[]
+}
+
+export function EditAccessRulesForm({ adminId, currentRules }: EditAccessRulesFormProps) {
+  const router = useRouter()
+  const [rules, setRules] = useState<AdminAccessRuleInput[]>(
+    currentRules.map((r) => ({ cities: r.cities, plans: r.plans, trialFilter: r.trialFilter }))
+  )
+  const [loading, setLoading] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSave() {
+    if (rules.some(ruleIsEmpty)) {
+      setError("قوانین بدون فیلتر وجود دارد — آن‌ها را حذف یا تکمیل کنید")
+      return
+    }
+
+    setLoading(true)
+    setError("")
+    setSaved(false)
+    try {
+      const res = await fetch(`/api/admin/mid-admins/${adminId}/access-rules`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rules }),
+      })
+      if (!res.ok) {
+        const json = await res.json()
+        setError(json.error ?? "خطا در ذخیره")
+        return
+      }
+      setSaved(true)
+      router.refresh()
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <AccessRulesEditor
+        rules={rules}
+        onChange={(next) => {
+          setRules(next)
+          setSaved(false)
+        }}
+      />
+
+      <div className="flex items-center gap-3">
+        <Button onClick={handleSave} disabled={loading} size="sm">
+          {loading ? "در حال ذخیره..." : `ذخیره (${rules.length.toLocaleString("fa-IR")} قانون)`}
         </Button>
         {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
         {error && <span className="text-xs text-red-600">{error}</span>}

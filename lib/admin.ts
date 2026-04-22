@@ -1,4 +1,5 @@
 import { format } from "date-fns-jalali"
+import type { Prisma } from "@/app/generated/prisma/client"
 import { db } from "@/lib/db"
 import { PLAN_PRICES_TOMAN } from "@/lib/payment"
 import { findActiveReferredOffices } from "@/lib/referral"
@@ -46,18 +47,51 @@ export const AI_UNIT_COST_TOMAN = 80
 /**
  * Returns the list of officeIds a given admin user can access.
  * - SUPER_ADMIN  → null (unrestricted — callers must omit the officeId filter)
- * - MID_ADMIN    → string[] of explicitly assigned offices
+ * - MID_ADMIN    → union of (a) explicitly assigned offices and (b) offices
+ *                  matching any AdminAccessRule (dynamic: city / plan / trial).
+ *   Rule-based matches are evaluated live per request so newly-registered
+ *   offices join automatically without re-assigning.
  */
 export async function getAccessibleOfficeIds(
   user: SessionUser
 ): Promise<string[] | null> {
   if (user.role === "SUPER_ADMIN") return null
 
-  const assignments = await db.adminOfficeAssignment.findMany({
-    where: { adminUserId: user.id },
-    select: { officeId: true },
-  })
-  return assignments.map((a) => a.officeId)
+  const [assignments, rules] = await Promise.all([
+    db.adminOfficeAssignment.findMany({
+      where: { adminUserId: user.id },
+      select: { officeId: true },
+    }),
+    db.adminAccessRule.findMany({
+      where: { adminUserId: user.id },
+      select: { cities: true, plans: true, trialFilter: true },
+    }),
+  ])
+
+  const ids = new Set<string>(assignments.map((a) => a.officeId))
+
+  if (rules.length > 0) {
+    const ruleClauses: Prisma.OfficeWhereInput[] = rules.map((rule) => {
+      const where: Prisma.OfficeWhereInput = { deletedAt: null }
+      if (rule.cities.length > 0) where.city = { in: rule.cities }
+
+      const subWhere: Prisma.SubscriptionWhereInput = {}
+      if (rule.plans.length > 0) subWhere.plan = { in: rule.plans }
+      if (rule.trialFilter === "TRIAL_ONLY") subWhere.isTrial = true
+      if (rule.trialFilter === "PAID_ONLY") subWhere.isTrial = false
+      if (Object.keys(subWhere).length > 0) where.subscription = subWhere
+
+      return where
+    })
+
+    const matched = await db.office.findMany({
+      where: { OR: ruleClauses },
+      select: { id: true },
+    })
+    for (const o of matched) ids.add(o.id)
+  }
+
+  return Array.from(ids)
 }
 
 /**

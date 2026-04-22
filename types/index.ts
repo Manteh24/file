@@ -13,6 +13,7 @@ export type BillingCycle = "MONTHLY" | "ANNUAL"
 export type SubStatus = "ACTIVE" | "GRACE" | "LOCKED" | "CANCELLED"
 export type TicketCategory = "BILLING" | "TECHNICAL" | "ACCOUNT" | "FEATURE_REQUEST" | "BUG_REPORT" | "OTHER"
 export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED"
+export type CalendarEventType = "REMINDER" | "NOTE" | "MEETING"
 
 export type TransactionType = "SALE" | "LONG_TERM_RENT" | "SHORT_TERM_RENT" | "PRE_SALE"
 export type PropertyType =
@@ -470,7 +471,7 @@ export interface MidAdminSummary {
   isActive: boolean
   adminTier: AdminTier | null
   createdAt: Date
-  _count: { adminAssignments: number }
+  _count: { adminAssignments: number; adminAccessRules: number }
 }
 
 export interface MidAdminAssignment {
@@ -478,6 +479,19 @@ export interface MidAdminAssignment {
   officeId: string
   assignedAt: Date
   office: { id: string; name: string; city: string | null }
+}
+
+export type TrialFilter = "ANY" | "TRIAL_ONLY" | "PAID_ONLY"
+
+export interface AdminAccessRuleInput {
+  cities: string[]
+  plans: Plan[]
+  trialFilter: TrialFilter
+}
+
+export interface AdminAccessRuleSummary extends AdminAccessRuleInput {
+  id: string
+  createdAt: Date
 }
 
 export interface OfficeNoteItem {
@@ -620,4 +634,37 @@ export interface AdminKpiData {
     paymentFailures30d: number
     supportResponseTime: string
   }
+}
+
+// ─── Calendar Domain Types ─────────────────────────────────────────────────────
+
+export interface CalendarEventAttendeeInfo {
+  userId: string
+  user: { id: string; displayName: string }
+}
+
+export interface CalendarEvent {
+  id: string
+  officeId: string
+  createdById: string
+  title: string | null
+  description: string | null
+  type: CalendarEventType
+  eventDate: string  // ISO string
+  startTime: string | null
+  endTime: string | null
+  reminderMinutes: number | null
+  playSound: boolean
+  createdAt: string
+  updatedAt: string
+  attendees: CalendarEventAttendeeInfo[]
+  createdBy: { displayName: string }
+}
+
+// Events grouped by ISO date string ("YYYY-MM-DD") for efficient grid rendering
+export type CalendarEventsByDate = Record<string, CalendarEvent[]>
+
+export interface AgentSelectOption {
+  id: string
+  displayName: string
 }

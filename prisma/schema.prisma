@@ -40,6 +40,13 @@ enum AdminTier {
   FULL_ACCESS
 }
 
+// Controls whether an AdminAccessRule matches trial-only, paid-only, or both.
+enum TrialFilter {
+  ANY
+  TRIAL_ONLY
+  PAID_ONLY
+}
+
 enum PhotoProcessMode {
   ALWAYS
   NEVER
@@ -196,6 +203,7 @@ model User {
   office              Office?          @relation(fields: [officeId], references: [id])
   branch              Branch?          @relation(fields: [branchId], references: [id])
   adminAssignments    AdminOfficeAssignment[]
+  adminAccessRules    AdminAccessRule[]
   sessions            UserSession[]
   createdFiles        PropertyFile[]   @relation("CreatedFiles")
   fileAssignments     FileAssignment[]
@@ -615,6 +623,28 @@ model Branch {
 
   @@index([officeId])
   @@map("branches")
+}
+
+// Dynamic access rule for a MID_ADMIN — offices matching any rule are accessible,
+// evaluated live at request time so newly-registered offices join automatically.
+// Within one rule, fields are AND'd (city AND plan AND trial). Multiple rules are OR'd.
+// Empty cities[] / plans[] = no constraint on that dimension. Explicit AdminOfficeAssignment
+// rows still grant access in addition to rule-based matches.
+model AdminAccessRule {
+  id          String      @id @default(cuid())
+  adminUserId String
+  // Empty = match any city. Otherwise office.city must be in this list.
+  cities      String[]    @default([])
+  // Empty = match any plan. Otherwise office.subscription.plan must be in this list.
+  plans       Plan[]      @default([])
+  // Controls whether trial offices match: ANY (both), TRIAL_ONLY, or PAID_ONLY.
+  trialFilter TrialFilter @default(ANY)
+  createdAt   DateTime    @default(now())
+
+  admin       User @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@map("admin_access_rules")
 }
 
 // Links a MID_ADMIN user to specific offices they are allowed to support.

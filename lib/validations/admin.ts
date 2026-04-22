@@ -36,6 +36,21 @@ export const setAssignmentsSchema = z.object({
   officeIds: z.array(z.string().cuid()).max(100),
 })
 
+// Dynamic access rule — matches offices by city/plan/trial. Empty arrays = no
+// constraint on that dimension. Multiple rules are OR'd together.
+const accessRuleSchema = z.object({
+  cities: z.array(z.string().min(1).max(64)).max(100),
+  plans: z.array(z.enum(["FREE", "PRO", "TEAM"])).max(3),
+  trialFilter: z.enum(["ANY", "TRIAL_ONLY", "PAID_ONLY"]),
+}).refine(
+  (r) => r.cities.length > 0 || r.plans.length > 0 || r.trialFilter !== "ANY",
+  { message: "هر قانون دسترسی باید حداقل یک فیلتر داشته باشد" }
+)
+
+export const setAccessRulesSchema = z.object({
+  rules: z.array(accessRuleSchema).max(20),
+})
+
 export const toggleActiveSchema = z.object({
   active: z.boolean(),
 })

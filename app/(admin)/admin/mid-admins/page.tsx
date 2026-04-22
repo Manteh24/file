@@ -24,7 +24,7 @@ export default async function AdminMidAdminsPage() {
         isActive: true,
         adminTier: true,
         createdAt: true,
-        _count: { select: { adminAssignments: true } },
+        _count: { select: { adminAssignments: true, adminAccessRules: true } },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -59,7 +59,7 @@ export default async function AdminMidAdminsPage() {
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">نام</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">نام کاربری</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">سطح دسترسی</th>
-                <th className="px-4 py-3 text-start font-medium text-muted-foreground">دفاتر</th>
+                <th className="px-4 py-3 text-start font-medium text-muted-foreground">دسترسی</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">تاریخ ثبت</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">وضعیت</th>
                 <th className="px-4 py-3"></th>
@@ -79,8 +79,14 @@ export default async function AdminMidAdminsPage() {
                       {admin.adminTier ? (TIER_LABELS[admin.adminTier] ?? admin.adminTier) : "فقط مشاهده"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {admin._count.adminAssignments.toLocaleString("fa-IR")} دفتر
+                  <td className="px-4 py-3 tabular-nums text-xs text-muted-foreground">
+                    {admin._count.adminAssignments.toLocaleString("fa-IR")} دفتر خاص
+                    {admin._count.adminAccessRules > 0 && (
+                      <>
+                        <span className="mx-1">·</span>
+                        {admin._count.adminAccessRules.toLocaleString("fa-IR")} قانون
+                      </>
+                    )}
                   </td>
                   <td className="px-4 py-3 tabular-nums text-muted-foreground">
                     {format(new Date(admin.createdAt), "yyyy/MM/dd")}
