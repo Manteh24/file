@@ -99,6 +99,12 @@ export function NotificationBell() {
       router.push("/settings#billing")
       return
     }
+    // Meeting invites link to the calendar
+    if (notification.type === "MEETING_INVITE") {
+      setOpen(false)
+      router.push("/calendar")
+      return
+    }
     if (notification.fileId) {
       setOpen(false)
       router.push(`/files/${notification.fileId}`)

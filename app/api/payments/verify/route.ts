@@ -3,9 +3,10 @@ import { db } from "@/lib/db"
 import { verifyPayment, calculateNewPeriodEnd } from "@/lib/payment"
 
 // Base path for post-payment redirects
-function settingsUrl(status: string): string {
+function settingsUrl(status: string, plan?: string): string {
   const base = process.env.NEXTAUTH_URL ?? ""
-  return `${base}/settings?payment=${status}`
+  const planParam = plan ? `&plan=${plan}` : ""
+  return `${base}/settings?payment=${status}${planParam}`
 }
 
 // This route has NO auth check — it is called directly by Zarinpal's servers.
@@ -103,5 +104,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(settingsUrl("error"))
   }
 
-  return NextResponse.redirect(settingsUrl("success"))
+  return NextResponse.redirect(settingsUrl("success", record.plan))
 }

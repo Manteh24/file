@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { BookOpen, CheckCircle2, Key, Users, BarChart3 } from "lucide-react"
+import { CheckCircle2, BookOpen, Crown, Gem } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -10,19 +10,94 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import type { Plan } from "@/types"
 
 interface WelcomeModalProps {
   open: boolean
+  plan?: Plan
 }
 
-const HIGHLIGHTS = [
-  { icon: Key, text: "فایل‌های ملکی خود را ثبت و مدیریت کنید" },
-  { icon: Users, text: "مشاوران دفتر را اضافه و دسترسی بدهید" },
-  { icon: BarChart3, text: "گزارش‌های مالی و عملکرد دفتر را ببینید" },
-]
+interface PlanConfig {
+  label: string
+  Icon: React.ElementType
+  gradientClass: string
+  badgeClass: string
+  iconBgClass: string
+  iconClass: string
+  title: string
+  description: string
+  features: string[]
+}
 
-export function WelcomeModal({ open: initialOpen }: WelcomeModalProps) {
+const PLAN_CONFIG: Record<Plan, PlanConfig> = {
+  PRO: {
+    label: "حرفه‌ای",
+    Icon: Gem,
+    gradientClass: "from-indigo-500/20 via-indigo-400/10 to-muted",
+    badgeClass:
+      "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300",
+    iconBgClass: "bg-indigo-100 dark:bg-indigo-900/50",
+    iconClass: "text-indigo-600 dark:text-indigo-400",
+    title: "اشتراک حرفه‌ای فعال شد! 🎉",
+    description:
+      "تبریک! از این لحظه به تمام امکانات پلن حرفه‌ای دسترسی کامل دارید.",
+    features: [
+      "فایل‌های ملکی نامحدود",
+      "مشاوران نامحدود",
+      "تولید توضیحات با هوش مصنوعی",
+      "گزارش‌های پیشرفته مالی",
+      "ارسال پیامک اشتراکی",
+    ],
+  },
+  TEAM: {
+    label: "تیمی",
+    Icon: Crown,
+    gradientClass: "from-amber-500/20 via-amber-400/10 to-muted",
+    badgeClass:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    iconBgClass: "bg-amber-100 dark:bg-amber-900/50",
+    iconClass: "text-amber-600 dark:text-amber-400",
+    title: "اشتراک تیمی فعال شد! 🎉",
+    description:
+      "تبریک! بالاترین سطح دسترسی برای تیم شما آماده است. از همه امکانات لذت ببرید.",
+    features: [
+      "تمام امکانات پلن حرفه‌ای",
+      "ارسال پیامک گروهی به مشتریان",
+      "مدیریت پیشرفته تیم",
+      "سقف بالاتر هوش مصنوعی ماهانه",
+    ],
+  },
+  FREE: {
+    label: "رایگان",
+    Icon: CheckCircle2,
+    gradientClass: "from-primary/10 via-primary/5 to-muted",
+    badgeClass: "bg-primary/10 text-primary",
+    iconBgClass: "bg-primary/15",
+    iconClass: "text-primary",
+    title: "خوش آمدید! 🎉",
+    description: "اشتراک شما با موفقیت فعال شد. حالا به امکانات دسترسی دارید.",
+    features: [
+      "فایل‌های ملکی خود را ثبت و مدیریت کنید",
+      "مشاوران دفتر را اضافه و دسترسی بدهید",
+      "گزارش‌های مالی و عملکرد دفتر را ببینید",
+    ],
+  },
+}
+
+export function WelcomeModal({ open: initialOpen, plan = "FREE" }: WelcomeModalProps) {
   const [open, setOpen] = useState(initialOpen)
+  const config = PLAN_CONFIG[plan] ?? PLAN_CONFIG.FREE
+  const {
+    Icon,
+    label,
+    gradientClass,
+    badgeClass,
+    iconBgClass,
+    iconClass,
+    title,
+    description,
+    features,
+  } = config
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -30,93 +105,67 @@ export function WelcomeModal({ open: initialOpen }: WelcomeModalProps) {
         showCloseButton
         className="p-0 overflow-hidden max-w-[calc(100%-2rem)] sm:max-w-2xl"
       >
-        <div className="flex flex-col sm:flex-row min-h-[380px]">
-          {/* Image panel — appears on the right in RTL */}
-          <div className="relative flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/5 to-muted sm:w-[42%] min-h-[180px] sm:min-h-0 order-first sm:order-last">
-            {/* Placeholder illustration — replace with <Image> when ready */}
-            <div className="flex flex-col items-center gap-3 px-6 py-8 text-center select-none">
-              <div className="size-20 rounded-2xl bg-primary/15 flex items-center justify-center">
-                <svg
-                  viewBox="0 0 64 64"
-                  fill="none"
-                  className="size-11 text-primary"
-                  aria-hidden="true"
-                >
-                  {/* Simple house icon */}
-                  <path
-                    d="M8 28L32 8l24 20v28H40V40H24v16H8V28Z"
-                    fill="currentColor"
-                    fillOpacity="0.18"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinejoin="round"
-                  />
-                  <rect
-                    x="26"
-                    y="40"
-                    width="12"
-                    height="16"
-                    rx="1.5"
-                    fill="currentColor"
-                    fillOpacity="0.35"
-                  />
-                  <rect
-                    x="20"
-                    y="28"
-                    width="10"
-                    height="9"
-                    rx="1"
-                    fill="currentColor"
-                    fillOpacity="0.5"
-                  />
-                  <rect
-                    x="34"
-                    y="28"
-                    width="10"
-                    height="9"
-                    rx="1"
-                    fill="currentColor"
-                    fillOpacity="0.5"
-                  />
-                </svg>
+        <div className="flex flex-col sm:flex-row min-h-[400px]">
+          {/* Visual panel — appears on the right in RTL */}
+          <div
+            className={`relative flex items-center justify-center bg-gradient-to-br ${gradientClass} sm:w-[42%] min-h-[180px] sm:min-h-0 order-first sm:order-last overflow-hidden`}
+          >
+            <div className="flex flex-col items-center gap-4 px-6 py-8 text-center select-none relative z-10">
+              {/* Plan badge */}
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${badgeClass}`}>
+                پلن {label}
+              </span>
+
+              {/* Animated icon */}
+              <div
+                className={`size-20 rounded-2xl ${iconBgClass} flex items-center justify-center`}
+                style={{ animation: "celebrationBounce 2s ease-in-out infinite" }}
+              >
+                <Icon className={`size-10 ${iconClass}`} strokeWidth={1.5} />
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                تصویر خوش‌آمدگویی
-                <br />
-                به زودی اضافه می‌شود
-              </p>
+
+              {/* Floating sparkle dots */}
+              <div className="absolute top-6 start-8 size-2.5 rounded-full bg-current opacity-20" />
+              <div className="absolute top-14 start-4 size-1.5 rounded-full bg-current opacity-15" />
+              <div className="absolute bottom-10 end-6 size-3 rounded-full bg-current opacity-10" />
+              <div className="absolute bottom-6 end-12 size-2 rounded-full bg-current opacity-20" />
+              <div className="absolute top-1/3 end-4 size-1.5 rounded-full bg-current opacity-25" />
             </div>
 
-            {/* Subtle decorative circles */}
-            <div className="absolute -bottom-6 -start-6 size-24 rounded-full bg-primary/8 pointer-events-none" />
-            <div className="absolute -top-4 -end-4 size-16 rounded-full bg-primary/6 pointer-events-none" />
+            {/* Background decorative circles */}
+            <div className="absolute -bottom-8 -start-8 size-36 rounded-full bg-current opacity-[0.05] pointer-events-none" />
+            <div className="absolute -top-6 -end-6 size-24 rounded-full bg-current opacity-[0.04] pointer-events-none" />
           </div>
 
-          {/* Text panel */}
+          {/* Content panel */}
           <div className="flex flex-col justify-between gap-6 p-6 sm:p-8 sm:flex-1">
             <div className="space-y-5">
               <div>
                 <DialogTitle className="text-xl font-bold leading-snug text-foreground">
-                  خوش آمدید! 🎉
+                  {title}
                 </DialogTitle>
-                <DialogDescription className="mt-1.5 text-sm text-muted-foreground">
-                  اشتراک شما با موفقیت فعال شد. حالا به همه امکانات دسترسی دارید.
+                <DialogDescription className="mt-1.5 text-sm text-muted-foreground leading-relaxed">
+                  {description}
                 </DialogDescription>
               </div>
 
               <ul className="space-y-3">
-                {HIGHLIGHTS.map(({ icon: Icon, text }) => (
+                {features.map((text) => (
                   <li key={text} className="flex items-start gap-2.5">
                     <CheckCircle2 className="size-4 mt-0.5 shrink-0 text-emerald-500" />
-                    <span className="text-sm text-foreground leading-relaxed">{text}</span>
+                    <span className="text-sm text-foreground leading-relaxed">
+                      {text}
+                    </span>
                   </li>
                 ))}
               </ul>
 
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                اگر در شروع به کار نیاز به راهنمایی دارید، صفحه راهنما را ببینید — همه چیز را
-                قدم به قدم توضیح داده‌ایم.
-              </p>
+              {plan !== "FREE" && (
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  اگر سؤال یا مشکلی داشتید، از طریق بخش پشتیبانی با ما در
+                  تماس باشید.
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2.5">

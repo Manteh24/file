@@ -114,6 +114,12 @@ enum MessageChannel {
   EMAIL
 }
 
+enum CalendarEventType {
+  REMINDER
+  NOTE
+  MEETING
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 // Office is the tenant root. Every other entity belongs to an office via officeId.
@@ -166,6 +172,7 @@ model Office {
   trialPhone       TrialPhone?
   scheduledSms     ScheduledSms[]
   officeMessages   OfficeMessage[]
+  calendarEvents   CalendarEvent[]
 
   @@map("offices")
 }
@@ -225,6 +232,8 @@ model User {
   ticketMessages      TicketMessage[]
   passwordResetTokens PasswordResetToken[]
   sentMessages        OfficeMessage[]      @relation("SentMessages")
+  createdCalendarEvents  CalendarEvent[]           @relation("CalendarEventCreator")
+  calendarAttendances    CalendarEventAttendee[]   @relation("CalendarEventAttendees")
 
   @@map("users")
 }
@@ -921,4 +930,43 @@ model OfficeMessage {
 
   @@index([officeId])
   @@map("office_messages")
+}
+
+// A calendar event created by a manager. MEETING events can invite agents.
+// REMINDER and NOTE are private to the manager; MEETING creates notifications for attendees.
+model CalendarEvent {
+  id              String            @id @default(cuid())
+  officeId        String
+  createdById     String
+  title           String?           // optional — NOTE type has no title; REMINDER may be untitled
+  description     String?
+  type            CalendarEventType
+  // Stored as Gregorian ISO timestamp. Only the date part is semantically used.
+  eventDate       DateTime
+  // Optional HH:MM 24-hour strings. Stored as text to avoid TZ-shift issues.
+  startTime       String?
+  endTime         String?
+  reminderMinutes Int?              // REMINDER: minutes before eventDate to send notification
+  playSound       Boolean           @default(false)  // REMINDER + MEETING: play audio on notification
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  office    Office                  @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  createdBy User                    @relation("CalendarEventCreator", fields: [createdById], references: [id])
+  attendees CalendarEventAttendee[]
+
+  @@index([officeId, eventDate])
+  @@map("calendar_events")
+}
+
+// Join table: which agents are invited to a MEETING event.
+model CalendarEventAttendee {
+  eventId String
+  userId  String
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User          @relation("CalendarEventAttendees", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, userId])
+  @@map("calendar_event_attendees")
 }

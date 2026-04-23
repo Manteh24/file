@@ -12,6 +12,7 @@ import {
   FileText,
   BarChart2,
   MessageSquare,
+  CalendarDays,
   ChevronLeft,
   ArrowUp,
   LogOut,
@@ -46,6 +47,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
       { href: "/files", label: "فایل‌ها", icon: FolderOpen, tutorialId: "nav-files" },
       { href: "/crm", label: "مشتریان", icon: Users },
+      { href: "/calendar", label: "تقویم", icon: CalendarDays },
     ],
   },
   {

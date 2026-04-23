@@ -13,7 +13,7 @@ import { ManagerIsAgentToggle } from "@/components/settings/ManagerIsAgentToggle
 import type { OfficeProfile, SubscriptionInfo } from "@/types"
 
 interface SettingsPageProps {
-  searchParams: Promise<{ payment?: string }>
+  searchParams: Promise<{ payment?: string; plan?: string }>
 }
 
 // Payment result banners shown after returning from Zarinpal
@@ -98,7 +98,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       />
 
       {params.payment === "success" && (
-        <WelcomeModal open />
+        <WelcomeModal
+          open
+          plan={
+            params.plan === "PRO" || params.plan === "TEAM"
+              ? params.plan
+              : (subscriptionInfo?.plan ?? "FREE")
+          }
+        />
       )}
 
       {params.payment && (

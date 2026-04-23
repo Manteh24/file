@@ -11,23 +11,11 @@ import {
   CardDescription,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { formatJalali, formatToman } from "@/lib/utils"
+import { formatToman } from "@/lib/utils"
 import { FileStatusRing } from "@/components/dashboard/FileStatusRing"
 import { ExpiringContractsWidget } from "@/components/dashboard/ExpiringContractsWidget"
-import type { Plan, SubStatus } from "@/types"
-
-const planLabels: Record<Plan, string> = {
-  FREE: "رایگان",
-  PRO: "حرفه‌ای",
-  TEAM: "تیم",
-}
-
-const statusConfig: Record<SubStatus, { label: string; color: string }> = {
-  ACTIVE: { label: "فعال", color: "text-emerald-600" },
-  GRACE: { label: "دوره اضافه", color: "text-amber-600" },
-  LOCKED: { label: "مسدود", color: "text-destructive" },
-  CANCELLED: { label: "لغو شده", color: "text-muted-foreground" },
-}
+import { PlanUpgradeCelebration } from "@/components/dashboard/PlanUpgradeCelebration"
+import type { Plan } from "@/types"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -38,8 +26,7 @@ export default async function DashboardPage() {
 
   const jalaliMonthStart = startOfMonth(new Date())
 
-  const [subscription, teamCount, activeFilesCount, customerCount, fileStatusGroups, monthContractData] = await Promise.all([
-    db.subscription.findFirst({ where: { officeId } }),
+  const [teamCount, activeFilesCount, customerCount, fileStatusGroups, monthContractData] = await Promise.all([
     db.user.count({ where: { officeId } }),
     db.propertyFile.count({
       where: {
@@ -63,19 +50,6 @@ export default async function DashboardPage() {
     }),
   ])
 
-  const trialDaysLeft =
-    subscription?.isTrial && subscription.trialEndsAt
-      ? Math.max(
-          0,
-          Math.ceil(
-            (subscription.trialEndsAt.getTime() - Date.now()) /
-              (1000 * 60 * 60 * 24)
-          )
-        )
-      : null
-
-  const subStatus = subscription ? statusConfig[subscription.status] : null
-
   const fileStatusData = fileStatusGroups.map((g) => ({
     status: g.status,
     count: g._count.id,
@@ -83,8 +57,35 @@ export default async function DashboardPage() {
   const monthDeals = monthContractData._count.id
   const monthCommission = monthContractData._sum.commissionAmount ?? BigInt(0)
 
+  // Check for an admin-triggered plan upgrade notification (MANAGER only)
+  let planUpgradeNotification: { id: string; plan: Plan } | null = null
+  if (role === "MANAGER") {
+    const upgradeNotif = await db.notification.findFirst({
+      where: {
+        userId,
+        read: false,
+        type: { in: ["PLAN_UPGRADED_PRO", "PLAN_UPGRADED_TEAM"] },
+      },
+      select: { id: true, type: true },
+      orderBy: { createdAt: "desc" },
+    })
+    if (upgradeNotif) {
+      planUpgradeNotification = {
+        id: upgradeNotif.id,
+        plan: upgradeNotif.type === "PLAN_UPGRADED_TEAM" ? "TEAM" : "PRO",
+      }
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {planUpgradeNotification && (
+        <PlanUpgradeCelebration
+          notificationId={planUpgradeNotification.id}
+          plan={planUpgradeNotification.plan}
+        />
+      )}
+
       <div>
         <h1 className="text-2xl font-bold">داشبورد</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -107,8 +108,8 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* KPI grid: 2 cols on mobile, 4 on desktop */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 content-start">
         <Card>
           <CardHeader>
             <CardDescription>فایل‌های فعال</CardDescription>
@@ -135,8 +136,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Team count — real data from DB */}
-        <Card>
+        <Card className="col-span-2 sm:col-span-1">
           <CardHeader>
             <CardDescription>اعضای تیم</CardDescription>
             <CardTitle className="text-3xl tabular-nums">
@@ -145,28 +145,6 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground">کاربر فعال</p>
-          </CardContent>
-        </Card>
-
-        {/* Subscription — real data from DB */}
-        <Card>
-          <CardHeader>
-            <CardDescription>اشتراک</CardDescription>
-            <CardTitle
-              className={`text-2xl ${subStatus?.color ?? ""}`}
-            >
-              {subscription ? planLabels[subscription.plan] : "—"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              {subStatus?.label}
-              {trialDaysLeft !== null
-                ? ` — ${trialDaysLeft.toLocaleString("fa-IR")} روز مانده`
-                : subscription?.currentPeriodEnd
-                ? ` تا ${formatJalali(subscription.currentPeriodEnd)}`
-                : ""}
-            </p>
           </CardContent>
         </Card>
       </div>
