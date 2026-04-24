@@ -15,7 +15,7 @@ import {
   getMonth,
   addMonths,
 } from "date-fns-jalali"
-import { Menu, Sun, Moon, Search, UserCircle, CalendarDays, ChevronRight, ChevronLeft, Plus, X } from "lucide-react"
+import { Sun, Moon, Search, UserCircle, CalendarDays, ChevronRight, ChevronLeft, Plus, X } from "lucide-react"
 import { EventForm } from "@/components/calendar/EventForm"
 import type { AgentSelectOption } from "@/types"
 import { NotificationBell } from "@/components/dashboard/NotificationBell"
@@ -503,7 +503,6 @@ interface TopbarProps {
   userName: string
   avatarUrl?: string | null
   isDark: boolean
-  onMenuClick: () => void
   onToggleDark: () => void
   onSearchOpen: () => void
   role: Role
@@ -513,7 +512,6 @@ export function Topbar({
   userName,
   avatarUrl,
   isDark,
-  onMenuClick,
   onToggleDark,
   onSearchOpen,
   role,
@@ -542,16 +540,9 @@ export function Topbar({
           borderBottom: "1px solid var(--color-border-subtle)",
         }}
       >
-        {/* Right side: hamburger (mobile) or page title (desktop) */}
+        {/* Right side: page title (desktop) / logo (mobile — mobile nav replaces hamburger) */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={onMenuClick}
-            className="lg:hidden h-9 w-9 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
-            aria-label="باز کردن منو"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <h1 className="hidden lg:block text-lg font-semibold text-[var(--color-text-primary)]">
+          <h1 className="text-base font-semibold text-[var(--color-text-primary)] lg:text-lg">
             {pageTitle}
           </h1>
         </div>

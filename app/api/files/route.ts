@@ -60,6 +60,8 @@ export async function GET(request: Request) {
         area: true,
         address: true,
         neighborhood: true,
+        latitude: true,
+        longitude: true,
         salePrice: true,
         depositAmount: true,
         rentAmount: true,

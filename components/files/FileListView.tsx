@@ -1,16 +1,17 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { LayoutGrid, List, MapPin, User, Phone, Eye } from "lucide-react"
+import { LayoutGrid, List, Map as MapIcon, MapPin, User, Phone, Eye } from "lucide-react"
 import { FileCard } from "@/components/files/FileCard"
 import { FileStatusBadge } from "@/components/files/FileStatusBadge"
 import { QuickViewDrawer } from "@/components/files/QuickViewDrawer"
+import { FileMapView } from "@/components/files/FileMapView"
 import { formatToman, formatJalali } from "@/lib/utils"
 import type { PropertyFileSummary, TransactionType } from "@/types"
 
 const STORAGE_KEY = "fileListView"
 
-type ViewMode = "gallery" | "table"
+type ViewMode = "gallery" | "table" | "map"
 
 const transactionTypeLabels: Record<TransactionType, string> = {
   SALE: "فروش",
@@ -55,7 +56,7 @@ export function FileListView({ files }: FileListViewProps) {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === "table" || stored === "gallery") setView(stored)
+    if (stored === "table" || stored === "gallery" || stored === "map") setView(stored)
   }, [])
 
   function switchView(v: ViewMode) {
@@ -75,8 +76,8 @@ export function FileListView({ files }: FileListViewProps) {
     <>
     <QuickViewDrawer file={quickViewFile} onClose={closeQuickView} />
     <div>
-      {/* View toggle — hidden on mobile (always gallery per spec) */}
-      <div className="hidden sm:flex items-center justify-end mb-4 gap-1">
+      {/* View toggle — table mode stays desktop-only; gallery + map work on mobile */}
+      <div className="flex items-center justify-end mb-4 gap-1">
         <button
           onClick={() => switchView("gallery")}
           className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
@@ -92,7 +93,7 @@ export function FileListView({ files }: FileListViewProps) {
         </button>
         <button
           onClick={() => switchView("table")}
-          className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
+          className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
           style={
             view === "table"
               ? { background: "var(--color-teal-50)", color: "var(--color-teal-600)" }
@@ -103,7 +104,23 @@ export function FileListView({ files }: FileListViewProps) {
         >
           <List className="h-4 w-4" />
         </button>
+        <button
+          onClick={() => switchView("map")}
+          className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors"
+          style={
+            view === "map"
+              ? { background: "var(--color-teal-50)", color: "var(--color-teal-600)" }
+              : { color: "var(--color-text-tertiary)" }
+          }
+          title="نمای نقشه"
+          aria-label="نمای نقشه"
+        >
+          <MapIcon className="h-4 w-4" />
+        </button>
       </div>
+
+      {/* Map view */}
+      {view === "map" && <FileMapView files={files} />}
 
       {/* Gallery view */}
       {view === "gallery" && (

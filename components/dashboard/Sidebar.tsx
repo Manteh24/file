@@ -21,7 +21,6 @@ import {
   BookOpen,
   Gift,
   Settings,
-  X,
 } from "lucide-react"
 import { WelcomeModal } from "@/components/settings/WelcomeModal"
 import { cn } from "@/lib/utils"
@@ -46,8 +45,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
       { href: "/files", label: "فایل‌ها", icon: FolderOpen, tutorialId: "nav-files" },
-      { href: "/crm", label: "مشتریان", icon: Users },
-      { href: "/calendar", label: "تقویم", icon: CalendarDays },
+      { href: "/crm", label: "مشتریان", icon: Users, tutorialId: "nav-crm" },
+      { href: "/calendar", label: "تقویم", icon: CalendarDays, tutorialId: "nav-calendar" },
     ],
   },
   {
@@ -317,18 +316,10 @@ export function Sidebar({
               </div>
               <button
                 onClick={onToggleCollapsed}
-                className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
+                className="h-8 w-8 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text-primary)] transition-colors"
                 aria-label="جمع کردن منو"
               >
                 <ChevronLeft className="h-4 w-4 scale-x-[-1]" />
-              </button>
-              {/* Mobile close button */}
-              <button
-                onClick={onClose}
-                className="lg:hidden h-8 w-8 flex items-center justify-center rounded-lg text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-2)]"
-                aria-label="بستن منو"
-              >
-                <X className="h-4 w-4" />
               </button>
             </>
           )}
@@ -570,35 +561,14 @@ export function Sidebar({
     )
   }
 
+  // Suppress unused-prop lint: mobilePopoverRef is retained for backward compatibility
+  // but no longer rendered since mobile users use MobileBottomNav.
+  void mobilePopoverRef
+  void isOpen
+
   return (
     <>
-      {/* Mobile backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/40 lg:hidden"
-          onClick={onClose}
-          aria-hidden
-        />
-      )}
-
-      {/* Mobile: fixed overlay from right — always expanded */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 right-0 z-30 lg:hidden",
-          "border-l border-[var(--color-border-subtle)]",
-          "transition-transform duration-200 ease-out",
-          isOpen ? "translate-x-0" : "translate-x-full"
-        )}
-        style={{
-          width: 260,
-          background: "var(--color-surface-1)",
-        }}
-        aria-label="منوی اصلی"
-      >
-        {renderSidebarContent(false, mobilePopoverRef)}
-      </aside>
-
-      {/* Desktop: fixed right sidebar */}
+      {/* Desktop: fixed right sidebar. Mobile uses MobileBottomNav instead. */}
       <aside
         className="hidden lg:flex lg:flex-col fixed inset-y-0 right-0 z-30"
         style={{

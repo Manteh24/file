@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { ArrowRight, Paperclip, X } from "lucide-react"
+import { ArrowRight, CheckCircle2, Paperclip, X } from "lucide-react"
 import Link from "next/link"
 
 const CATEGORY_OPTIONS = [
@@ -26,6 +26,7 @@ export default function NewTicketPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [showSuccessToast, setShowSuccessToast] = useState(false)
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null
@@ -52,19 +53,33 @@ export default function NewTicketPage() {
 
       if (!data.success) {
         setError(data.error ?? "خطایی رخ داد")
+        setIsSubmitting(false)
         return
       }
 
-      router.push(`/support/${data.data.id}`)
+      setShowSuccessToast(true)
+      setTimeout(() => {
+        router.push(`/support/${data.data.id}`)
+      }, 1400)
     } catch {
       setError("خطا در ارسال تیکت")
-    } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
     <div className="space-y-6 max-w-2xl">
+      {showSuccessToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-4 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 shadow-lg animate-in fade-in-0 slide-in-from-top-2 dark:border-emerald-900/50 dark:bg-emerald-950/60 dark:text-emerald-200"
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>تیکت با موفقیت ارسال شد</span>
+        </div>
+      )}
+
       <PageHeader
         title="تیکت جدید"
         actions={
