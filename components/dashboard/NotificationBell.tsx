@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Bell, Check } from "lucide-react"
+import { playReminderTone } from "@/lib/reminder-sound"
 
 interface Notification {
   id: string
@@ -39,14 +40,33 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false)
   const [markingAll, setMarkingAll] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  // Tracks IDs we've already seen across polls. The first fetch primes the set
+  // without playing any sound (otherwise every page load would replay every
+  // unseen reminder).
+  const seenIdsRef = useRef<Set<string> | null>(null)
 
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications")
       const body = await res.json()
-      if (body.success) {
-        setNotifications(body.data as Notification[])
+      if (!body.success) return
+      const incoming = body.data as Notification[]
+      setNotifications(incoming)
+
+      if (seenIdsRef.current === null) {
+        // Prime — first poll after mount.
+        seenIdsRef.current = new Set(incoming.map((n) => n.id))
+        return
       }
+
+      // Find newly arrived sound-enabled reminders and ding once.
+      const newSoundReminder = incoming.find(
+        (n) => n.type === "CALENDAR_REMINDER_SOUND" && !seenIdsRef.current!.has(n.id)
+      )
+      if (newSoundReminder) {
+        playReminderTone()
+      }
+      seenIdsRef.current = new Set(incoming.map((n) => n.id))
     } catch {
       // Silently ignore — stale data is fine; next poll will retry
     }
@@ -99,8 +119,12 @@ export function NotificationBell() {
       router.push("/settings#billing")
       return
     }
-    // Meeting invites link to the calendar
-    if (notification.type === "MEETING_INVITE") {
+    // Meeting invites and calendar reminders both link to the calendar
+    if (
+      notification.type === "MEETING_INVITE" ||
+      notification.type === "CALENDAR_REMINDER_SOUND" ||
+      notification.type === "CALENDAR_REMINDER_SILENT"
+    ) {
       setOpen(false)
       router.push("/calendar")
       return
@@ -136,7 +160,7 @@ export function NotificationBell() {
         <Bell className="h-5 w-5" />
         {/* Unread badge */}
         {unreadCount > 0 && (
-          <span className="absolute top-1 start-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+          <span className="absolute top-1 start-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-background">
             {unreadCount > 9 ? "۹+" : unreadCount.toLocaleString("fa-IR")}
           </span>
         )}

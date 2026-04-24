@@ -18,35 +18,46 @@ const STEPS: Step[] = [
     id: "welcome",
     title: "به املاکبین خوش آمدید 👋",
     description:
-      "چند ثانیه وقت بگذارید تا با امکانات اصلی پلتفرم آشنا شوید. می‌توانید هر زمان این راهنما را رد کنید.",
+      "چند ثانیه وقت بگذارید تا با امکانات اصلی آشنا شوید. می‌توانید هر زمان این راهنما را رد کنید.",
   },
   {
     id: "files",
     targetId: "nav-files",
     title: "فایل‌های ملکی",
     description:
-      "از اینجا فایل‌های دفتر را مدیریت کنید. برای ذخیره فایل تنها نوع معامله، موقعیت روی نقشه و یک شماره تماس کافی است.",
+      "از اینجا فایل‌ها را مدیریت کنید. برای ثبت سریع، تنها نوع معامله، موقعیت روی نقشه و یک شماره تماس کافی است. لینک اشتراک‌گذاری هم از صفحه هر فایل ساخته می‌شود.",
   },
   {
-    id: "agents",
-    targetId: "nav-agents",
-    title: "مشاوران تیم",
+    id: "quick-create",
+    targetId: "nav-quick-create",
+    title: "ایجاد سریع",
     description:
-      "مشاوران خود را اضافه کنید و هر فایل را به یک یا چند نفر اختصاص دهید تا آن‌ها هم دسترسی کامل داشته باشند.",
+      "با دکمه + در منوی پایین، در هر لحظه فایل، مشتری، قرارداد یا رویداد تقویم جدید بسازید — بدون رفتن به صفحه مربوطه.",
   },
   {
-    id: "share",
-    title: "اشتراک‌گذاری با مشتری",
+    id: "crm",
+    targetId: "nav-crm",
+    title: "مدیریت مشتریان",
     description:
-      "در صفحه هر فایل، لینک اختصاصی با قیمت دلخواه بسازید و مستقیماً پیامک کنید. مشتری بدون نیاز به ورود، ملک را می‌بیند.",
+      "مشتریان را با نوع (خریدار، مستاجر، فروشنده، مالک) ثبت کنید و تاریخچه تماس‌ها و معاملات هر کدام را در یک‌جا ببینید.",
+  },
+  {
+    id: "calendar",
+    targetId: "nav-calendar",
+    title: "تقویم و یادآوری‌ها",
+    description:
+      "جلسات بازدید، یادآور تماس و رویدادهای دفتر را اضافه کنید. در زمان مقرر نوتیفیکیشن با صدای هشدار دریافت می‌کنید — حتی وقتی برنامه باز نیست.",
+  },
+  {
+    id: "more",
+    targetId: "nav-more",
+    title: "امکانات بیشتر",
+    description:
+      "از منوی «بیشتر» به مشاوران، قراردادها، گزارش‌ها، مرکز پیام، تنظیمات، ارتقا پلن و پشتیبانی دسترسی دارید.",
   },
 ]
 
-interface OnboardingTutorialProps {
-  onOpenSidebar: () => void
-}
-
-export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
+export function OnboardingTutorial() {
   const [stepIdx, setStepIdx] = useState(0)
   // null = full-overlay (centered steps); rect = spotlight position
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null)
@@ -82,7 +93,6 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
     if (timerRef.current) clearTimeout(timerRef.current)
 
     if (step.targetId) {
-      onOpenSidebar()
       // Don't null the rect during transition — keep previous spotlight position
       // so the div stays mounted and CSS transition has a start point.
       timerRef.current = setTimeout(measureTarget, 260)
@@ -94,7 +104,7 @@ export function OnboardingTutorial({ onOpenSidebar }: OnboardingTutorialProps) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [step.targetId, onOpenSidebar, measureTarget])
+  }, [step.targetId, measureTarget])
 
   // Re-measure on resize
   useEffect(() => {

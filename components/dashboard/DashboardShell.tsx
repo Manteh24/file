@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Sidebar } from "./Sidebar"
 import { Topbar } from "./Topbar"
 import { SearchDialog } from "./SearchDialog"
@@ -8,6 +8,7 @@ import { SubscriptionBanner } from "./SubscriptionBanner"
 import { TrialActivationBanner } from "./TrialActivationBanner"
 import { OnboardingTutorial } from "./OnboardingTutorial"
 import { PWAInstallPrompt } from "./PWAInstallPrompt"
+import { MobileBottomNav } from "./MobileBottomNav"
 import { AppLoadingScreen } from "@/components/shared/AppLoadingScreen"
 import type { Role } from "@/types"
 import type { ResolvedSubscription } from "@/lib/subscription"
@@ -33,9 +34,9 @@ export function DashboardShell({
   showOnboarding,
   trialBannerProps,
 }: DashboardShellProps) {
-  // Mobile sidebar open/close
+  // Mobile sidebar — desktop still uses Sidebar. Bottom nav replaces mobile drawer;
+  // the state is retained only because Sidebar still accepts isOpen/onClose props.
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const openSidebar = useCallback(() => setSidebarOpen(true), [])
 
   // Global search dialog
   const [searchOpen, setSearchOpen] = useState(false)
@@ -142,7 +143,6 @@ export function DashboardShell({
           userName={userName}
           avatarUrl={avatarUrl}
           isDark={isDark}
-          onMenuClick={() => setSidebarOpen(true)}
           onToggleDark={toggleDark}
           onSearchOpen={() => setSearchOpen(true)}
           role={role}
@@ -163,10 +163,12 @@ export function DashboardShell({
           />
         )}
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 [&>*]:mx-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-6 [&>*]:mx-auto">{children}</main>
       </div>
 
-      {showOnboarding && <OnboardingTutorial onOpenSidebar={openSidebar} />}
+      <MobileBottomNav role={role} />
+
+      {showOnboarding && <OnboardingTutorial />}
       <PWAInstallPrompt />
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} role={role} />
     </div>
