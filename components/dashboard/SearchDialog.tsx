@@ -13,7 +13,8 @@ import {
   BarChart2,
   X,
 } from "lucide-react"
-import type { Role } from "@/types"
+import { canOfficeDo, type OfficeCapability } from "@/lib/office-permissions"
+import type { SessionUserForNav } from "./DashboardShell"
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -66,13 +67,20 @@ const TRANSACTION_LABELS: Record<string, string> = {
 
 /* ─── Quick nav links shown when query is empty ──────────────────────────── */
 
-const QUICK_LINKS = [
-  { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard, managerOnly: false },
-  { href: "/files", label: "فایل‌ها", icon: FolderOpen, managerOnly: false },
-  { href: "/crm", label: "مشتریان", icon: Users, managerOnly: false },
-  { href: "/agents", label: "مشاوران", icon: UserCheck, managerOnly: true },
-  { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
-  { href: "/reports", label: "گزارش‌ها", icon: BarChart2, managerOnly: true },
+interface QuickLink {
+  href: string
+  label: string
+  icon: React.ElementType
+  requiresCapability?: OfficeCapability
+}
+
+const QUICK_LINKS: QuickLink[] = [
+  { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
+  { href: "/files", label: "فایل‌ها", icon: FolderOpen },
+  { href: "/crm", label: "مشتریان", icon: Users },
+  { href: "/agents", label: "مشاوران", icon: UserCheck, requiresCapability: "manageAgents" },
+  { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
+  { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
 ]
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -80,12 +88,13 @@ const QUICK_LINKS = [
 interface SearchDialogProps {
   open: boolean
   onClose: () => void
-  role: Role
+  sessionUser: SessionUserForNav
 }
 
-export function SearchDialog({ open, onClose, role }: SearchDialogProps) {
+export function SearchDialog({ open, onClose, sessionUser }: SearchDialogProps) {
   const router = useRouter()
-  const isManager = role !== "AGENT"
+  const canSearchAgents = canOfficeDo(sessionUser, "manageAgents")
+  const canSearchContracts = canOfficeDo(sessionUser, "viewContracts")
 
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResults | null>(null)
@@ -153,7 +162,7 @@ export function SearchDialog({ open, onClose, role }: SearchDialogProps) {
           icon: Users,
           category: "مشتریان",
         })),
-        ...(isManager
+        ...(canSearchAgents
           ? results.agents.map((a) => ({
               id: a.id,
               href: `/agents/${a.id}`,
@@ -163,7 +172,7 @@ export function SearchDialog({ open, onClose, role }: SearchDialogProps) {
               category: "مشاوران",
             }))
           : []),
-        ...(isManager
+        ...(canSearchContracts
           ? results.contracts.map((c) => ({
               id: c.id,
               href: `/contracts/${c.id}`,
@@ -219,7 +228,9 @@ export function SearchDialog({ open, onClose, role }: SearchDialogProps) {
     categories[categories.length - 1].items.push(item)
   }
 
-  const quickLinks = QUICK_LINKS.filter((l) => !l.managerOnly || isManager)
+  const quickLinks = QUICK_LINKS.filter(
+    (l) => !l.requiresCapability || canOfficeDo(sessionUser, l.requiresCapability)
+  )
 
   let globalIdx = 0
 

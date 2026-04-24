@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation"
 import { LayoutDashboard, FolderOpen, Users, Menu, Plus } from "lucide-react"
 import { QuickCreateSheet } from "./QuickCreateSheet"
 import { MobileMoreSheet } from "./MobileMoreSheet"
-import type { Role } from "@/types"
+import type { SessionUserForNav } from "./DashboardShell"
 
 interface MobileBottomNavProps {
-  role: Role
+  sessionUser: SessionUserForNav
 }
 
 interface NavTab {
@@ -25,7 +25,7 @@ const TABS: NavTab[] = [
   { href: "/crm", label: "مشتریان", icon: Users, tutorialId: "nav-crm" },
 ]
 
-export function MobileBottomNav({ role }: MobileBottomNavProps) {
+export function MobileBottomNav({ sessionUser }: MobileBottomNavProps) {
   const pathname = usePathname()
   const [quickCreateOpen, setQuickCreateOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -88,12 +88,12 @@ export function MobileBottomNav({ role }: MobileBottomNavProps) {
       <QuickCreateSheet
         open={quickCreateOpen}
         onClose={() => setQuickCreateOpen(false)}
-        role={role}
+        sessionUser={sessionUser}
       />
       <MobileMoreSheet
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
-        role={role}
+        sessionUser={sessionUser}
       />
     </>
   )

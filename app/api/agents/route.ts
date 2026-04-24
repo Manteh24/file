@@ -102,7 +102,16 @@ export async function POST(request: Request) {
   }
 
   const { officeId } = session.user
-  const { username, displayName, password, email, canFinalizeContracts } = parsed.data
+  const {
+    username,
+    displayName,
+    password,
+    email,
+    canFinalizeContracts,
+    officeMemberRole,
+    permissionsOverride,
+    branchId,
+  } = parsed.data
 
   try {
     await requireWriteAccess(officeId!)
@@ -164,6 +173,9 @@ export async function POST(request: Request) {
         role: "AGENT",
         officeId,
         canFinalizeContracts: canFinalizeContracts ?? false,
+        ...(officeMemberRole && { officeMemberRole }),
+        ...(permissionsOverride && { permissionsOverride }),
+        ...(branchId !== undefined && { branchId }),
       },
       select: { id: true },
     })

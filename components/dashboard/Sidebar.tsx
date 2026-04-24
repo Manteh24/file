@@ -26,8 +26,9 @@ import { WelcomeModal } from "@/components/settings/WelcomeModal"
 import { cn } from "@/lib/utils"
 import { signOutAction } from "@/app/(dashboard)/actions"
 import { activateProTrial } from "@/lib/trial-activation"
-import type { Role } from "@/types"
 import type { ResolvedSubscription } from "@/lib/subscription"
+import { canOfficeDo, type OfficeCapability } from "@/lib/office-permissions"
+import type { SessionUserForNav } from "./DashboardShell"
 
 /* ─── Nav Definition ─────────────────────────────────────────────────────── */
 
@@ -35,7 +36,7 @@ interface NavItem {
   href: string
   label: string
   icon: React.ElementType
-  managerOnly?: boolean
+  requiresCapability?: OfficeCapability
   tutorialId?: string
 }
 
@@ -52,10 +53,10 @@ const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "مدیریت",
     items: [
-      { href: "/agents", label: "مشاوران", icon: UserCheck, managerOnly: true, tutorialId: "nav-agents" },
-      { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
-      { href: "/reports", label: "گزارش‌ها", icon: BarChart2, managerOnly: true },
-      { href: "/messages", label: "مرکز پیام", icon: MessageSquare, managerOnly: true },
+      { href: "/agents", label: "مشاوران", icon: UserCheck, requiresCapability: "manageAgents", tutorialId: "nav-agents" },
+      { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
+      { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
+      { href: "/messages", label: "مرکز پیام", icon: MessageSquare, requiresCapability: "sendBulkSms" },
     ],
   },
 ]
@@ -148,7 +149,7 @@ function useUnreadCount() {
 /* ─── Props ──────────────────────────────────────────────────────────────── */
 
 interface SidebarProps {
-  role: Role
+  sessionUser: SessionUserForNav
   officeName: string
   userName: string
   subscription: ResolvedSubscription | null
@@ -166,7 +167,7 @@ interface SidebarProps {
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export function Sidebar({
-  role,
+  sessionUser,
   officeName,
   subscription,
   isOpen,
@@ -187,8 +188,8 @@ export function Sidebar({
 
   const plan = subscription?.plan ?? "FREE"
   const isTrial = subscription?.isTrial ?? false
-  const isManager = role !== "AGENT"
-  const showTrialButton = isManager && plan === "FREE" && !isTrial
+  const canManageOffice = canOfficeDo(sessionUser, "manageOffice")
+  const showTrialButton = canManageOffice && plan === "FREE" && !isTrial
 
   // Initials for office card
   const officeInitials = officeName.slice(0, 2)
@@ -227,7 +228,7 @@ export function Sidebar({
   }
 
   function renderNavItem(item: NavItem, _idx: number, effectiveCollapsed: boolean) {
-    if (item.managerOnly && !isManager) return null
+    if (item.requiresCapability && !canOfficeDo(sessionUser, item.requiresCapability)) return null
 
     const isActive =
       item.href === "/dashboard"
@@ -329,7 +330,7 @@ export function Sidebar({
         <nav className="flex-1 overflow-y-auto py-3 px-2" aria-label="منوی اصلی">
           {navGroups.map((group) => {
             const visibleItems = group.items.filter(
-              (item) => !item.managerOnly || isManager
+              (item) => !item.requiresCapability || canOfficeDo(sessionUser, item.requiresCapability)
             )
             if (visibleItems.length === 0) return null
 
@@ -407,7 +408,7 @@ export function Sidebar({
 
                 {/* Actions */}
                 <div className="py-1">
-                  {isManager && (plan === "FREE" || isTrial) && (
+                  {canManageOffice && (plan === "FREE" || isTrial) && (
                     <Link
                       href="/settings#billing"
                       onClick={handlePopoverNav}
@@ -417,7 +418,7 @@ export function Sidebar({
                       ارتقا اشتراک
                     </Link>
                   )}
-                  {isManager && (
+                  {canManageOffice && (
                     <Link
                       href="/referral"
                       onClick={handlePopoverNav}
@@ -430,7 +431,7 @@ export function Sidebar({
                 </div>
 
                 <div className="border-t border-[var(--color-border-subtle)] py-1">
-                  {isManager && (
+                  {canManageOffice && (
                     <Link
                       href="/settings"
                       onClick={handlePopoverNav}

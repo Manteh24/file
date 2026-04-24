@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@/app/generated/prisma/client"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { updateAgentSchema } from "@/lib/validations/agent"
@@ -34,6 +35,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
         email: true,
         isActive: true,
         canFinalizeContracts: true,
+        officeMemberRole: true,
+        permissionsOverride: true,
+        branchId: true,
         officeId: true,
         createdAt: true,
         updatedAt: true,
@@ -120,12 +124,22 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     typeof bodyObj.isActive === "boolean" ? { isActive: bodyObj.isActive } : {}
 
   try {
+    const { branchId: branchIdUpdate, permissionsOverride: overrideUpdate, ...rest } = parsed.data
     await db.user.update({
       where: { id },
       data: {
-        ...parsed.data,
+        ...rest,
         // Normalize empty email to null
-        ...(parsed.data.email !== undefined && { email: parsed.data.email || null }),
+        ...(rest.email !== undefined && { email: rest.email || null }),
+        ...(branchIdUpdate !== undefined && {
+          branch:
+            branchIdUpdate === null
+              ? { disconnect: true }
+              : { connect: { id: branchIdUpdate } },
+        }),
+        ...(overrideUpdate !== undefined && {
+          permissionsOverride: overrideUpdate === null ? Prisma.JsonNull : overrideUpdate,
+        }),
         ...isActiveUpdate,
       },
     })

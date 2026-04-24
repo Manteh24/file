@@ -156,6 +156,10 @@ export interface AgentSummary {
 export interface AgentDetail extends AgentSummary {
   officeId: string
   updatedAt: Date
+  canFinalizeContracts?: boolean
+  officeMemberRole?: string | null
+  permissionsOverride?: Record<string, boolean> | null
+  branchId?: string | null
   fileAssignments: Array<{
     file: { id: string; transactionType: string; status: string }
   }>

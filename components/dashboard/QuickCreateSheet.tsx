@@ -4,12 +4,13 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { FolderPlus, UserPlus, FileSignature, CalendarPlus, X, Lock } from "lucide-react"
 import { usePlanStatus } from "@/hooks/usePlanStatus"
-import type { Role } from "@/types"
+import { canOfficeDo, type OfficeCapability } from "@/lib/office-permissions"
+import type { SessionUserForNav } from "./DashboardShell"
 
 interface QuickCreateSheetProps {
   open: boolean
   onClose: () => void
-  role: Role
+  sessionUser: SessionUserForNav
 }
 
 interface ActionRow {
@@ -17,14 +18,13 @@ interface ActionRow {
   label: string
   sublabel?: string
   icon: React.ElementType
-  managerOnly?: boolean
+  requiresCapability?: OfficeCapability
   disabled?: boolean
   disabledReason?: string
 }
 
-export function QuickCreateSheet({ open, onClose, role }: QuickCreateSheetProps) {
+export function QuickCreateSheet({ open, onClose, sessionUser }: QuickCreateSheetProps) {
   const { isAtLimit, data } = usePlanStatus()
-  const isManager = role !== "AGENT"
   const fileAtLimit = isAtLimit("activeFiles")
 
   // Close on Escape
@@ -60,18 +60,20 @@ export function QuickCreateSheet({ open, onClose, role }: QuickCreateSheetProps)
       href: "/contracts/new",
       label: "قرارداد جدید",
       icon: FileSignature,
-      managerOnly: true,
+      requiresCapability: "finalizeContract",
     },
     {
       href: "/calendar",
       label: "رویداد تقویم",
       sublabel: "افزودن از صفحه تقویم",
       icon: CalendarPlus,
-      managerOnly: true,
+      requiresCapability: "manageOffice",
     },
   ]
 
-  const visible = actions.filter((a) => !a.managerOnly || isManager)
+  const visible = actions.filter(
+    (a) => !a.requiresCapability || canOfficeDo(sessionUser, a.requiresCapability)
+  )
 
   return (
     <>

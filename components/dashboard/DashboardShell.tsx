@@ -9,31 +9,42 @@ import { TrialActivationBanner } from "./TrialActivationBanner"
 import { OnboardingTutorial } from "./OnboardingTutorial"
 import { PWAInstallPrompt } from "./PWAInstallPrompt"
 import { MobileBottomNav } from "./MobileBottomNav"
+import { BranchSwitcher } from "./BranchSwitcher"
 import { AppLoadingScreen } from "@/components/shared/AppLoadingScreen"
 import type { Role } from "@/types"
 import type { ResolvedSubscription } from "@/lib/subscription"
+import type { OfficeMemberRole, PermissionsOverride } from "@/lib/office-permissions"
+
+export interface SessionUserForNav {
+  role: Role
+  officeMemberRole?: OfficeMemberRole | null
+  permissionsOverride?: PermissionsOverride | null
+}
 
 interface DashboardShellProps {
   children: React.ReactNode
-  role: Role
+  sessionUser: SessionUserForNav
   officeName: string
   userName: string
   avatarUrl?: string | null
   subscription: ResolvedSubscription | null
   showOnboarding: boolean
   trialBannerProps?: { hasUsedTrial: boolean } | null
+  multiBranchEnabled?: boolean
 }
 
 export function DashboardShell({
   children,
-  role,
+  sessionUser,
   officeName,
   userName,
   avatarUrl,
   subscription,
   showOnboarding,
   trialBannerProps,
+  multiBranchEnabled,
 }: DashboardShellProps) {
+  const role = sessionUser.role
   // Mobile sidebar — desktop still uses Sidebar. Bottom nav replaces mobile drawer;
   // the state is retained only because Sidebar still accepts isOpen/onClose props.
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -121,7 +132,7 @@ export function DashboardShell({
       <AppLoadingScreen visible={showLoader} />
 
       <Sidebar
-        role={role}
+        sessionUser={sessionUser}
         officeName={officeName}
         userName={userName}
         subscription={subscription}
@@ -163,14 +174,16 @@ export function DashboardShell({
           />
         )}
 
+        {multiBranchEnabled && <BranchSwitcher sessionUser={sessionUser} />}
+
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-6 [&>*]:mx-auto">{children}</main>
       </div>
 
-      <MobileBottomNav role={role} />
+      <MobileBottomNav sessionUser={sessionUser} />
 
       {showOnboarding && <OnboardingTutorial />}
       <PWAInstallPrompt />
-      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} role={role} />
+      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} sessionUser={sessionUser} />
     </div>
   )
 }

@@ -10,6 +10,7 @@ import { UserPhoneForm } from "@/components/settings/UserPhoneForm"
 import { PlanUsageSummary } from "@/components/dashboard/PlanUsageSummary"
 import { WelcomeModal } from "@/components/settings/WelcomeModal"
 import { ManagerIsAgentToggle } from "@/components/settings/ManagerIsAgentToggle"
+import { TeamBranchesSection } from "@/components/settings/TeamBranchesSection"
 import type { OfficeProfile, SubscriptionInfo } from "@/types"
 import { canOfficeDo } from "@/lib/office-permissions"
 
@@ -74,7 +75,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const [office, subscription, currentUser] = await Promise.all([
     db.office.findUnique({
       where: { id: officeId },
-      select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true, managerIsAgent: true },
+      select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true, managerIsAgent: true, multiBranchEnabled: true, shareFilesAcrossBranches: true, shareCustomersAcrossBranches: true },
     }),
     db.subscription.findUnique({
       where: { officeId },
@@ -88,7 +89,19 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
   if (!office) redirect("/dashboard")
 
-  const officeProfile: OfficeProfile = office
+  const officeProfile: OfficeProfile = {
+    id: office.id,
+    name: office.name,
+    phone: office.phone,
+    email: office.email,
+    address: office.address,
+    city: office.city,
+    officeBio: office.officeBio,
+    logoUrl: office.logoUrl,
+    photoEnhancementMode: office.photoEnhancementMode,
+    watermarkMode: office.watermarkMode,
+    managerIsAgent: office.managerIsAgent,
+  }
   const subscriptionInfo: SubscriptionInfo | null = subscription
 
   return (
@@ -137,6 +150,21 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </h2>
         </div>
         <UserPhoneForm initialPhone={currentUser?.phone ?? null} />
+      </section>
+
+      {/* Section: Team & Branches */}
+      <section>
+        <div className="mb-4 border-b border-border pb-3">
+          <h2 className="text-[13px] font-medium uppercase tracking-widest text-muted-foreground">
+            تیم و شعبه‌ها
+          </h2>
+        </div>
+        <TeamBranchesSection
+          plan={subscriptionInfo?.plan ?? "FREE"}
+          initialMultiBranchEnabled={office.multiBranchEnabled}
+          initialShareFiles={office.shareFilesAcrossBranches}
+          initialShareCustomers={office.shareCustomersAcrossBranches}
+        />
       </section>
 
       {/* Section: Subscription */}

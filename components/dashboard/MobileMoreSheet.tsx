@@ -18,19 +18,20 @@ import {
   X,
 } from "lucide-react"
 import { signOutAction } from "@/app/(dashboard)/actions"
-import type { Role } from "@/types"
+import { canOfficeDo, type OfficeCapability } from "@/lib/office-permissions"
+import type { SessionUserForNav } from "./DashboardShell"
 
 interface MobileMoreSheetProps {
   open: boolean
   onClose: () => void
-  role: Role
+  sessionUser: SessionUserForNav
 }
 
 interface Item {
   href: string
   label: string
   icon: React.ElementType
-  managerOnly?: boolean
+  requiresCapability?: OfficeCapability
 }
 
 const GENERAL: Item[] = [
@@ -38,23 +39,24 @@ const GENERAL: Item[] = [
 ]
 
 const MANAGEMENT: Item[] = [
-  { href: "/agents", label: "مشاوران", icon: UserCheck, managerOnly: true },
-  { href: "/contracts", label: "قراردادها", icon: FileText, managerOnly: true },
-  { href: "/reports", label: "گزارش‌ها", icon: BarChart2, managerOnly: true },
-  { href: "/messages", label: "مرکز پیام", icon: MessageSquare, managerOnly: true },
+  { href: "/agents", label: "مشاوران", icon: UserCheck, requiresCapability: "manageAgents" },
+  { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
+  { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
+  { href: "/messages", label: "مرکز پیام", icon: MessageSquare, requiresCapability: "sendBulkSms" },
 ]
 
 const ACCOUNT: Item[] = [
   { href: "/profile", label: "پروفایل", icon: UserCircle },
-  { href: "/settings", label: "تنظیمات", icon: Settings, managerOnly: true },
-  { href: "/settings#billing", label: "ارتقاء پلن", icon: CreditCard, managerOnly: true },
-  { href: "/referral", label: "دعوت از دوستان", icon: Gift, managerOnly: true },
+  { href: "/settings", label: "تنظیمات", icon: Settings, requiresCapability: "manageOffice" },
+  { href: "/settings#billing", label: "ارتقاء پلن", icon: CreditCard, requiresCapability: "manageOffice" },
+  { href: "/referral", label: "دعوت از دوستان", icon: Gift, requiresCapability: "manageOffice" },
   { href: "/guide", label: "راهنما", icon: BookOpen },
   { href: "/support", label: "پشتیبانی", icon: HelpCircle },
 ]
 
-export function MobileMoreSheet({ open, onClose, role }: MobileMoreSheetProps) {
-  const isManager = role !== "AGENT"
+export function MobileMoreSheet({ open, onClose, sessionUser }: MobileMoreSheetProps) {
+  const itemVisible = (item: Item) =>
+    !item.requiresCapability || canOfficeDo(sessionUser, item.requiresCapability)
 
   useEffect(() => {
     if (!open) return
@@ -72,8 +74,8 @@ export function MobileMoreSheet({ open, onClose, role }: MobileMoreSheetProps) {
     return () => { document.body.style.overflow = prev }
   }, [open])
 
-  const visibleManagement = MANAGEMENT.filter((i) => !i.managerOnly || isManager)
-  const visibleAccount = ACCOUNT.filter((i) => !i.managerOnly || isManager)
+  const visibleManagement = MANAGEMENT.filter(itemVisible)
+  const visibleAccount = ACCOUNT.filter(itemVisible)
 
   function renderRow(item: Item) {
     const Icon = item.icon

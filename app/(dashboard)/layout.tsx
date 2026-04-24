@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   const [office, subscription, userRecord] = await Promise.all([
     db.office.findUnique({
       where: { id: officeId },
-      select: { name: true },
+      select: { name: true, multiBranchEnabled: true },
     }),
     getEffectiveSubscription(officeId),
     db.user.findUnique({
@@ -49,13 +49,18 @@ export default async function DashboardLayout({
 
   return (
     <DashboardShell
-      role={session.user.role}
+      sessionUser={{
+        role: session.user.role,
+        officeMemberRole: session.user.officeMemberRole,
+        permissionsOverride: session.user.permissionsOverride,
+      }}
       officeName={office?.name ?? "دفتر شما"}
       userName={session.user.name ?? "کاربر"}
       avatarUrl={userRecord?.avatarUrl}
       subscription={subscription}
       showOnboarding={showOnboarding}
       trialBannerProps={trialBannerProps}
+      multiBranchEnabled={office?.multiBranchEnabled ?? false}
     >
       {children}
     </DashboardShell>
