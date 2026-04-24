@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 export async function GET(request: Request) {
   const session = await auth()
@@ -16,8 +17,8 @@ export async function GET(request: Request) {
   }
 
   const officeId = session.user.officeId as string
-  const role = session.user.role
-  const isManager = role === "MANAGER"
+  const canSearchAgents = canOfficeDo(session.user, "manageAgents")
+  const canSearchContracts = canOfficeDo(session.user, "viewContracts")
   const LIMIT = 5
 
   const [files, customers, agents, contracts] = await Promise.all([
@@ -48,8 +49,8 @@ export async function GET(request: Request) {
       take: LIMIT,
     }),
 
-    // Agents — manager only
-    isManager
+    // Agents — requires manageAgents capability
+    canSearchAgents
       ? db.user.findMany({
           where: {
             officeId,
@@ -65,8 +66,8 @@ export async function GET(request: Request) {
         })
       : Promise.resolve([]),
 
-    // Contracts — search by file address or notes; manager only
-    isManager
+    // Contracts — requires viewContracts capability
+    canSearchContracts
       ? db.contract.findMany({
           where: {
             officeId,

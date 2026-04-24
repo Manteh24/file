@@ -4,16 +4,17 @@ import { db } from "@/lib/db"
 import { createContractSchema } from "@/lib/validations/contract"
 import { bigIntToNumber } from "@/lib/utils"
 import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── GET /api/contracts ─────────────────────────────────────────────────────────
-// Returns all contracts in the manager's office. Manager-only.
+// Returns all contracts in the caller's office. Requires viewContracts capability.
 
 export async function GET() {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "viewContracts")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 
@@ -69,17 +70,21 @@ export async function POST(request: Request) {
   const { officeId, id: userId, role } = session.user
   if (!officeId) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
 
-  // For agents, check the canFinalizeContracts permission from DB
-  if (role === "AGENT") {
-    const agentUser = await db.user.findFirst({
-      where: { id: userId, officeId },
-      select: { canFinalizeContracts: true },
-    })
-    if (!agentUser?.canFinalizeContracts) {
+  // Owner MANAGER, BRANCH_MANAGER, or agents with finalizeContract override pass canOfficeDo.
+  // Fall back to the legacy DB `canFinalizeContracts` flag for pre-migration agents whose
+  // permissionsOverride hasn't been populated yet.
+  if (!canOfficeDo(session.user, "finalizeContract")) {
+    if (role === "AGENT") {
+      const agentUser = await db.user.findFirst({
+        where: { id: userId, officeId },
+        select: { canFinalizeContracts: true },
+      })
+      if (!agentUser?.canFinalizeContracts) {
+        return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
+      }
+    } else {
       return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
     }
-  } else if (role !== "MANAGER") {
-    return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 
   let body: unknown

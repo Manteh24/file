@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { updateOfficeProfileSchema } from "@/lib/validations/settings"
 import { getEffectiveSubscription } from "@/lib/subscription"
+import { canOfficeDo } from "@/lib/office-permissions"
 import { z } from "zod"
 
 export async function GET() {
@@ -13,7 +14,7 @@ export async function GET() {
       { status: 401 }
     )
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageOffice")) {
     return NextResponse.json(
       { success: false, error: "دسترسی غیرمجاز" },
       { status: 403 }
@@ -60,7 +61,7 @@ export async function PATCH(request: Request) {
       { status: 401 }
     )
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageOffice")) {
     return NextResponse.json(
       { success: false, error: "دسترسی غیرمجاز" },
       { status: 403 }

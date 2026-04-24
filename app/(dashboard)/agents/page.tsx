@@ -8,12 +8,13 @@ import { AgentCard } from "@/components/agents/AgentCard"
 import { NewAgentButton } from "@/components/agents/NewAgentButton"
 import { Badge } from "@/components/ui/badge"
 import type { AgentSummary } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 export default async function AgentsPage() {
   const session = await auth()
   if (!session) redirect("/login")
-  // Agents have no access to this section
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  // Plain agents have no access to this section
+  if (!canOfficeDo(session.user, "manageAgents")) redirect("/dashboard")
 
   const { officeId } = session.user
 

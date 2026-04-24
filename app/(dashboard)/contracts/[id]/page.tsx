@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { formatToman, formatJalali, bigIntToNumber } from "@/lib/utils"
 import type { TransactionType, PropertyType } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 const transactionTypeLabels: Record<TransactionType, string> = {
   SALE: "فروش",
@@ -35,7 +36,7 @@ interface ContractPageProps {
 export default async function ContractPage({ params }: ContractPageProps) {
   const session = await auth()
   if (!session) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "viewContracts")) redirect("/dashboard")
 
   const { id } = await params
   const { officeId } = session.user

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { updateAgentSchema } from "@/lib/validations/agent"
 import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -16,7 +17,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageAgents")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 
@@ -71,7 +72,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageAgents")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 
@@ -147,7 +148,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageAgents")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 

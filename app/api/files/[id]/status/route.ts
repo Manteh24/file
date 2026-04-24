@@ -3,10 +3,11 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { changeFileStatusSchema } from "@/lib/validations/file"
 import { deactivateShareLinks, type FieldDiff } from "@/lib/file-helpers"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── PATCH /api/files/[id]/status ─────────────────────────────────────────────
 // Changes the file status (manual archive).
-// Only managers can change file status.
+// Requires deleteFile capability (Owner MANAGER or BRANCH_MANAGER).
 // Deactivates all share links when file becomes inactive.
 
 export async function PATCH(
@@ -18,7 +19,7 @@ export async function PATCH(
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
 
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "deleteFile")) {
     return NextResponse.json(
       { success: false, error: "فقط مدیران می‌توانند وضعیت فایل را تغییر دهند" },
       { status: 403 }

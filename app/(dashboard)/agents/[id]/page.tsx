@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatJalali } from "@/lib/utils"
 import type { TransactionType, FileStatus } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 interface AgentPageProps {
   params: Promise<{ id: string }>
@@ -34,7 +35,7 @@ const fileStatusLabels: Record<FileStatus, string> = {
 export default async function AgentPage({ params }: AgentPageProps) {
   const session = await auth()
   if (!session) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "manageAgents")) redirect("/dashboard")
 
   const { id } = await params
   const { officeId } = session.user

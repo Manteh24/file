@@ -2,9 +2,10 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { bigIntToNumber } from "@/lib/utils"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── GET /api/contracts/[id] ────────────────────────────────────────────────────
-// Returns the full detail of a single contract. Manager-only.
+// Returns the full detail of a single contract. Requires viewContracts capability.
 
 export async function GET(
   _request: Request,
@@ -14,7 +15,7 @@ export async function GET(
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "viewContracts")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 

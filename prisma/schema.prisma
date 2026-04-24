@@ -136,124 +136,133 @@ enum CalendarEventType {
 
 // Office is the tenant root. Every other entity belongs to an office via officeId.
 model Office {
-  id           String        @id @default(cuid())
-  name         String
-  phone        String?
-  email        String?
-  address      String?
-  city         String?
+  id                           String           @id @default(cuid())
+  name                         String
+  phone                        String?
+  email                        String?
+  address                      String?
+  city                         String?
   // Office logo and bio — shown on public share pages
-  logoUrl        String?
-  officeBio      String?
+  logoUrl                      String?
+  officeBio                    String?
   // Photo processing preferences — defaults to ALWAYS enhance and ALWAYS watermark
-  photoEnhancementMode  PhotoProcessMode  @default(ALWAYS)
-  watermarkMode         PhotoProcessMode  @default(ALWAYS)
+  photoEnhancementMode         PhotoProcessMode @default(ALWAYS)
+  watermarkMode                PhotoProcessMode @default(ALWAYS)
   // Bank details for referral commission payouts — filled in by the office manager
-  cardNumber     String?
-  shebaNumber    String?
-  cardHolderName String?
+  cardNumber                   String?
+  shebaNumber                  String?
+  cardHolderName               String?
   // Referral code entered at registration — identifies the referrer, not this office.
-  referralCode String?
+  referralCode                 String?
   // When true, the manager appears in the agents list and can be assigned to files.
   // Default true preserves existing behavior. Only changeable on PRO/TEAM plans.
-  managerIsAgent Boolean @default(true)
+  managerIsAgent               Boolean          @default(true)
+  // Multi-branch opt-in (TEAM plan). Until true, branch UI is hidden and branch
+  // scoping is a no-op. Enabling creates an HQ branch and stamps existing data.
+  multiBranchEnabled           Boolean          @default(false)
+  // When true, every user sees every branch's files regardless of their own
+  // branchId. When false, non-manager users are scoped to their own branch.
+  shareFilesAcrossBranches     Boolean          @default(true)
+  // Same flag but for customers.
+  shareCustomersAcrossBranches Boolean          @default(true)
   // Soft delete — null means active, set means archived. Data is never hard-deleted.
-  deletedAt    DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  deletedAt                    DateTime?
+  createdAt                    DateTime         @default(now())
+  updatedAt                    DateTime         @updatedAt
 
-  users            User[]
-  subscription     Subscription?
-  files            PropertyFile[]
-  customers        Customer[]
-  contracts        Contract[]
-  paymentRecords   PaymentRecord[]
-  adminAssignments AdminOfficeAssignment[]
-  aiUsageLogs      AiUsageLog[]
-  smsUsageLogs     SmsUsageLog[]
-  branches         Branch[]
-  notes            OfficeNote[]
+  users                    User[]
+  subscription             Subscription?
+  files                    PropertyFile[]
+  customers                Customer[]
+  contracts                Contract[]
+  paymentRecords           PaymentRecord[]
+  adminAssignments         AdminOfficeAssignment[]
+  aiUsageLogs              AiUsageLog[]
+  smsUsageLogs             SmsUsageLog[]
+  branches                 Branch[]
+  notes                    OfficeNote[]
   // Referral that brought this office to the platform (one office can be referred once)
-  referral         Referral?
+  referral                 Referral?
   // The referral code this office owns and shares with others to earn commissions
-  ownReferralCode  ReferralCode?
-  supportTickets   SupportTicket[]
+  ownReferralCode          ReferralCode?
+  supportTickets           SupportTicket[]
   // Referral earning snapshots that included this office as an active referred office
   referralEarningSnapshots ReferralMonthlyEarningOffice[]
   // One-time trial phone record — prevents the same mobile from starting multiple trials
-  trialPhone       TrialPhone?
-  scheduledSms     ScheduledSms[]
-  officeMessages   OfficeMessage[]
-  calendarEvents   CalendarEvent[]
+  trialPhone               TrialPhone?
+  scheduledSms             ScheduledSms[]
+  officeMessages           OfficeMessage[]
+  calendarEvents           CalendarEvent[]
 
   @@map("offices")
 }
 
 model User {
-  id           String        @id @default(cuid())
+  id                   String            @id @default(cuid())
   // username is the primary login identifier. Unique globally across all offices.
-  username     String        @unique
+  username             String            @unique
   // email is optional — agents may have no email. Nullable unique allows multiple NULLs in PostgreSQL.
-  email        String?       @unique
+  email                String?           @unique
   // phone used for SMS-based password reset. Nullable unique allows multiple NULLs.
-  phone        String?       @unique
-  passwordHash String
-  displayName  String
-  role         Role
+  phone                String?           @unique
+  passwordHash         String
+  displayName          String
+  role                 Role
   // Permission tier for MID_ADMIN users. Null = read-only access.
-  adminTier    AdminTier?
-  isActive              Boolean       @default(true)
-  onboardingCompleted   Boolean       @default(false)
+  adminTier            AdminTier?
+  isActive             Boolean           @default(true)
+  onboardingCompleted  Boolean           @default(false)
   // avatarUrl will be populated by the image processing pipeline (Feature 14)
-  avatarUrl    String?
+  avatarUrl            String?
   // Short bio — shown on public share pages
-  bio          String?
+  bio                  String?
   // Internal admin note (not visible to the user)
-  adminNote    String?
+  adminNote            String?
   // When true, this agent is allowed to finalize contracts (normally manager-only).
   // DEPRECATED — superseded by permissionsOverride.finalizeContract. Kept for one release
   // while the migration backfills the override. New code must read through canOfficeDo().
-  canFinalizeContracts Boolean @default(false)
+  canFinalizeContracts Boolean           @default(false)
   // Preset permission bundle for non-manager office users. Null for MANAGER and admin roles.
   // Resolution: permissionsOverride wins per-capability; otherwise the preset map is used.
-  officeMemberRole OfficeMemberRole?
+  officeMemberRole     OfficeMemberRole?
   // Sparse per-capability override ({ finalizeContract: true, createFile: false, ... }).
   // Null or missing keys fall back to the officeMemberRole preset.
-  permissionsOverride Json?
+  permissionsOverride  Json?
   // Nullable: SUPER_ADMIN and MID_ADMIN users have no tenant office (officeId = null)
-  officeId     String?
+  officeId             String?
   // Nullable: links user to a specific branch (Team plan multi-branch, hidden until month 4)
-  branchId     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  branchId             String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
-  office              Office?          @relation(fields: [officeId], references: [id])
-  branch              Branch?          @relation(fields: [branchId], references: [id])
-  adminAssignments    AdminOfficeAssignment[]
-  adminAccessRules    AdminAccessRule[]
-  sessions            UserSession[]
-  createdFiles        PropertyFile[]   @relation("CreatedFiles")
-  fileAssignments     FileAssignment[]
-  activityLogs        ActivityLog[]
-  priceHistory        PriceHistory[]
-  shareLinks          ShareLink[]      @relation("ShareLinkCreator")
-  shareLinkAgentCards ShareLink[]      @relation("ShareLinkAgent")
-  notifications       Notification[]
-  createdCustomers    Customer[]       @relation("CreatedCustomers")
-  customerNotes       CustomerNote[]   @relation("CustomerNotes")
-  finalizedContracts  Contract[]       @relation("FinalizedContracts")
-  officeNotes         OfficeNote[]
-  adminActions        AdminActionLog[]
-  adminCreatedCodes   ReferralCode[]   @relation("AdminCreatedReferralCodes")
-  adminPaidEarnings   ReferralMonthlyEarning[] @relation("AdminPaidEarnings")
-  sentBroadcasts      AdminBroadcast[]
-  adminLoginLogs      AdminLoginLog[]  @relation("AdminLoginLogs")
-  createdTickets      SupportTicket[]  @relation("TicketCreator")
-  ticketMessages      TicketMessage[]
-  passwordResetTokens PasswordResetToken[]
-  sentMessages        OfficeMessage[]      @relation("SentMessages")
-  createdCalendarEvents  CalendarEvent[]           @relation("CalendarEventCreator")
-  calendarAttendances    CalendarEventAttendee[]   @relation("CalendarEventAttendees")
+  office                Office?                  @relation(fields: [officeId], references: [id])
+  branch                Branch?                  @relation(fields: [branchId], references: [id])
+  managedBranch         Branch?                  @relation("BranchManager")
+  adminAssignments      AdminOfficeAssignment[]
+  adminAccessRules      AdminAccessRule[]
+  sessions              UserSession[]
+  createdFiles          PropertyFile[]           @relation("CreatedFiles")
+  fileAssignments       FileAssignment[]
+  activityLogs          ActivityLog[]
+  priceHistory          PriceHistory[]
+  shareLinks            ShareLink[]              @relation("ShareLinkCreator")
+  shareLinkAgentCards   ShareLink[]              @relation("ShareLinkAgent")
+  notifications         Notification[]
+  createdCustomers      Customer[]               @relation("CreatedCustomers")
+  customerNotes         CustomerNote[]           @relation("CustomerNotes")
+  finalizedContracts    Contract[]               @relation("FinalizedContracts")
+  officeNotes           OfficeNote[]
+  adminActions          AdminActionLog[]
+  adminCreatedCodes     ReferralCode[]           @relation("AdminCreatedReferralCodes")
+  adminPaidEarnings     ReferralMonthlyEarning[] @relation("AdminPaidEarnings")
+  sentBroadcasts        AdminBroadcast[]
+  adminLoginLogs        AdminLoginLog[]          @relation("AdminLoginLogs")
+  createdTickets        SupportTicket[]          @relation("TicketCreator")
+  ticketMessages        TicketMessage[]
+  passwordResetTokens   PasswordResetToken[]
+  sentMessages          OfficeMessage[]          @relation("SentMessages")
+  createdCalendarEvents CalendarEvent[]          @relation("CalendarEventCreator")
+  calendarAttendances   CalendarEventAttendee[]  @relation("CalendarEventAttendees")
 
   @@map("users")
 }
@@ -271,7 +280,7 @@ model UserSession {
   // userAgent stored at login for device display in profile sessions panel.
   userAgent    String?
 
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_sessions")
 }
@@ -293,7 +302,7 @@ model Subscription {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  office           Office    @relation(fields: [officeId], references: [id])
+  office Office @relation(fields: [officeId], references: [id])
 
   @@map("subscriptions")
 }
@@ -308,72 +317,78 @@ model PropertyFile {
   propertyType    PropertyType?
 
   // Physical details
-  area            Int?            // square meters (متراژ)
-  floorNumber     Int?
-  totalFloors     Int?
-  buildingAge     Int?            // years (سن بنا)
+  area        Int? // square meters (متراژ)
+  floorNumber Int?
+  totalFloors Int?
+  buildingAge Int? // years (سن بنا)
 
   // Price fields — which are used depends on transactionType
-  salePrice       BigInt?         // total price in Toman (for SALE, PRE_SALE)
-  depositAmount   BigInt?         // رهن in Toman (for LONG_TERM_RENT)
-  rentAmount      BigInt?         // monthly اجاره in Toman (for LONG_TERM_RENT, SHORT_TERM_RENT)
+  salePrice     BigInt? // total price in Toman (for SALE, PRE_SALE)
+  depositAmount BigInt? // رهن in Toman (for LONG_TERM_RENT)
+  rentAmount    BigInt? // monthly اجاره in Toman (for LONG_TERM_RENT, SHORT_TERM_RENT)
 
   // Location — map pin stored as lat/lng. Address filled manually until map feature is built.
-  latitude        Float?
-  longitude       Float?
-  address         String?
-  neighborhood    String?
+  latitude         Float?
+  longitude        Float?
+  address          String?
+  neighborhood     String?
   // Neshan POI analysis stored as JSON after location is pinned (Feature 13)
   locationAnalysis Json?
 
   // AI-generated or manually written description
-  description     String?
+  description String?
 
   // Amenities
-  hasElevator      Boolean         @default(false)
-  hasParking       Boolean         @default(false)
-  hasStorage       Boolean         @default(false)
-  hasBalcony       Boolean         @default(false)
-  hasSecurity      Boolean         @default(false)
-  hasGym           Boolean         @default(false)
-  hasPool          Boolean         @default(false)
-  hasWesternToilet Boolean         @default(false)
-  hasSmartHome     Boolean         @default(false)
-  hasSauna         Boolean         @default(false)
-  hasJacuzzi       Boolean         @default(false)
-  hasRoofGarden    Boolean         @default(false)
+  hasElevator      Boolean @default(false)
+  hasParking       Boolean @default(false)
+  hasStorage       Boolean @default(false)
+  hasBalcony       Boolean @default(false)
+  hasSecurity      Boolean @default(false)
+  hasGym           Boolean @default(false)
+  hasPool          Boolean @default(false)
+  hasWesternToilet Boolean @default(false)
+  hasSmartHome     Boolean @default(false)
+  hasSauna         Boolean @default(false)
+  hasJacuzzi       Boolean @default(false)
+  hasRoofGarden    Boolean @default(false)
 
   // Internal notes — not shown on public share page
-  notes           String?
+  notes String?
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  // Branch ownership (TEAM multi-branch). Null until the office enables branches,
+  // at which point the enable flow backfills every row with HQ's id.
+  branchId String?
 
-  office          Office          @relation(fields: [officeId], references: [id])
-  createdBy       User            @relation("CreatedFiles", fields: [createdById], references: [id])
-  assignedAgents  FileAssignment[]
-  contacts        Contact[]
-  photos          FilePhoto[]
-  activityLogs    ActivityLog[]
-  priceHistory    PriceHistory[]
-  shareLinks      ShareLink[]
-  contract        Contract?
-  notifications   Notification[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  office         Office           @relation(fields: [officeId], references: [id])
+  createdBy      User             @relation("CreatedFiles", fields: [createdById], references: [id])
+  branch         Branch?          @relation(fields: [branchId], references: [id])
+  assignedAgents FileAssignment[]
+  contacts       Contact[]
+  photos         FilePhoto[]
+  activityLogs   ActivityLog[]
+  priceHistory   PriceHistory[]
+  shareLinks     ShareLink[]
+  contract       Contract?
+  notifications  Notification[]
 
   @@index([officeId])
   @@index([officeId, status])
+  @@index([branchId])
   @@map("property_files")
 }
 
 // Tracks which agents are assigned to a file.
 model FileAssignment {
-  id         String       @id @default(cuid())
+  id         String   @id @default(cuid())
   fileId     String
   userId     String
-  assignedAt DateTime     @default(now())
+  assignedAt DateTime @default(now())
 
-  file       PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  user       User         @relation(fields: [userId], references: [id])
+  file PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id])
 
   @@unique([fileId, userId])
   @@map("file_assignments")
@@ -381,45 +396,45 @@ model FileAssignment {
 
 // Contacts linked to a file (owner, tenant, buyer, landlord).
 model Contact {
-  id        String       @id @default(cuid())
+  id        String      @id @default(cuid())
   fileId    String
   type      ContactType
   name      String?
   phone     String
   notes     String?
-  createdAt DateTime     @default(now())
+  createdAt DateTime    @default(now())
 
-  file      PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  file PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
   @@map("contacts")
 }
 
 // Photo records for a file. URL points to IranServer object storage (Feature 14).
 model FilePhoto {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   fileId    String
   url       String
-  order     Int          @default(0)
-  createdAt DateTime     @default(now())
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
 
-  file      PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  file PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
   @@map("file_photos")
 }
 
 // Immutable log of all file changes. Visible to managers only.
 model ActivityLog {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   fileId    String
   userId    String
   // Human-readable action label: CREATE, EDIT, STATUS_CHANGE, ASSIGNMENT, SHARE_LINK
   action    String
   // Field-level diff stored as JSON: { field: [oldValue, newValue] }
   diff      Json?
-  createdAt DateTime     @default(now())
+  createdAt DateTime @default(now())
 
-  file      PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id])
+  file PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id])
 
   @@index([fileId])
   @@map("activity_logs")
@@ -427,17 +442,17 @@ model ActivityLog {
 
 // Records every price change on a file with before/after values.
 model PriceHistory {
-  id          String       @id @default(cuid())
+  id          String   @id @default(cuid())
   fileId      String
   changedById String
   // Which price field changed: salePrice | depositAmount | rentAmount
   priceField  String
   oldPrice    BigInt?
   newPrice    BigInt?
-  changedAt   DateTime     @default(now())
+  changedAt   DateTime @default(now())
 
-  file        PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  changedBy   User         @relation(fields: [changedById], references: [id])
+  file      PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  changedBy User         @relation(fields: [changedById], references: [id])
 
   @@index([fileId])
   @@map("price_history")
@@ -455,16 +470,20 @@ model Customer {
   types       CustomerType[]
   // Internal notes about this customer
   notes       String?
+  // Branch ownership (TEAM multi-branch). Null until the office enables branches.
+  branchId    String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  office             Office            @relation(fields: [officeId], references: [id])
-  createdBy          User              @relation("CreatedCustomers", fields: [createdById], references: [id])
-  contactLogs        CustomerNote[]
-  shareLinks         ShareLink[]
-  contractCustomers  ContractCustomer[]
+  office            Office             @relation(fields: [officeId], references: [id])
+  createdBy         User               @relation("CreatedCustomers", fields: [createdById], references: [id])
+  branch            Branch?            @relation(fields: [branchId], references: [id])
+  contactLogs       CustomerNote[]
+  shareLinks        ShareLink[]
+  contractCustomers ContractCustomer[]
 
   @@index([officeId])
+  @@index([branchId])
   @@map("customers")
 }
 
@@ -476,8 +495,8 @@ model CustomerNote {
   content    String
   createdAt  DateTime @default(now())
 
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  user       User     @relation("CustomerNotes", fields: [userId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user     User     @relation("CustomerNotes", fields: [userId], references: [id])
 
   @@index([customerId])
   @@map("customer_notes")
@@ -491,8 +510,8 @@ model ContractCustomer {
   // The customer's role in this specific contract (BUYER, TENANT/RENTER, etc.)
   role       CustomerType
 
-  contract   Contract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  customer   Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@unique([contractId, customerId])
   @@map("contract_customers")
@@ -502,30 +521,30 @@ model ContractCustomer {
 // Creating a contract atomically transitions the file to SOLD or RENTED and
 // deactivates all share links.
 model Contract {
-  id              String          @id @default(cuid())
-  officeId        String
+  id                  String          @id @default(cuid())
+  officeId            String
   // fileId is unique — one contract per file
-  fileId          String          @unique
-  finalizedById   String
+  fileId              String          @unique
+  finalizedById       String
   // Copied from the file at finalization time for archival integrity
-  transactionType TransactionType
+  transactionType     TransactionType
   // Final agreed price used as the basis for commission calculation.
   // BigInt — Iranian real estate prices exceed PostgreSQL INTEGER's ~2.1B Toman limit.
-  finalPrice       BigInt
+  finalPrice          BigInt
   // Commission breakdown — all amounts in Toman
-  commissionAmount BigInt
-  agentShare       BigInt
-  officeShare      BigInt
-  notes           String?
+  commissionAmount    BigInt
+  agentShare          BigInt
+  officeShare         BigInt
+  notes               String?
   // Months the lease runs. Only set for LONG_TERM_RENT contracts. Used to derive lease-end date.
   leaseDurationMonths Int?
-  finalizedAt     DateTime        @default(now())
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  finalizedAt         DateTime        @default(now())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
-  office            Office            @relation(fields: [officeId], references: [id])
-  file              PropertyFile      @relation(fields: [fileId], references: [id])
-  finalizedBy       User              @relation("FinalizedContracts", fields: [finalizedById], references: [id])
+  office            Office             @relation(fields: [officeId], references: [id])
+  file              PropertyFile       @relation(fields: [fileId], references: [id])
+  finalizedBy       User               @relation("FinalizedContracts", fields: [finalizedById], references: [id])
   scheduledSms      ScheduledSms?
   contractCustomers ContractCustomer[]
 
@@ -535,29 +554,29 @@ model Contract {
 
 // Each share action creates a new unique link with its own price and view counter.
 model ShareLink {
-  id          String       @id @default(cuid())
-  fileId      String
-  createdById String
+  id                  String   @id @default(cuid())
+  fileId              String
+  createdById         String
   // The agent whose profile card is shown on the public share page.
   // Null = no agent card shown (office card only).
-  agentId     String?
-  token       String       @unique
+  agentId             String?
+  token               String   @unique
   // Custom price overrides. For SALE/PRE_SALE: customPrice = sale price.
   // For SHORT_TERM_RENT: customPrice = rent amount.
   // For LONG_TERM_RENT: customPrice = اجاره (rent), customDepositAmount = رهن (deposit).
   customPrice         BigInt?
   customDepositAmount BigInt?
-  viewCount   Int          @default(0)
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
+  viewCount           Int      @default(0)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
 
   // Optional CRM customer this link was sent to
-  customerId  String?
+  customerId String?
 
-  file        PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
-  createdBy   User         @relation("ShareLinkCreator", fields: [createdById], references: [id])
-  agent       User?        @relation("ShareLinkAgent", fields: [agentId], references: [id])
-  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  file      PropertyFile @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  createdBy User         @relation("ShareLinkCreator", fields: [createdById], references: [id])
+  agent     User?        @relation("ShareLinkAgent", fields: [agentId], references: [id])
+  customer  Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@index([token])
   @@map("share_links")
@@ -565,19 +584,19 @@ model ShareLink {
 
 // Per-user notification record. Created server-side on key events.
 model Notification {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   // FILE_ASSIGNED | FILE_EDITED
   type      String
   title     String
   message   String
-  read      Boolean       @default(false)
+  read      Boolean  @default(false)
   // Optional deep-link to the relevant file
   fileId    String?
-  createdAt DateTime      @default(now())
+  createdAt DateTime @default(now())
 
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  file      PropertyFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  file PropertyFile? @relation(fields: [fileId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([userId, read])
@@ -602,7 +621,7 @@ model PaymentRecord {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  office       Office   @relation(fields: [officeId], references: [id])
+  office Office @relation(fields: [officeId], references: [id])
 
   @@index([officeId])
   @@map("payment_records")
@@ -617,7 +636,7 @@ model AiUsageLog {
   shamsiMonth Int
   count       Int    @default(0)
 
-  office      Office @relation(fields: [officeId], references: [id])
+  office Office @relation(fields: [officeId], references: [id])
 
   @@unique([officeId, shamsiMonth])
   @@map("ai_usage_logs")
@@ -632,23 +651,32 @@ model SmsUsageLog {
   shamsiMonth Int
   count       Int    @default(0)
 
-  office      Office @relation(fields: [officeId], references: [id])
+  office Office @relation(fields: [officeId], references: [id])
 
   @@unique([officeId, shamsiMonth])
   @@map("sms_usage_logs")
 }
 
 // Office branch for multi-branch management (Team plan).
-// Schema included at launch; UI and enforcement enabled at month 4.
+// Enabled lazily via POST /api/branches/enable. Until then no Branch rows exist
+// for the office and all branch-scoped queries are no-ops.
 model Branch {
-  id        String   @id @default(cuid())
-  officeId  String
-  name      String
-  address   String?
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  officeId       String
+  name           String
+  address        String?
+  // Exactly one HQ branch per office — created by the enable endpoint. HQ cannot be deleted.
+  isHeadquarters Boolean  @default(false)
+  // Optional branch manager. Setting this should also set the user's role to
+  // BRANCH_MANAGER at the route level. @unique: a user can manage at most one branch.
+  managerId      String?  @unique
+  createdAt      DateTime @default(now())
 
-  office    Office   @relation(fields: [officeId], references: [id])
+  office    Office         @relation(fields: [officeId], references: [id])
+  manager   User?          @relation("BranchManager", fields: [managerId], references: [id])
   users     User[]
+  files     PropertyFile[]
+  customers Customer[]
 
   @@index([officeId])
   @@map("branches")
@@ -670,7 +698,7 @@ model AdminAccessRule {
   trialFilter TrialFilter @default(ANY)
   createdAt   DateTime    @default(now())
 
-  admin       User @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  admin User @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
 
   @@index([adminUserId])
   @@map("admin_access_rules")
@@ -684,8 +712,8 @@ model AdminOfficeAssignment {
   officeId    String
   assignedAt  DateTime @default(now())
 
-  admin       User   @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
-  office      Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  admin  User   @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
 
   @@unique([adminUserId, officeId])
   @@index([adminUserId])
@@ -705,7 +733,7 @@ model AdminActionLog {
   metadata   Json?
   createdAt  DateTime @default(now())
 
-  admin      User @relation(fields: [adminId], references: [id])
+  admin User @relation(fields: [adminId], references: [id])
 
   @@index([adminId])
   @@index([targetType, targetId])
@@ -720,8 +748,8 @@ model OfficeNote {
   content   String
   createdAt DateTime @default(now())
 
-  office    Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
-  admin     User   @relation(fields: [adminId], references: [id])
+  office Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  admin  User   @relation(fields: [adminId], references: [id])
 
   @@index([officeId])
   @@map("office_notes")
@@ -768,7 +796,7 @@ model ReferralMonthlyEarning {
   id                String       @id @default(cuid())
   referralCodeId    String
   referralCode      ReferralCode @relation(fields: [referralCodeId], references: [id])
-  yearMonth         String       // "2026-03"
+  yearMonth         String // "2026-03"
   activeOfficeCount Int
   // commissionAmount = activeOfficeCount * code.commissionPerOfficePerMonth at snapshot time
   commissionAmount  BigInt
@@ -779,7 +807,7 @@ model ReferralMonthlyEarning {
   createdAt         DateTime     @default(now())
 
   // Which offices were counted as active when this snapshot was generated
-  activeOffices     ReferralMonthlyEarningOffice[]
+  activeOffices ReferralMonthlyEarningOffice[]
 
   @@unique([referralCodeId, yearMonth])
   @@map("referral_monthly_earnings")
@@ -791,8 +819,8 @@ model ReferralMonthlyEarningOffice {
   earningId String
   officeId  String
 
-  earning   ReferralMonthlyEarning @relation(fields: [earningId], references: [id], onDelete: Cascade)
-  office    Office                 @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  earning ReferralMonthlyEarning @relation(fields: [earningId], references: [id], onDelete: Cascade)
+  office  Office                 @relation(fields: [officeId], references: [id], onDelete: Cascade)
 
   @@id([earningId, officeId])
   @@map("referral_monthly_earning_offices")
@@ -800,7 +828,7 @@ model ReferralMonthlyEarningOffice {
 
 // Record of admin broadcast messages sent to office managers.
 model AdminBroadcast {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   subject        String
   body           String
   // "ONE" | "ALL" | "FILTERED"
@@ -809,10 +837,10 @@ model AdminBroadcast {
   // for FILTERED: e.g. { plan: "FREE", status: "ACTIVE" }
   targetFilter   Json?
   recipientCount Int
-  sendSms        Boolean   @default(false)
-  sentAt         DateTime  @default(now())
+  sendSms        Boolean  @default(false)
+  sentAt         DateTime @default(now())
   sentByAdminId  String
-  sentByAdmin    User      @relation(fields: [sentByAdminId], references: [id])
+  sentByAdmin    User     @relation(fields: [sentByAdminId], references: [id])
 
   @@map("admin_broadcasts")
 }
@@ -825,7 +853,7 @@ model AdminLoginLog {
   userAgent String?
   loginAt   DateTime @default(now())
 
-  admin     User     @relation("AdminLoginLogs", fields: [adminId], references: [id], onDelete: Cascade)
+  admin User @relation("AdminLoginLogs", fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
   @@map("admin_login_logs")
@@ -859,19 +887,19 @@ model PlatformSetting {
 
 // A support ticket submitted by a manager or agent.
 model SupportTicket {
-  id         String         @id @default(cuid())
-  officeId   String
-  createdBy  String
-  subject    String
-  category   TicketCategory
-  status     TicketStatus   @default(OPEN)
-  closedAt   DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id        String         @id @default(cuid())
+  officeId  String
+  createdBy String
+  subject   String
+  category  TicketCategory
+  status    TicketStatus   @default(OPEN)
+  closedAt  DateTime?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
-  office     Office         @relation(fields: [officeId], references: [id])
-  creator    User           @relation("TicketCreator", fields: [createdBy], references: [id])
-  messages   TicketMessage[]
+  office   Office          @relation(fields: [officeId], references: [id])
+  creator  User            @relation("TicketCreator", fields: [createdBy], references: [id])
+  messages TicketMessage[]
 
   @@index([officeId])
   @@index([officeId, status])
@@ -880,16 +908,16 @@ model SupportTicket {
 
 // A message in a support ticket thread (user reply or admin reply).
 model TicketMessage {
-  id            String        @id @default(cuid())
+  id            String   @id @default(cuid())
   ticketId      String
   authorId      String
-  isAdminReply  Boolean       @default(false)
+  isAdminReply  Boolean  @default(false)
   body          String
   attachmentUrl String?
-  createdAt     DateTime      @default(now())
+  createdAt     DateTime @default(now())
 
-  ticket        SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  author        User          @relation(fields: [authorId], references: [id])
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User          @relation(fields: [authorId], references: [id])
 
   @@index([ticketId])
   @@map("ticket_messages")
@@ -910,8 +938,8 @@ model ScheduledSms {
   errorMsg    String?
   createdAt   DateTime  @default(now())
 
-  office      Office    @relation(fields: [officeId], references: [id])
-  contract    Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  office   Office   @relation(fields: [officeId], references: [id])
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@index([scheduledAt])
   @@map("scheduled_sms")
@@ -926,7 +954,7 @@ model TrialPhone {
   officeId  String   @unique
   createdAt DateTime @default(now())
 
-  office    Office   @relation(fields: [officeId], references: [id])
+  office Office @relation(fields: [officeId], references: [id])
 
   @@map("trial_phones")
 }
@@ -938,15 +966,15 @@ model OfficeMessage {
   officeId       String
   senderId       String
   channel        MessageChannel
-  subject        String?        // used for EMAIL channel
+  subject        String? // used for EMAIL channel
   body           String         @db.Text
   recipientCount Int
   // Human-readable description of the audience: "همه مشاوران", "مشتریان (خریدار)", etc.
   filterLabel    String?
   createdAt      DateTime       @default(now())
 
-  office         Office         @relation(fields: [officeId], references: [id])
-  sender         User           @relation("SentMessages", fields: [senderId], references: [id])
+  office Office @relation(fields: [officeId], references: [id])
+  sender User   @relation("SentMessages", fields: [senderId], references: [id])
 
   @@index([officeId])
   @@map("office_messages")
@@ -958,7 +986,7 @@ model CalendarEvent {
   id              String            @id @default(cuid())
   officeId        String
   createdById     String
-  title           String?           // optional — NOTE type has no title; REMINDER may be untitled
+  title           String? // optional — NOTE type has no title; REMINDER may be untitled
   description     String?
   type            CalendarEventType
   // Stored as Gregorian ISO timestamp. Only the date part is semantically used.
@@ -966,8 +994,8 @@ model CalendarEvent {
   // Optional HH:MM 24-hour strings. Stored as text to avoid TZ-shift issues.
   startTime       String?
   endTime         String?
-  reminderMinutes Int?              // MEETING: minutes before startTime to fire notification. Unused for REMINDER.
-  playSound       Boolean           @default(false)  // REMINDER + MEETING: play audio on notification
+  reminderMinutes Int? // MEETING: minutes before startTime to fire notification. Unused for REMINDER.
+  playSound       Boolean           @default(false) // REMINDER + MEETING: play audio on notification
   // Stamped by /api/cron/fire-calendar-reminders once a reminder fires. Null = never fired (or no reminder configured).
   reminderFiredAt DateTime?
   createdAt       DateTime          @default(now())

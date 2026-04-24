@@ -24,6 +24,7 @@ import { MapView } from "@/components/shared/MapView"
 import { formatToman, formatJalali } from "@/lib/utils"
 import { parseLocationAnalysis } from "@/lib/maps"
 import type { TransactionType, PropertyType, Role } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 interface FileDetailPageProps {
   params: Promise<{ id: string }>
@@ -106,20 +107,24 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
         })
       : []
 
-  // Activity log is fetched separately — manager only. Conditional includes break Prisma's return types.
-  const activityLogs =
-    role === "MANAGER"
-      ? await db.activityLog.findMany({
-          where: { fileId: id },
-          include: { user: { select: { displayName: true, role: true } } },
-          orderBy: { createdAt: "desc" },
-          take: 20,
-        })
-      : []
+  // Capability flags — resolved once, used throughout the UI below.
+  const canViewActivityLog = canOfficeDo(session.user, "viewActivityLog")
+  const canAssignFile = canOfficeDo(session.user, "assignFile")
+  const canDeleteFile = canOfficeDo(session.user, "deleteFile")
+
+  // Activity log is fetched separately — gated on viewActivityLog. Conditional includes break Prisma's return types.
+  const activityLogs = canViewActivityLog
+    ? await db.activityLog.findMany({
+        where: { fileId: id },
+        include: { user: { select: { displayName: true, role: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      })
+    : []
 
   const canEdit =
     file.status === "ACTIVE" &&
-    (role === "MANAGER" ||
+    (canOfficeDo(session.user, "editFile") ||
       file.assignedAgents.some((a) => a.user.id === userId))
 
   const showSalePrice =
@@ -162,9 +167,9 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
 
         <div className="flex shrink-0 gap-2">
           {file.status === "ACTIVE" &&
-            (role === "MANAGER" || agentPermissions?.canFinalizeContracts) && (
+            (canOfficeDo(session.user, "finalizeContract") || agentPermissions?.canFinalizeContracts) && (
               <>
-                {role === "MANAGER" && <ArchiveFileButton fileId={file.id} />}
+                {canDeleteFile && <ArchiveFileButton fileId={file.id} />}
                 <Button asChild variant="outline">
                   <Link href={`/contracts/new?fileId=${file.id}`}>
                     <FileCheck className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
@@ -377,8 +382,8 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
         </Card>
       )}
 
-      {/* Assigned agents — editable for manager, read-only for agents */}
-      {role === "MANAGER" ? (
+      {/* Assigned agents — editable for users with assignFile, read-only otherwise */}
+      {canAssignFile ? (
         <AgentAssignmentPanel fileId={file.id} currentAgents={file.assignedAgents} />
       ) : (
         file.assignedAgents.length > 0 && (
@@ -433,8 +438,8 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
         </Card>
       )}
 
-      {/* Activity log — manager only */}
-      {role === "MANAGER" && activityLogs.length > 0 && (
+      {/* Activity log — requires viewActivityLog capability */}
+      {canViewActivityLog && activityLogs.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">تاریخچه فعالیت</CardTitle>

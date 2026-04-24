@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { processAvatar } from "@/lib/image"
 import { uploadFile, deleteFile, generateOfficeLogoKey } from "@/lib/storage"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]
@@ -10,7 +11,7 @@ const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic
 export async function POST(request: NextRequest) {
   const session = await auth()
   if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageOffice")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 

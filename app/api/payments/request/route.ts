@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { requestPaymentSchema } from "@/lib/validations/settings"
 import { requestPayment, PLAN_PRICES_RIALS } from "@/lib/payment"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
       { status: 401 }
     )
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageOffice")) {
     return NextResponse.json(
       { success: false, error: "دسترسی غیرمجاز" },
       { status: 403 }

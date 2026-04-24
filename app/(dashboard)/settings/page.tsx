@@ -11,6 +11,7 @@ import { PlanUsageSummary } from "@/components/dashboard/PlanUsageSummary"
 import { WelcomeModal } from "@/components/settings/WelcomeModal"
 import { ManagerIsAgentToggle } from "@/components/settings/ManagerIsAgentToggle"
 import type { OfficeProfile, SubscriptionInfo } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 interface SettingsPageProps {
   searchParams: Promise<{ payment?: string; plan?: string }>
@@ -64,7 +65,7 @@ function PaymentStatusBanner({ status }: { status: string }) {
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const session = await auth()
   if (!session?.user) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "manageOffice")) redirect("/dashboard")
 
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")

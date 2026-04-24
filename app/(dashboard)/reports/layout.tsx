@@ -4,11 +4,12 @@ import { redirect } from "next/navigation"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { TrialFeatureWarning } from "@/components/shared/TrialFeatureWarning"
 import { ReportsTabs } from "@/components/reports/ReportsTabs"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 export default async function ReportsLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   if (!session?.user) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "viewReports")) redirect("/dashboard")
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 

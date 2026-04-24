@@ -6,11 +6,12 @@ import { bigIntToNumber } from "@/lib/utils"
 import { getDefaultReferralCommission } from "@/lib/platform-settings"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { ReferralDashboard } from "@/components/referral/ReferralDashboard"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 export default async function ReferralPage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "manageOffice")) redirect("/dashboard")
 
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")

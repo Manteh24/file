@@ -3,9 +3,10 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { assignAgentsSchema } from "@/lib/validations/file"
 import { createManyNotifications } from "@/lib/notifications"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── PUT /api/files/[id]/agents ─────────────────────────────────────────────────
-// Atomically replaces all agent assignments for a file. Manager-only.
+// Atomically replaces all agent assignments for a file. Requires assignFile capability.
 // Sending an empty agentIds array removes all assignments.
 
 export async function PUT(
@@ -16,7 +17,7 @@ export async function PUT(
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "assignFile")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 

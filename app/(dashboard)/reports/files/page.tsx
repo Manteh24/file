@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+import { canOfficeDo } from "@/lib/office-permissions"
 import {
   normalisePeriod,
   getDateFilter,
@@ -37,7 +38,7 @@ const TX_LABELS: Record<string, string> = {
 export default async function FilesReportPage({ searchParams }: Props) {
   const session = await auth()
   if (!session?.user) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "viewReports")) redirect("/dashboard")
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 

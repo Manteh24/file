@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { canOfficeDo, type OfficeMemberRole, type PermissionsOverride } from "@/lib/office-permissions"
+import type { Role } from "@/types"
 
 interface Agent {
   id: string
@@ -26,16 +28,26 @@ type TabId = typeof TABS[number]["id"]
 export default function MessagesPage() {
   const [activeTab, setActiveTab] = useState<TabId>("notify")
   const [agents, setAgents] = useState<Agent[]>([])
-  const [role, setRole] = useState<string | null>(null)
+  const [sessionUser, setSessionUser] = useState<{
+    role: Role
+    officeMemberRole?: OfficeMemberRole | null
+    permissionsOverride?: PermissionsOverride | null
+  } | null>(null)
   const [plan, setPlan] = useState<string | null>(null)
   const [historyKey, setHistoryKey] = useState(0)
 
   useEffect(() => {
-    // Fetch session role to guard page client-side
+    // Fetch session user to guard page client-side via canOfficeDo
     fetch("/api/auth/session")
       .then((r) => r.json())
       .then((s) => {
-        if (s?.user?.role) setRole(s.user.role)
+        if (s?.user?.role) {
+          setSessionUser({
+            role: s.user.role,
+            officeMemberRole: s.user.officeMemberRole ?? null,
+            permissionsOverride: s.user.permissionsOverride ?? null,
+          })
+        }
       })
 
     // Fetch subscription plan for SMS gating
@@ -56,7 +68,7 @@ export default function MessagesPage() {
       })
   }, [])
 
-  if (role && role !== "MANAGER") {
+  if (sessionUser && !canOfficeDo(sessionUser, "sendBulkSms")) {
     redirect("/dashboard")
   }
 

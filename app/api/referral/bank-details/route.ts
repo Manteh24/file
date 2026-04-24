@@ -2,12 +2,13 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { updateBankDetailsSchema } from "@/lib/validations/settings"
+import { canOfficeDo } from "@/lib/office-permissions"
 
-// PATCH /api/referral/bank-details — update the office's bank details for commission payouts
+// PATCH /api/referral/bank-details — update the office's bank details for commission payouts. Owner-only.
 export async function PATCH(request: Request) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageOffice")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 

@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { z } from "zod"
 import { sendSms } from "@/lib/sms"
 import { requireWriteAccess, SubscriptionLockedError, incrementSmsUsage } from "@/lib/subscription"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 const CustomerTypeEnum = z.enum(["BUYER", "RENTER", "SELLER", "LANDLORD"])
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "sendBulkSms")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 

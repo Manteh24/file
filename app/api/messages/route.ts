@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── GET /api/messages ──────────────────────────────────────────────────────────
-// Returns message history for this office, newest first. Manager-only.
+// Returns message history for this office, newest first.
+// Requires sendBulkSms capability (Owner MANAGER, BRANCH_MANAGER, MARKETING).
 
 export async function GET() {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "sendBulkSms")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 

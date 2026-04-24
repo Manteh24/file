@@ -7,16 +7,17 @@ import {
   getSmsUsageThisMonth,
 } from "@/lib/subscription"
 import { db } from "@/lib/db"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── GET /api/subscription/usage ────────────────────────────────────────────
-// Returns current plan limits and usage counters for the authenticated manager.
+// Returns current plan limits and usage counters. Requires manageOffice (Owner-only).
 
 export async function GET() {
   const session = await auth()
   if (!session?.user?.officeId) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageOffice")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 

@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import { formatToman, formatJalali } from "@/lib/utils"
+import { canOfficeDo } from "@/lib/office-permissions"
 import Link from "next/link"
 import {
   normalisePeriod,
@@ -39,7 +40,7 @@ interface ExpiringLeaseRow {
 export default async function ContractsReportPage({ searchParams }: Props) {
   const session = await auth()
   if (!session?.user) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "viewReports")) redirect("/dashboard")
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 

@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { AgentForm } from "@/components/agents/AgentForm"
 import type { AgentDetail } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 interface EditAgentPageProps {
   params: Promise<{ id: string }>
@@ -12,7 +13,7 @@ interface EditAgentPageProps {
 export default async function EditAgentPage({ params }: EditAgentPageProps) {
   const session = await auth()
   if (!session) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "manageAgents")) redirect("/dashboard")
 
   const { id } = await params
   const { officeId } = session.user

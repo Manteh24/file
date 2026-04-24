@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { createShareLinkSchema } from "@/lib/validations/shareLink"
 import { bigIntToNumber } from "@/lib/utils"
 import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── GET /api/files/[id]/share-links ────────────────────────────────────────
 // Returns all share links for a file. Accessible to manager or assigned agent.
@@ -112,23 +113,25 @@ export async function POST(
   }
 
   // Validate the agentId.
-  // Agents: can only attribute their own ID and must be assigned to this file.
-  // Managers: free to attribute any active office agent (no assignment required).
-  if (agentId && role === "AGENT") {
-    const isAssigned = await db.fileAssignment.findFirst({
-      where: { fileId, userId: agentId },
-    })
-    if (!isAssigned) {
-      return NextResponse.json(
-        { success: false, error: "مشاور انتخاب‌شده به این فایل دسترسی ندارد" },
-        { status: 400 }
-      )
-    }
-  }
-  if (agentId && role === "MANAGER") {
-    const agentExists = await db.user.findFirst({ where: { id: agentId, officeId, isActive: true } })
-    if (!agentExists) {
-      return NextResponse.json({ success: false, error: "مشاور یافت نشد" }, { status: 400 })
+  // Users with assignFile capability (Owner MANAGER, BRANCH_MANAGER) may attribute
+  // any active office agent. Plain agents may only attribute themselves and must
+  // be assigned to this file.
+  if (agentId) {
+    if (canOfficeDo(session.user, "assignFile")) {
+      const agentExists = await db.user.findFirst({ where: { id: agentId, officeId, isActive: true } })
+      if (!agentExists) {
+        return NextResponse.json({ success: false, error: "مشاور یافت نشد" }, { status: 400 })
+      }
+    } else {
+      const isAssigned = await db.fileAssignment.findFirst({
+        where: { fileId, userId: agentId },
+      })
+      if (!isAssigned) {
+        return NextResponse.json(
+          { success: false, error: "مشاور انتخاب‌شده به این فایل دسترسی ندارد" },
+          { status: 400 }
+        )
+      }
     }
   }
 

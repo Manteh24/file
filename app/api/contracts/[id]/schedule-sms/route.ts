@@ -2,10 +2,11 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── GET /api/contracts/[id]/schedule-sms ────────────────────────────────────
 // Returns the scheduled SMS for the contract, or null if none exists.
-// Manager-only.
+// Requires viewContracts capability.
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -14,7 +15,7 @@ export async function GET(
   if (!session?.user) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "viewContracts")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 
@@ -53,7 +54,7 @@ const scheduleSchema = z.object({
 
 // ─── POST /api/contracts/[id]/schedule-sms ───────────────────────────────────
 // Creates or replaces the scheduled SMS for the contract.
-// Manager-only. Only valid for LONG_TERM_RENT contracts that are not yet sent.
+// Requires finalizeContract capability. Only valid for LONG_TERM_RENT contracts that are not yet sent.
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -62,7 +63,7 @@ export async function POST(
   if (!session?.user) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "finalizeContract")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 
@@ -133,7 +134,7 @@ export async function DELETE(
   if (!session?.user) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "finalizeContract")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 

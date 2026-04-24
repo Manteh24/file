@@ -3,12 +3,13 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { findActiveReferredOffices } from "@/lib/referral"
 import { bigIntToNumber } from "@/lib/utils"
+import { canOfficeDo } from "@/lib/office-permissions"
 
-// GET /api/referral — returns the authenticated manager's referral code data
+// GET /api/referral — returns the office's referral code data. Owner-only (manageOffice).
 export async function GET() {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageOffice")) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 

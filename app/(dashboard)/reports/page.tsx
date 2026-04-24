@@ -10,6 +10,7 @@ import { format } from "date-fns-jalali"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
+import { canOfficeDo } from "@/lib/office-permissions"
 import { formatToman, formatJalali } from "@/lib/utils"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -47,7 +48,7 @@ const TRANSACTION_TYPES: TransactionType[] = [
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const session = await auth()
   if (!session?.user) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "viewReports")) redirect("/dashboard")
 
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")

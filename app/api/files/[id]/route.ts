@@ -6,6 +6,7 @@ import { buildDiff, recordPriceChanges, type FieldDiff } from "@/lib/file-helper
 import { createManyNotifications } from "@/lib/notifications"
 import { bigIntToNumber } from "@/lib/utils"
 import { requireWriteAccess, SubscriptionLockedError } from "@/lib/subscription"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── GET /api/files/[id] ───────────────────────────────────────────────────────
 // Returns the full detail of a single file.
@@ -41,14 +42,13 @@ export async function GET(
         assignedAgents: {
           include: { user: { select: { id: true, displayName: true } } },
         },
-        // Activity log is only returned for managers
-        activityLogs:
-          role === "MANAGER"
-            ? {
-                include: { user: { select: { displayName: true, role: true } } },
-                orderBy: { createdAt: "desc" },
-              }
-            : false,
+        // Activity log is only returned to users with viewActivityLog capability
+        activityLogs: canOfficeDo(session.user, "viewActivityLog")
+          ? {
+              include: { user: { select: { displayName: true, role: true } } },
+              orderBy: { createdAt: "desc" },
+            }
+          : false,
         priceHistory: {
           include: { changedBy: { select: { displayName: true } } },
           orderBy: { changedAt: "desc" },

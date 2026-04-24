@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/shared/EmptyState"
 import { ContractForm } from "@/components/contracts/ContractForm"
 import { FileText } from "lucide-react"
 import type { ActiveFileSummary } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 interface NewContractPageProps {
   searchParams: Promise<{ fileId?: string }>
@@ -18,15 +19,18 @@ export default async function NewContractPage({ searchParams }: NewContractPageP
   const { officeId, id: userId, role } = session.user
   if (!officeId) redirect("/admin/dashboard")
 
-  // Agents must have canFinalizeContracts permission; managers always have access
-  if (role === "AGENT") {
-    const agentUser = await db.user.findUnique({
-      where: { id: userId },
-      select: { canFinalizeContracts: true },
-    })
-    if (!agentUser?.canFinalizeContracts) redirect("/dashboard")
-  } else if (role !== "MANAGER") {
-    redirect("/dashboard")
+  // Owner MANAGER, BRANCH_MANAGER, or agents with finalizeContract override pass canOfficeDo.
+  // Fall back to legacy DB flag for pre-migration agents.
+  if (!canOfficeDo(session.user, "finalizeContract")) {
+    if (role === "AGENT") {
+      const agentUser = await db.user.findUnique({
+        where: { id: userId },
+        select: { canFinalizeContracts: true },
+      })
+      if (!agentUser?.canFinalizeContracts) redirect("/dashboard")
+    } else {
+      redirect("/dashboard")
+    }
   }
 
   const { fileId: initialFileId } = await searchParams

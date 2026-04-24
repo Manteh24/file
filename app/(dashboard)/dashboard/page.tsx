@@ -16,6 +16,7 @@ import { FileStatusRing } from "@/components/dashboard/FileStatusRing"
 import { ExpiringContractsWidget } from "@/components/dashboard/ExpiringContractsWidget"
 import { PlanUpgradeCelebration } from "@/components/dashboard/PlanUpgradeCelebration"
 import type { Plan } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 export default async function DashboardPage() {
   const session = await auth()
@@ -23,6 +24,10 @@ export default async function DashboardPage() {
 
   const { officeId, role, id: userId } = session.user
   if (!officeId) redirect("/admin/dashboard")
+
+  // Precomputed capability flags for the UI below.
+  const canManageAgents = canOfficeDo(session.user, "manageAgents")
+  const canViewReports = canOfficeDo(session.user, "viewReports")
 
   const jalaliMonthStart = startOfMonth(new Date())
 
@@ -101,7 +106,7 @@ export default async function DashboardPage() {
         <Button variant="outline" asChild>
           <Link href="/crm/new">افزودن مشتری</Link>
         </Button>
-        {role === "MANAGER" && (
+        {canManageAgents && (
           <Button variant="outline" asChild>
             <Link href="/agents/new">دعوت مشاور</Link>
           </Button>
@@ -150,7 +155,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Visual section: file pipeline ring + this-month summary */}
-      {role === "MANAGER" && (
+      {canViewReports && (
         <div className="grid gap-4 lg:grid-cols-2">
           <FileStatusRing data={fileStatusData} />
           <ThisMonthCard deals={monthDeals} commission={monthCommission} />

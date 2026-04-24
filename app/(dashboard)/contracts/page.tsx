@@ -9,12 +9,13 @@ import { EmptyState } from "@/components/shared/EmptyState"
 import { ContractCard } from "@/components/contracts/ContractCard"
 import { bigIntToNumber } from "@/lib/utils"
 import type { ContractSummary } from "@/types"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 export default async function ContractsPage() {
   const session = await auth()
   if (!session) redirect("/login")
-  // Contracts are manager-only
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  // Contracts list requires viewContracts
+  if (!canOfficeDo(session.user, "viewContracts")) redirect("/dashboard")
 
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")

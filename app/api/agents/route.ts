@@ -4,16 +4,18 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { createAgentSchema } from "@/lib/validations/agent"
 import { requireWriteAccess, SubscriptionLockedError, getEffectiveSubscription, getEffectivePlanLimits, getUserCount } from "@/lib/subscription"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── GET /api/agents ────────────────────────────────────────────────────────────
-// Returns all agents in the manager's office. Manager-only.
+// Returns all agents in the caller's office. Requires manageAgents capability
+// (Owner MANAGER or BRANCH_MANAGER preset).
 
 export async function GET() {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageAgents")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 
@@ -75,14 +77,14 @@ export async function GET() {
 }
 
 // ─── POST /api/agents ───────────────────────────────────────────────────────────
-// Creates a new agent in the manager's office. Manager-only.
+// Creates a new agent. Requires manageAgents capability.
 
 export async function POST(request: Request) {
   const session = await auth()
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "manageAgents")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 

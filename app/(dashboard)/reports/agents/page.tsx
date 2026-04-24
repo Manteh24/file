@@ -3,6 +3,7 @@ import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { format } from "date-fns-jalali"
+import { canOfficeDo } from "@/lib/office-permissions"
 import {
   normalisePeriod,
   getDateFilter,
@@ -40,7 +41,7 @@ interface AgentData {
 export default async function AgentsReportPage({ searchParams }: Props) {
   const session = await auth()
   if (!session?.user) redirect("/login")
-  if (session.user.role !== "MANAGER") redirect("/dashboard")
+  if (!canOfficeDo(session.user, "viewReports")) redirect("/dashboard")
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 

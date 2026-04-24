@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { canOfficeDo } from "@/lib/office-permissions"
 
 // ─── PATCH /api/share-links/[id] ────────────────────────────────────────────
-// Deactivates a share link. Manager-only.
+// Deactivates a share link. Requires deleteFile capability.
 
 export async function PATCH(
   _request: Request,
@@ -13,7 +14,7 @@ export async function PATCH(
   if (!session) {
     return NextResponse.json({ success: false, error: "احراز هویت الزامی است" }, { status: 401 })
   }
-  if (session.user.role !== "MANAGER") {
+  if (!canOfficeDo(session.user, "deleteFile")) {
     return NextResponse.json({ success: false, error: "دسترسی غیرمجاز" }, { status: 403 })
   }
 
