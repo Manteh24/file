@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { buildBranchFilter } from "@/lib/branch-scope"
+import { buildBranchFilter, resolveBranchScope } from "@/lib/branch-scope"
 
 // Shorthand constructors so each case reads as close to the rule matrix as possible.
 const office = (flags: Partial<{
@@ -133,6 +133,88 @@ describe("buildBranchFilter — isolation on", () => {
 
   it("AGENT with no branchId (office-wide) sees everything — no filter pinned", () => {
     const result = buildBranchFilter(agent(null), office(), "file")
+    expect(result).toEqual({})
+  })
+})
+
+describe("resolveBranchScope — query param overlay", () => {
+  it("MANAGER + requested branchId narrows to the requested branch", () => {
+    const result = resolveBranchScope(
+      { role: "MANAGER", branchId: null },
+      office(),
+      "file",
+      "branch-b"
+    )
+    expect(result).toEqual({ branchId: "branch-b" })
+  })
+
+  it("MANAGER without requested branchId returns empty filter (sees all)", () => {
+    const result = resolveBranchScope(
+      { role: "MANAGER", branchId: null },
+      office(),
+      "file",
+      null
+    )
+    expect(result).toEqual({})
+  })
+
+  it("AGENT scoped to branch-a CANNOT override their visibility via requested branchId", () => {
+    // Branch-scoped agent tries to view branch-b — request is ignored, they
+    // remain pinned to branch-a by the visibility filter.
+    const result = resolveBranchScope(
+      agent("branch-a"),
+      office(),
+      "file",
+      "branch-b"
+    )
+    expect(result).toEqual({ branchId: "branch-a" })
+  })
+
+  it("AGENT with viewAllBranches override + requested branchId narrows to it", () => {
+    const result = resolveBranchScope(
+      {
+        role: "AGENT",
+        officeMemberRole: "AGENT",
+        branchId: "branch-a",
+        permissionsOverride: { viewAllBranches: true },
+      },
+      office(),
+      "file",
+      "branch-b"
+    )
+    expect(result).toEqual({ branchId: "branch-b" })
+  })
+
+  it("Sharing ON + requested branchId narrows to the requested branch", () => {
+    const result = resolveBranchScope(
+      agent("branch-a"),
+      office({ shareFilesAcrossBranches: true }),
+      "file",
+      "branch-b"
+    )
+    expect(result).toEqual({ branchId: "branch-b" })
+  })
+
+  it("multiBranch disabled + requested branchId still narrows (admin overlay)", () => {
+    // When multi-branch is off, visibility is empty — but if a branchId is in
+    // the URL we still honor it. (In practice the switcher would never inject
+    // one in this state, but the helper shouldn't silently drop it.)
+    const result = resolveBranchScope(
+      agent("branch-a"),
+      office({ multiBranchEnabled: false }),
+      "file",
+      "branch-b"
+    )
+    expect(result).toEqual({ branchId: "branch-b" })
+  })
+
+  it("Empty string requested branchId is treated as no filter", () => {
+    const result = resolveBranchScope(
+      { role: "MANAGER", branchId: null },
+      office(),
+      "file",
+      ""
+    )
     expect(result).toEqual({})
   })
 })

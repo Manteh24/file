@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { CustomerCard } from "@/components/crm/CustomerCard"
+import { resolveBranchScope } from "@/lib/branch-scope"
 import type { CustomerType, CustomerSummary } from "@/types"
 
 interface CRMPageProps {
-  searchParams: Promise<{ type?: string }>
+  searchParams: Promise<{ type?: string; branchId?: string }>
 }
 
 const TYPE_FILTER_OPTIONS: { value: CustomerType | "ALL"; label: string }[] = [
@@ -30,10 +31,30 @@ export default async function CRMPage({ searchParams }: CRMPageProps) {
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 
+  const office = await db.office.findUnique({
+    where: { id: officeId },
+    select: {
+      multiBranchEnabled: true,
+      shareFilesAcrossBranches: true,
+      shareCustomersAcrossBranches: true,
+    },
+  })
+  const branchFilter = resolveBranchScope(
+    session.user,
+    office ?? {
+      multiBranchEnabled: false,
+      shareFilesAcrossBranches: true,
+      shareCustomersAcrossBranches: true,
+    },
+    "customer",
+    params.branchId ?? null
+  )
+
   const customers = await db.customer.findMany({
     where: {
       officeId,
       ...(typeFilter && { types: { hasSome: [typeFilter] } }),
+      ...branchFilter,
     },
     select: {
       id: true,

@@ -17,19 +17,55 @@ import { ExpiringContractsWidget } from "@/components/dashboard/ExpiringContract
 import { PlanUpgradeCelebration } from "@/components/dashboard/PlanUpgradeCelebration"
 import type { Plan } from "@/types"
 import { canOfficeDo } from "@/lib/office-permissions"
+import { resolveBranchScope } from "@/lib/branch-scope"
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams: Promise<{ branchId?: string }>
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const session = await auth()
   if (!session?.user) redirect("/login")
 
   const { officeId, role, id: userId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 
+  const params = await searchParams
+
   // Precomputed capability flags for the UI below.
   const canManageAgents = canOfficeDo(session.user, "manageAgents")
   const canViewReports = canOfficeDo(session.user, "viewReports")
 
   const jalaliMonthStart = startOfMonth(new Date())
+
+  // Branch scoping: visibility filter from office's multi-branch flags merged
+  // with the optional `?branchId` from the BranchSwitcher. Applied to file +
+  // customer KPIs (contracts and team count are office-wide).
+  const office = await db.office.findUnique({
+    where: { id: officeId },
+    select: {
+      multiBranchEnabled: true,
+      shareFilesAcrossBranches: true,
+      shareCustomersAcrossBranches: true,
+    },
+  })
+  const officeForFilter = office ?? {
+    multiBranchEnabled: false,
+    shareFilesAcrossBranches: true,
+    shareCustomersAcrossBranches: true,
+  }
+  const fileBranchFilter = resolveBranchScope(
+    session.user,
+    officeForFilter,
+    "file",
+    params.branchId ?? null
+  )
+  const customerBranchFilter = resolveBranchScope(
+    session.user,
+    officeForFilter,
+    "customer",
+    params.branchId ?? null
+  )
 
   const [teamCount, activeFilesCount, customerCount, fileStatusGroups, monthContractData] = await Promise.all([
     db.user.count({ where: { officeId } }),
@@ -40,12 +76,13 @@ export default async function DashboardPage() {
         ...(role === "AGENT" && {
           assignedAgents: { some: { userId } },
         }),
+        ...fileBranchFilter,
       },
     }),
-    db.customer.count({ where: { officeId } }),
+    db.customer.count({ where: { officeId, ...customerBranchFilter } }),
     db.propertyFile.groupBy({
       by: ["status"],
-      where: { officeId },
+      where: { officeId, ...fileBranchFilter },
       _count: { id: true },
     }),
     db.contract.aggregate({

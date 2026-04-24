@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
@@ -17,19 +17,67 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Switch } from "@/components/ui/switch"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { UpgradePrompt } from "@/components/shared/UpgradePrompt"
-import type { AgentDetail } from "@/types"
+import { PermissionMatrix } from "@/components/settings/PermissionMatrix"
+import {
+  OFFICE_ROLE_LABELS,
+  type OfficeMemberRole,
+  type PermissionsOverride,
+} from "@/lib/office-permissions"
+import { PLAN_FEATURES } from "@/lib/plan-constants-client"
+import type { AgentDetail, Plan } from "@/types"
+
+interface BranchOption {
+  id: string
+  name: string
+  isHeadquarters: boolean
+}
 
 interface AgentFormProps {
   // When provided, the form is in edit mode (username field is disabled)
   initialData?: Partial<AgentDetail>
   agentId?: string
+  /** When TEAM, expose the staff role dropdown + branch selector. */
+  plan?: Plan
+  /** When true, expose the branch selector (independent of plan in case of legacy state). */
+  multiBranchEnabled?: boolean
 }
 
-export function AgentForm({ initialData, agentId }: AgentFormProps) {
+export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: AgentFormProps) {
   const router = useRouter()
   const isEdit = !!agentId
   const [showPlanLimit, setShowPlanLimit] = useState(false)
+
+  const initialOfficeMemberRole = (initialData?.officeMemberRole as OfficeMemberRole | null | undefined) ?? "AGENT"
+  const initialOverride = (initialData?.permissionsOverride ?? null) as PermissionsOverride | null
+  const initialBranchId = initialData?.branchId ?? null
+
+  const [officeMemberRole, setOfficeMemberRole] = useState<OfficeMemberRole>(initialOfficeMemberRole)
+  const [permissionsOverride, setPermissionsOverride] = useState<PermissionsOverride | null>(initialOverride)
+  const [branchId, setBranchId] = useState<string | null>(initialBranchId)
+  const [branches, setBranches] = useState<BranchOption[]>([])
+
+  const showStaffRoleSelector = plan
+    ? PLAN_FEATURES[plan].hasCustomStaffRoles
+    : false
+  const showBranchSelector = !!multiBranchEnabled
+
+  useEffect(() => {
+    if (!showBranchSelector) return
+    fetch("/api/branches")
+      .then((r) => r.json())
+      .then((body) => {
+        if (body.success) setBranches(body.data as BranchOption[])
+      })
+      .catch(() => {})
+  }, [showBranchSelector])
 
   const form = useForm<CreateAgentInput>({
     // Cast needed: standardSchemaResolver's return type has a different third generic
@@ -50,14 +98,20 @@ export function AgentForm({ initialData, agentId }: AgentFormProps) {
     const url = isEdit ? `/api/agents/${agentId}` : "/api/agents"
     const method = isEdit ? "PATCH" : "POST"
 
-    // In edit mode, only send the editable fields (including canFinalizeContracts)
+    // In edit mode, only send the editable fields (including capability fields)
     const body = isEdit
       ? {
           displayName: values.displayName,
           email: values.email,
           canFinalizeContracts: values.canFinalizeContracts,
+          ...(showStaffRoleSelector && { officeMemberRole, permissionsOverride }),
+          ...(showBranchSelector && { branchId }),
         }
-      : values
+      : {
+          ...values,
+          ...(showStaffRoleSelector && { officeMemberRole, permissionsOverride: permissionsOverride ?? undefined }),
+          ...(showBranchSelector && { branchId }),
+        }
 
     const response = await fetch(url, {
       method,
@@ -163,7 +217,69 @@ export function AgentForm({ initialData, agentId }: AgentFormProps) {
           )}
         />
 
-        {/* canFinalizeContracts — permission toggle */}
+        {/* Staff role selector — TEAM plan only */}
+        {showStaffRoleSelector && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">نقش کاربر</label>
+            <Select
+              value={officeMemberRole}
+              onValueChange={(v) => {
+                setOfficeMemberRole(v as OfficeMemberRole)
+                // Clear overrides when preset changes so the new preset takes effect cleanly
+                setPermissionsOverride(null)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(OFFICE_ROLE_LABELS) as OfficeMemberRole[]).map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {OFFICE_ROLE_LABELS[r]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              نقش پیش‌فرض دسترسی‌های کاربر را تعیین می‌کند. در صورت نیاز می‌توانید در پایین تک‌تک دسترسی‌ها را تغییر دهید.
+            </p>
+          </div>
+        )}
+
+        {/* Branch selector — visible when multi-branch is enabled */}
+        {showBranchSelector && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">شعبه</label>
+            <Select
+              value={branchId ?? "__none__"}
+              onValueChange={(v) => setBranchId(v === "__none__" ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="انتخاب شعبه" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">بدون شعبه (دسترسی به کل دفتر)</SelectItem>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                    {b.isHeadquarters && " (مرکزی)"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Permission matrix — TEAM plan only */}
+        {showStaffRoleSelector && (
+          <PermissionMatrix
+            preset={officeMemberRole}
+            override={permissionsOverride}
+            onChange={setPermissionsOverride}
+          />
+        )}
+
+        {/* canFinalizeContracts — permission toggle (legacy; superseded on TEAM by matrix) */}
         <FormField
           control={form.control}
           name="canFinalizeContracts"

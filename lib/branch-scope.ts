@@ -67,3 +67,29 @@ export function buildBranchFilter(
 
   return { branchId: user.branchId }
 }
+
+/**
+ * Combines the visibility filter from `buildBranchFilter` with an optional
+ * user-supplied `?branchId` from the URL (the BranchSwitcher).
+ *
+ * Rules:
+ *   - If visibility already pins to a branch (the caller is branch-scoped),
+ *     the user cannot override it. Their requested branchId is ignored.
+ *   - If visibility is open (MANAGER, viewAllBranches, sharing on, etc.) and
+ *     a `requestedBranchId` is passed, narrow the query to that branch.
+ *   - Otherwise return the empty filter.
+ *
+ * Pass the `?branchId` query param straight from `searchParams.branchId` —
+ * empty/undefined means "all branches".
+ */
+export function resolveBranchScope(
+  user: BranchScopeUser,
+  office: BranchScopeOffice,
+  entity: BranchScopeEntity,
+  requestedBranchId?: string | null
+): BranchFilter {
+  const visibility = buildBranchFilter(user, office, entity)
+  if ("branchId" in visibility) return visibility
+  if (requestedBranchId) return { branchId: requestedBranchId }
+  return {}
+}

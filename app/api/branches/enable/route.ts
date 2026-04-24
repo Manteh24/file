@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { getEffectiveSubscription } from "@/lib/subscription"
 import { canOfficeDo } from "@/lib/office-permissions"
+import { PLAN_FEATURES } from "@/lib/plan-constants-client"
 
 // ─── POST /api/branches/enable ──────────────────────────────────────────────────
 // One-click multi-branch enablement for TEAM offices.
@@ -48,7 +49,7 @@ export async function POST() {
   }
 
   const sub = await getEffectiveSubscription(officeId)
-  if (!sub || sub.plan !== "TEAM") {
+  if (!sub || !PLAN_FEATURES[sub.plan].hasMultiBranch) {
     return NextResponse.json(
       {
         success: false,

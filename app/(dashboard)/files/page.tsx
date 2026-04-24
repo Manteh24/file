@@ -10,11 +10,12 @@ import { FileListView } from "@/components/files/FileListView"
 import { NewFileButton } from "@/components/files/NewFileButton"
 import { fileFiltersSchema } from "@/lib/validations/file"
 import { buildFileWhere, buildOrderBy } from "@/lib/file-helpers"
+import { resolveBranchScope } from "@/lib/branch-scope"
 import type { FileStatus, PropertyFileSummary } from "@/types"
 import type { RawFilterParams } from "@/components/files/FileFilterPanel"
 
 interface FilesPageProps {
-  searchParams: Promise<RawFilterParams>
+  searchParams: Promise<RawFilterParams & { branchId?: string }>
 }
 
 const STATUS_FILTER_OPTIONS: { value: FileStatus | "ALL"; label: string }[] = [
@@ -72,8 +73,29 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
   // Fall back to no filters if params are invalid (e.g. manually crafted bad URL)
   const filters = filtersResult.success ? filtersResult.data : {}
 
+  // Branch scoping: enforce visibility per office's multi-branch flags, then
+  // narrow further if the user explicitly picked a branch in the switcher.
+  const office = await db.office.findUnique({
+    where: { id: officeId },
+    select: {
+      multiBranchEnabled: true,
+      shareFilesAcrossBranches: true,
+      shareCustomersAcrossBranches: true,
+    },
+  })
+  const branchFilter = resolveBranchScope(
+    session.user,
+    office ?? {
+      multiBranchEnabled: false,
+      shareFilesAcrossBranches: true,
+      shareCustomersAcrossBranches: true,
+    },
+    "file",
+    params.branchId ?? null
+  )
+
   const files = await db.propertyFile.findMany({
-    where: buildFileWhere(officeId, role, userId, filters),
+    where: { ...buildFileWhere(officeId, role, userId, filters), ...branchFilter },
     select: {
       id: true,
       transactionType: true,

@@ -19,6 +19,7 @@ export const PLAN_FEATURES = {
     hasCustomBranding: false,
     hasAdvancedAnalytics: false,
     hasMultiBranch: false,
+    hasCustomStaffRoles: false,
     watermarkLinks: true,
   },
   PRO: {
@@ -32,6 +33,7 @@ export const PLAN_FEATURES = {
     hasCustomBranding: true,
     hasAdvancedAnalytics: false,
     hasMultiBranch: false,
+    hasCustomStaffRoles: false,
     watermarkLinks: false,
   },
   TEAM: {
@@ -45,6 +47,7 @@ export const PLAN_FEATURES = {
     hasCustomBranding: true,
     hasAdvancedAnalytics: true,
     hasMultiBranch: true,
+    hasCustomStaffRoles: true,
     watermarkLinks: false,
   },
 } as const
