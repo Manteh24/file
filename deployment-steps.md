@@ -583,7 +583,10 @@ Add this line at the bottom:
 
 ```
 */5 * * * * curl -s -X POST -H "x-cron-secret: YOUR_CRON_SECRET" http://127.0.0.1:3000/api/cron/lock-expired-trials >> /var/log/amlakbin-cron.log 2>&1
+* * * * * curl -s -X POST -H "x-cron-secret: YOUR_CRON_SECRET" http://127.0.0.1:3000/api/cron/fire-calendar-reminders >> /var/log/amlakbin-cron.log 2>&1
 ```
+
+> The second line fires due calendar reminders (per-minute). Same `CRON_SECRET` as the first line.
 
 > Replace `YOUR_CRON_SECRET` with the same value you set in `ecosystem.config.js` and `.env`.
 > This runs every 5 minutes. The log goes to `/var/log/amlakbin-cron.log`.
