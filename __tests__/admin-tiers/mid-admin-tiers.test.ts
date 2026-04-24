@@ -52,7 +52,8 @@ vi.mock("@/lib/auth", () => ({ auth: vi.fn() }))
 vi.mock("@/lib/db", () => ({
   db: {
     subscription: { findUnique: vi.fn(), update: vi.fn() },
-    adminOfficeAssignment: { findMany: vi.fn() },
+    adminOfficeAssignment: { findMany: vi.fn().mockResolvedValue([]) },
+    adminAccessRule: { findMany: vi.fn().mockResolvedValue([]) },
     adminActionLog: { create: vi.fn() },
     user: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     userSession: { deleteMany: vi.fn() },
@@ -74,6 +75,7 @@ const mockAuth = auth as ReturnType<typeof vi.fn>
 const mockDb = db as unknown as {
   subscription: { findUnique: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }
   adminOfficeAssignment: { findMany: ReturnType<typeof vi.fn> }
+  adminAccessRule: { findMany: ReturnType<typeof vi.fn> }
   adminActionLog: { create: ReturnType<typeof vi.fn> }
   user: { findFirst: ReturnType<typeof vi.fn>; findUnique: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> }
   userSession: { deleteMany: ReturnType<typeof vi.fn> }
@@ -116,6 +118,7 @@ function makeBroadcastReq() {
 beforeEach(() => {
   vi.resetAllMocks()
   mockDb.adminOfficeAssignment.findMany.mockResolvedValue([{ officeId }])
+  mockDb.adminAccessRule.findMany.mockResolvedValue([])
   mockDb.adminActionLog.create.mockResolvedValue({})
   mockDb.subscription.update.mockResolvedValue({})
   mockDb.user.update.mockResolvedValue({})

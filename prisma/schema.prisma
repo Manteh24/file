@@ -40,6 +40,18 @@ enum AdminTier {
   FULL_ACCESS
 }
 
+// Preset capability bundle for a non-manager office user.
+// See lib/office-permissions.ts for the capability map.
+// AGENT is the default — legacy agents predating this feature are backfilled to AGENT.
+enum OfficeMemberRole {
+  AGENT
+  BRANCH_MANAGER
+  ACCOUNTANT
+  RECEPTIONIST
+  MARKETING
+  CUSTOM
+}
+
 // Controls whether an AdminAccessRule matches trial-only, paid-only, or both.
 enum TrialFilter {
   ANY
@@ -199,7 +211,15 @@ model User {
   // Internal admin note (not visible to the user)
   adminNote    String?
   // When true, this agent is allowed to finalize contracts (normally manager-only).
+  // DEPRECATED — superseded by permissionsOverride.finalizeContract. Kept for one release
+  // while the migration backfills the override. New code must read through canOfficeDo().
   canFinalizeContracts Boolean @default(false)
+  // Preset permission bundle for non-manager office users. Null for MANAGER and admin roles.
+  // Resolution: permissionsOverride wins per-capability; otherwise the preset map is used.
+  officeMemberRole OfficeMemberRole?
+  // Sparse per-capability override ({ finalizeContract: true, createFile: false, ... }).
+  // Null or missing keys fall back to the officeMemberRole preset.
+  permissionsOverride Json?
   // Nullable: SUPER_ADMIN and MID_ADMIN users have no tenant office (officeId = null)
   officeId     String?
   // Nullable: links user to a specific branch (Team plan multi-branch, hidden until month 4)
@@ -946,8 +966,10 @@ model CalendarEvent {
   // Optional HH:MM 24-hour strings. Stored as text to avoid TZ-shift issues.
   startTime       String?
   endTime         String?
-  reminderMinutes Int?              // REMINDER: minutes before eventDate to send notification
+  reminderMinutes Int?              // MEETING: minutes before startTime to fire notification. Unused for REMINDER.
   playSound       Boolean           @default(false)  // REMINDER + MEETING: play audio on notification
+  // Stamped by /api/cron/fire-calendar-reminders once a reminder fires. Null = never fired (or no reminder configured).
+  reminderFiredAt DateTime?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
@@ -956,6 +978,7 @@ model CalendarEvent {
   attendees CalendarEventAttendee[]
 
   @@index([officeId, eventDate])
+  @@index([reminderFiredAt, eventDate])
   @@map("calendar_events")
 }
 

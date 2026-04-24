@@ -1,4 +1,5 @@
 import type { DefaultSession } from "next-auth"
+import type { OfficeMemberRole, PermissionsOverride } from "@/lib/office-permissions"
 
 // ─── Domain Enums ─────────────────────────────────────────────────────────────
 // String unions mirror the Prisma enums — used in TypeScript without importing
@@ -127,6 +128,8 @@ export interface PropertyFileSummary {
   area: number | null
   address: string | null
   neighborhood: string | null
+  latitude: number | null
+  longitude: number | null
   salePrice: number | null
   depositAmount: number | null
   rentAmount: number | null
@@ -248,6 +251,12 @@ declare module "next-auth" {
       sessionId: string
       // Permission tier for MID_ADMIN users. Null = read-only.
       adminTier: AdminTier | null
+      // Preset permission bundle for non-manager office users. Null for MANAGER/admin roles.
+      officeMemberRole: OfficeMemberRole | null
+      // Sparse per-capability override; null = fall back to the preset.
+      permissionsOverride: PermissionsOverride | null
+      // Null = office-wide (Owner/Manager); non-null = scoped to that branch.
+      branchId: string | null
     } & DefaultSession["user"]
   }
 
@@ -257,6 +266,9 @@ declare module "next-auth" {
     role: Role
     sessionId: string
     adminTier: AdminTier | null
+    officeMemberRole: OfficeMemberRole | null
+    permissionsOverride: PermissionsOverride | null
+    branchId: string | null
   }
 }
 
@@ -267,6 +279,9 @@ declare module "@auth/core/jwt" {
     role: Role
     sessionId: string
     adminTier: AdminTier | null
+    officeMemberRole: OfficeMemberRole | null
+    permissionsOverride: PermissionsOverride | null
+    branchId: string | null
   }
 }
 

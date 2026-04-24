@@ -5,6 +5,7 @@ import { db } from "@/lib/db"
 import { loginSchema } from "@/lib/validations/auth"
 import { isRateLimited } from "@/lib/rate-limit"
 import type { AdminTier, Role } from "@/types"
+import type { OfficeMemberRole, PermissionsOverride } from "@/lib/office-permissions"
 
 // ─── Admin Login Logger ────────────────────────────────────────────────────────
 
@@ -85,6 +86,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           officeId: user.officeId,
           role: user.role as Role,
           adminTier: (user.adminTier ?? null) as AdminTier | null,
+          officeMemberRole: (user.officeMemberRole ?? null) as OfficeMemberRole | null,
+          permissionsOverride: (user.permissionsOverride ?? null) as PermissionsOverride | null,
+          branchId: user.branchId ?? null,
           sessionId,
           name: user.displayName,
           email: user.email ?? undefined,
@@ -103,6 +107,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.officeId = user.officeId
         token.role = user.role
         token.adminTier = user.adminTier
+        token.officeMemberRole = user.officeMemberRole
+        token.permissionsOverride = user.permissionsOverride
+        token.branchId = user.branchId
         token.sessionId = user.sessionId
       }
       return token
@@ -114,6 +121,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       session.user.officeId = token.officeId
       session.user.role = token.role
       session.user.adminTier = token.adminTier
+      session.user.officeMemberRole = token.officeMemberRole
+      session.user.permissionsOverride = token.permissionsOverride
+      session.user.branchId = token.branchId
       session.user.sessionId = token.sessionId
       return session
     },
