@@ -82,7 +82,7 @@ export async function PATCH(
     plan !== subscription.plan
 
   if (isPlanUpgrade) {
-    const planLabel = newPlan === "TEAM" ? "تیمی" : "حرفه‌ای"
+    const planLabel = newPlan === "TEAM" ? "تیم" : "حرفه‌ای"
     const manager = await db.user.findFirst({
       where: { officeId: id, role: "MANAGER", isActive: true },
       select: { id: true },

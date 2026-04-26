@@ -12,9 +12,12 @@ interface AdminSettingsFormProps {
   freeMaxAiMonth: string
   freeMaxSmsMonth: string
   defaultReferralCommission: string
+  referralBonusPercent: string
+  referralBonusMaxToman: string
+  referralBonusLifetimeCap: string
 }
 
-type SectionKey = "system" | "payment" | "ai" | "freeLimits" | "trial" | "referral"
+type SectionKey = "system" | "payment" | "ai" | "freeLimits" | "trial" | "referral" | "referralBonus"
 
 export function AdminSettingsForm(props: AdminSettingsFormProps) {
   const [maintenanceMode, setMaintenanceMode] = useState(props.maintenanceMode === "true")
@@ -30,6 +33,9 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
   const [defaultReferralCommission, setDefaultReferralCommission] = useState(
     props.defaultReferralCommission
   )
+  const [bonusPercent, setBonusPercent] = useState(props.referralBonusPercent)
+  const [bonusMaxToman, setBonusMaxToman] = useState(props.referralBonusMaxToman)
+  const [bonusLifetimeCap, setBonusLifetimeCap] = useState(props.referralBonusLifetimeCap)
 
   const [loadingSection, setLoadingSection] = useState<SectionKey | null>(null)
   const [savedSection, setSavedSection] = useState<SectionKey | null>(null)
@@ -323,6 +329,88 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             {loadingSection === "referral" ? "در حال ذخیره..." : "ذخیره"}
           </button>
           {savedSection === "referral" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+        </div>
+      </section>
+
+      {/* Section 7 — One-time Referral Bonus (office-owned codes) */}
+      <section className="rounded-lg border border-border p-5 space-y-4">
+        <h2 className="text-sm font-semibold">پاداش یکباره معرفی (کدهای دفاتر)</h2>
+        <p className="text-xs text-muted-foreground">
+          هنگامی که یک دفتر معرفی‌شده اولین پرداخت موفق خود را انجام می‌دهد، به دفتر معرف یک پاداش یکباره تعلق می‌گیرد.
+          فرمول: <strong>min(مبلغ پرداخت × درصد، سقف هر پاداش)</strong>. این مدل فقط برای کدهای خودکار دفاتر اعمال می‌شود؛
+          کدهای شریک که توسط ادمین ساخته شده‌اند همچنان از مدل ماهانه استفاده می‌کنند.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">درصد پاداش</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={bonusPercent}
+                onChange={(e) => { setBonusPercent(e.target.value); setSavedSection(null) }}
+                min="1"
+                max="100"
+                step="1"
+                className="w-24 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">٪</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">سقف هر پاداش</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={bonusMaxToman}
+                onChange={(e) => { setBonusMaxToman(e.target.value); setSavedSection(null) }}
+                min="0"
+                step="1000"
+                className="w-32 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">تومان</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">حداکثر پاداش‌ها در طول عمر</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={bonusLifetimeCap}
+                onChange={(e) => { setBonusLifetimeCap(e.target.value); setSavedSection(null) }}
+                min="1"
+                max="1000"
+                step="1"
+                className="w-24 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">پاداش</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const p = parseInt(bonusPercent, 10)
+              const m = parseInt(bonusMaxToman, 10)
+              const c = parseInt(bonusLifetimeCap, 10)
+              if (isNaN(p) || p < 1 || p > 100) { setError("درصد پاداش باید بین ۱ تا ۱۰۰ باشد"); return }
+              if (isNaN(m) || m < 0) { setError("سقف هر پاداش باید ۰ یا بیشتر باشد"); return }
+              if (isNaN(c) || c < 1 || c > 1000) { setError("سقف تعداد پاداش‌ها باید بین ۱ تا ۱۰۰۰ باشد"); return }
+              saveSection("referralBonus", {
+                REFERRAL_BONUS_PERCENT: String(p),
+                REFERRAL_BONUS_MAX_TOMAN: String(m),
+                REFERRAL_BONUS_LIFETIME_CAP: String(c),
+              })
+            }}
+            disabled={loadingSection === "referralBonus"}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {loadingSection === "referralBonus" ? "در حال ذخیره..." : "ذخیره"}
+          </button>
+          {savedSection === "referralBonus" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
         </div>
       </section>
     </div>

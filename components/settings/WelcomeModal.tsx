@@ -50,14 +50,14 @@ const PLAN_CONFIG: Record<Plan, PlanConfig> = {
     ],
   },
   TEAM: {
-    label: "تیمی",
+    label: "تیم",
     Icon: Crown,
     gradientClass: "from-amber-500/20 via-amber-400/10 to-muted",
     badgeClass:
       "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
     iconBgClass: "bg-amber-100 dark:bg-amber-900/50",
     iconClass: "text-amber-600 dark:text-amber-400",
-    title: "اشتراک تیمی فعال شد! 🎉",
+    title: "اشتراک تیم فعال شد! 🎉",
     description:
       "تبریک! بالاترین سطح دسترسی برای تیم شما آماده است. از همه امکانات لذت ببرید.",
     features: [

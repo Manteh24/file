@@ -21,28 +21,46 @@ export default async function AdminReferralsPage() {
       office: { select: { name: true } },
       _count: { select: { referrals: true } },
       monthlyEarnings: { select: { commissionAmount: true, isPaid: true } },
+      bonusPayouts: { select: { amountToman: true, status: true } },
     },
     orderBy: { createdAt: "desc" },
   })
 
   const rows = await Promise.all(
     codes.map(async (code) => {
-      const activeOfficeIds = await findActiveReferredOffices(code.id)
-      const totalEarned = code.monthlyEarnings.reduce((s, e) => s + Number(e.commissionAmount), 0)
-      const pendingAmount = code.monthlyEarnings
+      const isOfficeOwned = code.officeId !== null
+      // Office-owned codes use the one-time bonus model — count payouts (PAID + PENDING).
+      // Partner codes use the legacy monthly model — sum the monthly earnings.
+      const bonusCount = code.bonusPayouts.filter((p) => p.status !== "VOIDED").length
+      const bonusTotalEarned = code.bonusPayouts
+        .filter((p) => p.status === "PAID")
+        .reduce((s, p) => s + p.amountToman, 0)
+      const bonusPending = code.bonusPayouts
+        .filter((p) => p.status === "PENDING")
+        .reduce((s, p) => s + p.amountToman, 0)
+      const monthlyEarned = code.monthlyEarnings.reduce(
+        (s, e) => s + Number(e.commissionAmount),
+        0
+      )
+      const monthlyPending = code.monthlyEarnings
         .filter((e) => !e.isPaid)
         .reduce((s, e) => s + Number(e.commissionAmount), 0)
+
+      const activeOfficeIds = isOfficeOwned ? [] : await findActiveReferredOffices(code.id)
+
       return {
         id: code.id,
         code: code.code,
         label: code.label,
         officeName: code.office?.name ?? null,
+        isOfficeOwned,
         commissionPerOfficePerMonth: code.commissionPerOfficePerMonth,
         isActive: code.isActive,
         referralCount: code._count.referrals,
         activeOfficeCount: activeOfficeIds.length,
-        totalEarned,
-        pendingAmount,
+        bonusCount,
+        totalEarned: isOfficeOwned ? bonusTotalEarned : monthlyEarned,
+        pendingAmount: isOfficeOwned ? bonusPending : monthlyPending,
       }
     })
   )
@@ -76,8 +94,9 @@ export default async function AdminReferralsPage() {
               <tr>
                 <th className="px-4 py-3 text-start font-medium">کد</th>
                 <th className="px-4 py-3 text-start font-medium">برچسب / دفتر</th>
+                <th className="px-4 py-3 text-start font-medium">مدل</th>
                 <th className="px-4 py-3 text-start font-medium">دفاتر ارجاع‌شده</th>
-                <th className="px-4 py-3 text-start font-medium">دفاتر پولی فعال</th>
+                <th className="px-4 py-3 text-start font-medium">پاداش / فعال</th>
                 <th className="px-4 py-3 text-start font-medium">نرخ کمیسیون</th>
                 <th className="px-4 py-3 text-start font-medium">کل درآمد</th>
                 <th className="px-4 py-3 text-start font-medium">معوق</th>
@@ -92,14 +111,29 @@ export default async function AdminReferralsPage() {
                   <td className="px-4 py-3 text-muted-foreground">
                     {row.label ?? row.officeName ?? "—"}
                   </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        row.isOfficeOwned
+                          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                      }`}
+                    >
+                      {row.isOfficeOwned ? "یکباره" : "ماهانه"}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">{row.referralCount.toLocaleString("fa-IR")}</td>
                   <td className="px-4 py-3 font-medium text-green-700 dark:text-green-400">
-                    {row.activeOfficeCount.toLocaleString("fa-IR")}
+                    {row.isOfficeOwned
+                      ? row.bonusCount.toLocaleString("fa-IR")
+                      : row.activeOfficeCount.toLocaleString("fa-IR")}
                   </td>
                   <td className="px-4 py-3">
-                    {row.commissionPerOfficePerMonth > 0
-                      ? formatToman(row.commissionPerOfficePerMonth)
-                      : "—"}
+                    {row.isOfficeOwned
+                      ? "—"
+                      : row.commissionPerOfficePerMonth > 0
+                        ? formatToman(row.commissionPerOfficePerMonth)
+                        : "—"}
                   </td>
                   <td className="px-4 py-3">{row.totalEarned > 0 ? formatToman(row.totalEarned) : "—"}</td>
                   <td className="px-4 py-3 text-amber-600">

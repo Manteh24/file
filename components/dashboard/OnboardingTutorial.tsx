@@ -13,7 +13,13 @@ type Step = {
   description: string
 }
 
-const STEPS: Step[] = [
+type StepFlavor = "all" | "mobile-only"
+
+interface DefinedStep extends Step {
+  flavor?: StepFlavor
+}
+
+const ALL_STEPS: DefinedStep[] = [
   {
     id: "welcome",
     title: "به املاکبین خوش آمدید 👋",
@@ -54,10 +60,37 @@ const STEPS: Step[] = [
     title: "امکانات بیشتر",
     description:
       "از منوی «بیشتر» به مشاوران، قراردادها، گزارش‌ها، مرکز پیام، تنظیمات، ارتقا پلن و پشتیبانی دسترسی دارید.",
+    // The "بیشتر" tab lives in MobileBottomNav (lg:hidden), so on desktop the
+    // sidebar already lists those items directly — this step is redundant.
+    flavor: "mobile-only",
   },
 ]
 
+// Tailwind `lg` breakpoint — matches MobileBottomNav (lg:hidden) and
+// Sidebar (hidden on <lg). Below this width the bottom nav is visible
+// and the «بیشتر» step makes sense; above it, that nav item doesn't exist.
+const LG_BREAKPOINT = 1024
+
+function useIsDesktop() {
+  // Default to false on the server so SSR matches the mobile-first layout
+  // and we don't briefly show the «بیشتر» step before hydration.
+  const [isDesktop, setIsDesktop] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${LG_BREAKPOINT}px)`)
+    const update = () => setIsDesktop(mq.matches)
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [])
+  return isDesktop
+}
+
 export function OnboardingTutorial() {
+  const isDesktop = useIsDesktop()
+  const STEPS: Step[] = isDesktop
+    ? ALL_STEPS.filter((s) => s.flavor !== "mobile-only")
+    : ALL_STEPS
+
   const [stepIdx, setStepIdx] = useState(0)
   // null = full-overlay (centered steps); rect = spotlight position
   const [spotlightRect, setSpotlightRect] = useState<SpotlightRect | null>(null)
@@ -65,8 +98,13 @@ export function OnboardingTutorial() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const rafRef = useRef<number | null>(null)
 
-  const step = STEPS[stepIdx]
-  const isLast = stepIdx === STEPS.length - 1
+  // Clamp stepIdx if the breakpoint changes mid-tour and the array shrinks
+  useEffect(() => {
+    if (stepIdx > STEPS.length - 1) setStepIdx(STEPS.length - 1)
+  }, [STEPS.length, stepIdx])
+
+  const step = STEPS[Math.min(stepIdx, STEPS.length - 1)]
+  const isLast = stepIdx >= STEPS.length - 1
 
   const measureTarget = useCallback(() => {
     if (!step.targetId) {
@@ -154,12 +192,16 @@ export function OnboardingTutorial() {
   // Tooltip position: bottom-center on small screens when spotlight is active,
   // content-area anchor on desktop, centered card otherwise.
   const isMobile = window.innerWidth < 640
+  // MobileBottomNav is ~4rem (h-16) tall + safe-area inset. Lift the card
+  // above it so the «بعدی / قبلی» buttons aren't covered by the nav itself.
+  const mobileBottomGap =
+    "calc(4rem + env(safe-area-inset-bottom, 0px) + 16px)"
   const tooltipStyle: React.CSSProperties = (() => {
     if (sr && isMobile) {
-      // Keep card at bottom so it never overlaps the spotlight or escapes the viewport
+      // Keep card above the bottom nav so it never overlaps the nav buttons
       return {
         position: "fixed",
-        bottom: 20,
+        bottom: mobileBottomGap,
         left: "50%",
         transform: "translateX(-50%)",
         width: `calc(100vw - 32px)`,
@@ -185,10 +227,10 @@ export function OnboardingTutorial() {
         )
         return { position: "fixed", right: clampedRight, top, width: tooltipW, zIndex: 10001 }
       }
-      // Not enough space on either side — fall back to bottom-center
+      // Not enough space on either side — fall back to bottom-center (still above nav on mobile)
       return {
         position: "fixed",
-        bottom: 20,
+        bottom: isMobile ? mobileBottomGap : 20,
         left: "50%",
         transform: "translateX(-50%)",
         width: Math.min(340, window.innerWidth - 32),

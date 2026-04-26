@@ -25,6 +25,19 @@ interface MonthlyEarning {
   activeOffices: { id: string; name: string }[]
 }
 
+interface BonusPayout {
+  id: string
+  amountToman: number
+  paymentToman: number
+  percentApplied: number
+  capApplied: number
+  status: "PENDING" | "PAID" | "VOIDED"
+  paidAt: string | null
+  createdAt: string
+  referredOffice: { id: string; name: string }
+  paidByAdmin: { displayName: string } | null
+}
+
 interface CodeDetail {
   id: string
   code: string
@@ -38,9 +51,11 @@ interface CodeDetail {
   } | null
   commissionPerOfficePerMonth: number
   isActive: boolean
+  isOfficeOwned: boolean
   activeOfficeCount: number
   referrals: Array<{ office: ReferredOffice }>
   monthlyEarnings: MonthlyEarning[]
+  bonusPayouts: BonusPayout[]
 }
 
 // Build last 6 months: Jalali label, Gregorian YYYY-MM value (API format)
@@ -128,6 +143,22 @@ export default function ReferralCodeDetailPage() {
     setActionLoading(null)
   }
 
+  async function markBonusPaid(payoutId: string) {
+    setActionLoading(payoutId)
+    setError(null)
+    const res = await fetch(
+      `/api/admin/referral-codes/${codeId}/bonus-payouts/${payoutId}/mark-paid`,
+      { method: "POST" }
+    )
+    const json = await res.json()
+    if (json.success) {
+      await load()
+    } else {
+      setError(json.error ?? "خطا در تسویه")
+    }
+    setActionLoading(null)
+  }
+
   if (loading) return <p className="text-sm text-muted-foreground">در حال بارگذاری...</p>
   if (!data) return <p className="text-sm text-red-600">یافت نشد</p>
 
@@ -161,12 +192,20 @@ export default function ReferralCodeDetailPage() {
 
       {/* Stats bar */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { label: "کل ارجاع‌ها", value: data.referrals.length.toLocaleString("fa-IR") },
-          { label: "دفاتر پولی فعال", value: data.activeOfficeCount.toLocaleString("fa-IR") },
-          { label: "نرخ کمیسیون ماهانه", value: data.commissionPerOfficePerMonth > 0 ? formatToman(data.commissionPerOfficePerMonth) : "—" },
-          { label: "وضعیت", value: data.isActive ? "فعال" : "غیرفعال" },
-        ].map((item) => (
+        {(data.isOfficeOwned
+          ? [
+              { label: "مدل پاداش", value: "یکباره" },
+              { label: "کل ارجاع‌ها", value: data.referrals.length.toLocaleString("fa-IR") },
+              { label: "پاداش‌های ثبت‌شده", value: data.bonusPayouts.filter((p) => p.status !== "VOIDED").length.toLocaleString("fa-IR") },
+              { label: "وضعیت", value: data.isActive ? "فعال" : "غیرفعال" },
+            ]
+          : [
+              { label: "کل ارجاع‌ها", value: data.referrals.length.toLocaleString("fa-IR") },
+              { label: "دفاتر پولی فعال", value: data.activeOfficeCount.toLocaleString("fa-IR") },
+              { label: "نرخ کمیسیون ماهانه", value: data.commissionPerOfficePerMonth > 0 ? formatToman(data.commissionPerOfficePerMonth) : "—" },
+              { label: "وضعیت", value: data.isActive ? "فعال" : "غیرفعال" },
+            ]
+        ).map((item) => (
           <div key={item.label} className="rounded-lg border border-border p-4">
             <p className="text-xs text-muted-foreground">{item.label}</p>
             <p className="mt-1 text-lg font-bold">{item.value}</p>
@@ -260,7 +299,74 @@ export default function ReferralCodeDetailPage() {
         )}
       </section>
 
-      {/* Monthly Earnings */}
+      {/* Bonus Payouts (office-owned codes only) */}
+      {data.isOfficeOwned && (
+        <section className="space-y-3">
+          <h2 className="font-semibold">پاداش‌های یکباره</h2>
+          {data.bonusPayouts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">هنوز پاداشی ثبت نشده — پاداش هنگام اولین پرداخت موفق دفتر معرفی‌شده ایجاد می‌شود.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-border">
+              <table className="w-full text-sm">
+                <thead className="border-b border-border bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-2 text-start font-medium">تاریخ</th>
+                    <th className="px-4 py-2 text-start font-medium">دفتر معرفی‌شده</th>
+                    <th className="px-4 py-2 text-start font-medium">مبلغ پرداخت</th>
+                    <th className="px-4 py-2 text-start font-medium">پاداش</th>
+                    <th className="px-4 py-2 text-start font-medium">درصد / سقف</th>
+                    <th className="px-4 py-2 text-start font-medium">وضعیت</th>
+                    <th className="px-4 py-2 text-start font-medium">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {data.bonusPayouts.map((p) => (
+                    <tr key={p.id} className="hover:bg-muted/30">
+                      <td className="px-4 py-2 font-mono">{format(new Date(p.createdAt), "yyyy/MM/dd")}</td>
+                      <td className="px-4 py-2">
+                        <Link href={`/admin/offices/${p.referredOffice.id}`} className="text-primary hover:underline">
+                          {p.referredOffice.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2">{formatToman(p.paymentToman)}</td>
+                      <td className="px-4 py-2 font-medium">{formatToman(p.amountToman)}</td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">
+                        {p.percentApplied}٪ / {formatToman(p.capApplied)}
+                      </td>
+                      <td className="px-4 py-2">
+                        {p.status === "PAID" ? (
+                          <span className="flex items-center gap-1 text-green-600">
+                            <Check className="h-3.5 w-3.5" />
+                            {p.paidAt ? format(new Date(p.paidAt), "yyyy/MM/dd") : "تسویه شده"}
+                          </span>
+                        ) : p.status === "VOIDED" ? (
+                          <span className="text-muted-foreground">لغو شده</span>
+                        ) : (
+                          <span className="text-amber-600">معوق</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2">
+                        {p.status === "PENDING" && (
+                          <button
+                            onClick={() => markBonusPaid(p.id)}
+                            disabled={actionLoading === p.id}
+                            className="rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-200 disabled:opacity-50"
+                          >
+                            {actionLoading === p.id ? "..." : "تسویه"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Monthly Earnings (partner codes only) */}
+      {!data.isOfficeOwned && (
       <section className="space-y-3">
         <h2 className="font-semibold">تاریخچه کمیسیون ماهانه</h2>
 
@@ -388,6 +494,7 @@ export default function ReferralCodeDetailPage() {
           </div>
         )}
       </section>
+      )}
     </div>
   )
 }

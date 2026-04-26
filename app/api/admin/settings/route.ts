@@ -37,6 +37,27 @@ const patchSchema = z.object({
     .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
     .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
     .optional(),
+  REFERRAL_BONUS_PERCENT: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح باشد")
+    .refine((v) => {
+      const n = parseInt(v, 10)
+      return n >= 1 && n <= 100
+    }, "باید بین ۱ تا ۱۰۰ باشد")
+    .optional(),
+  REFERRAL_BONUS_MAX_TOMAN: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
+    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
+    .optional(),
+  REFERRAL_BONUS_LIFETIME_CAP: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح باشد")
+    .refine((v) => {
+      const n = parseInt(v, 10)
+      return n >= 1 && n <= 1000
+    }, "باید بین ۱ تا ۱۰۰۰ باشد")
+    .optional(),
 })
 
 export async function GET() {

@@ -49,14 +49,17 @@ export default async function EditAgentPage({ params }: EditAgentPageProps) {
 
   if (!agent) notFound()
 
+  const multiBranchEnabled = office?.multiBranchEnabled ?? false
+  const headerTitle = multiBranchEnabled ? "ویرایش عضو تیم" : "ویرایش مشاور"
+
   return (
     <div className="space-y-6 max-w-lg">
-      <PageHeader title="ویرایش مشاور" description={`ویرایش اطلاعات ${agent.displayName}`} />
+      <PageHeader title={headerTitle} description={`ویرایش اطلاعات ${agent.displayName}`} />
       <AgentForm
         initialData={agent as unknown as AgentDetail}
         agentId={id}
         plan={sub?.plan ?? "FREE"}
-        multiBranchEnabled={office?.multiBranchEnabled ?? false}
+        multiBranchEnabled={multiBranchEnabled}
       />
     </div>
   )

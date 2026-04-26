@@ -24,27 +24,29 @@ import { getHolidayName } from "@/lib/holidays"
 import type { Role } from "@/types"
 import type { CalendarEvent } from "@/types"
 
-const ROUTE_TITLES: Record<string, string> = {
-  "/dashboard": "داشبورد",
-  "/files": "فایل‌ها",
-  "/crm": "مشتریان",
-  "/agents": "مشاوران",
-  "/contracts": "قراردادها",
-  "/reports": "گزارش‌ها",
-  "/support": "پشتیبانی",
-  "/guide": "راهنما",
-  "/referral": "کد معرفی",
-  "/settings": "تنظیمات",
-  "/profile": "پروفایل من",
-  "/calendar": "تقویم",
+function buildRouteTitles(multiBranchEnabled: boolean): Record<string, string> {
+  return {
+    "/dashboard": "داشبورد",
+    "/files": "فایل‌ها",
+    "/crm": "مشتریان",
+    "/agents": multiBranchEnabled ? "تیم" : "مشاوران",
+    "/contracts": "قراردادها",
+    "/reports": "گزارش‌ها",
+    "/support": "پشتیبانی",
+    "/guide": "راهنما",
+    "/referral": "کد معرفی",
+    "/settings": "تنظیمات",
+    "/profile": "پروفایل من",
+    "/calendar": "تقویم",
+  }
 }
 
-function getPageTitle(pathname: string): string {
-  if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname]
-  const match = Object.keys(ROUTE_TITLES).find(
+function getPageTitle(pathname: string, routeTitles: Record<string, string>): string {
+  if (routeTitles[pathname]) return routeTitles[pathname]
+  const match = Object.keys(routeTitles).find(
     (route) => route !== "/dashboard" && pathname.startsWith(route)
   )
-  return match ? ROUTE_TITLES[match] : "املاکبین"
+  return match ? routeTitles[match] : "املاکبین"
 }
 
 /* ─── Mini Calendar Popover ─────────────────────────────────────────────────── */
@@ -506,6 +508,7 @@ interface TopbarProps {
   onToggleDark: () => void
   onSearchOpen: () => void
   role: Role
+  multiBranchEnabled?: boolean
 }
 
 export function Topbar({
@@ -515,9 +518,10 @@ export function Topbar({
   onToggleDark,
   onSearchOpen,
   role,
+  multiBranchEnabled,
 }: TopbarProps) {
   const pathname = usePathname()
-  const pageTitle = getPageTitle(pathname)
+  const pageTitle = getPageTitle(pathname, buildRouteTitles(!!multiBranchEnabled))
   const [isMac, setIsMac] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const calendarBtnRef = useRef<HTMLButtonElement>(null)

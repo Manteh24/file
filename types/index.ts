@@ -151,6 +151,9 @@ export interface AgentSummary {
   isActive: boolean
   createdAt: Date
   _count: { fileAssignments: number }
+  // Optional metadata surfaced on the team page when multi-branch is enabled.
+  branch?: { id: string; name: string; isHeadquarters: boolean } | null
+  officeMemberRole?: string | null
 }
 
 export interface AgentDetail extends AgentSummary {

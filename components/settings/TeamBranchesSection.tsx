@@ -84,6 +84,14 @@ export function TeamBranchesSection({
     }
   }, [])
 
+  // Notify the dashboard's BranchSwitcher (mounted in DashboardShell, separate
+  // tree) so it refreshes its own cached list when we mutate branches here.
+  const notifyBranchListChanged = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("branch-list-changed"))
+    }
+  }, [])
+
   useEffect(() => {
     if (multiBranchEnabled) {
       fetchBranches()
@@ -97,10 +105,10 @@ export function TeamBranchesSection({
         <Building2 className="mx-auto mb-3 size-8 text-muted-foreground" />
         <p className="text-sm font-medium">قابلیت چند شعبه</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          این قابلیت فقط در پلن تیمی فعال است. برای ایجاد شعبه‌های مستقل و مدیریت هر شعبه توسط مدیر شعبه، به پلن تیمی ارتقا دهید.
+          این قابلیت فقط در پلن تیم فعال است. برای ایجاد شعبه‌های مستقل و مدیریت هر شعبه توسط مدیر شعبه، به پلن تیم ارتقا دهید.
         </p>
         <Button asChild size="sm" className="mt-4">
-          <a href="#billing">ارتقا به پلن تیمی</a>
+          <a href="#billing">ارتقا به پلن تیم</a>
         </Button>
       </div>
     )
@@ -117,6 +125,7 @@ export function TeamBranchesSection({
       } else {
         setMultiBranchEnabled(true)
         setEnableConfirmOpen(false)
+        notifyBranchListChanged()
         router.refresh()
       }
     } catch {
@@ -182,6 +191,7 @@ export function TeamBranchesSection({
       } else {
         setDialogOpen(false)
         await fetchBranches()
+        notifyBranchListChanged()
       }
     } catch {
       setFormError("خطا در اتصال به سرور")
@@ -199,6 +209,7 @@ export function TeamBranchesSection({
       if (body.success) {
         setDeletingBranch(null)
         await fetchBranches()
+        notifyBranchListChanged()
       } else {
         setError(body.error ?? "خطا در حذف")
       }

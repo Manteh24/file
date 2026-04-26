@@ -35,7 +35,7 @@ export function BranchSwitcher({ sessionUser }: BranchSwitcherProps) {
   const canSeeAll =
     sessionUser.role === "MANAGER" || canOfficeDo(sessionUser, "viewAllBranches")
 
-  useEffect(() => {
+  const loadBranches = useCallback(() => {
     let cancelled = false
     fetch("/api/branches")
       .then((r) => r.json())
@@ -49,6 +49,23 @@ export function BranchSwitcher({ sessionUser }: BranchSwitcherProps) {
       cancelled = true
     }
   }, [])
+
+  // Refetch on initial mount AND every navigation, so a branch created from
+  // Settings → «شعبه‌ها» appears in the switcher as soon as the user navigates
+  // anywhere — without needing a hard refresh.
+  useEffect(() => {
+    return loadBranches()
+  }, [pathname, loadBranches])
+
+  // Settings page dispatches this event after create/update/delete so the
+  // switcher refreshes immediately, even without a navigation.
+  useEffect(() => {
+    function handler() {
+      loadBranches()
+    }
+    window.addEventListener("branch-list-changed", handler)
+    return () => window.removeEventListener("branch-list-changed", handler)
+  }, [loadBranches])
 
   const currentValue = searchParams.get("branchId") ?? (canSeeAll ? ALL_VALUE : "")
 
@@ -84,8 +101,8 @@ export function BranchSwitcher({ sessionUser }: BranchSwitcherProps) {
       {loading ? (
         <Loader2 className="size-4 animate-spin text-[var(--color-text-tertiary)]" />
       ) : (
-        <Select value={currentValue} onValueChange={handleChange}>
-          <SelectTrigger className="h-8 min-w-[160px] text-sm">
+        <Select dir="rtl" value={currentValue} onValueChange={handleChange}>
+          <SelectTrigger className="h-8 w-auto gap-2 text-sm">
             <SelectValue placeholder="انتخاب شعبه" />
           </SelectTrigger>
           <SelectContent>

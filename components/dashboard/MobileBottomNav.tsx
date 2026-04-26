@@ -10,6 +10,7 @@ import type { SessionUserForNav } from "./DashboardShell"
 
 interface MobileBottomNavProps {
   sessionUser: SessionUserForNav
+  multiBranchEnabled?: boolean
 }
 
 interface NavTab {
@@ -25,7 +26,7 @@ const TABS: NavTab[] = [
   { href: "/crm", label: "مشتریان", icon: Users, tutorialId: "nav-crm" },
 ]
 
-export function MobileBottomNav({ sessionUser }: MobileBottomNavProps) {
+export function MobileBottomNav({ sessionUser, multiBranchEnabled }: MobileBottomNavProps) {
   const pathname = usePathname()
   const [quickCreateOpen, setQuickCreateOpen] = useState(false)
   const [moreOpen, setMoreOpen] = useState(false)
@@ -94,6 +95,7 @@ export function MobileBottomNav({ sessionUser }: MobileBottomNavProps) {
         open={moreOpen}
         onClose={() => setMoreOpen(false)}
         sessionUser={sessionUser}
+        multiBranchEnabled={multiBranchEnabled}
       />
     </>
   )

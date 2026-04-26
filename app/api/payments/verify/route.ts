@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { verifyPayment, calculateNewPeriodEnd } from "@/lib/payment"
+import { maybeCreateBonusPayout } from "@/lib/referral"
 
 // Base path for post-payment redirects
 function settingsUrl(status: string, plan?: string): string {
@@ -102,6 +103,22 @@ export async function GET(request: Request) {
   } catch (err) {
     console.error("[GET /api/payments/verify] transaction error:", { authority, officeId: record.officeId }, err)
     return NextResponse.redirect(settingsUrl("error"))
+  }
+
+  // One-time referral bonus — best-effort, must not block or roll back the subscription update.
+  // Eligibility (sandbox skip, partner-code skip, idempotency, lifetime cap, etc.) lives in the helper.
+  try {
+    await maybeCreateBonusPayout({
+      paymentRecord: {
+        id: record.id,
+        officeId: record.officeId,
+        amount: record.amount,
+        status: "VERIFIED",
+      },
+      tx: db,
+    })
+  } catch (err) {
+    console.error("[GET /api/payments/verify] bonus creation failed (non-fatal):", { authority, officeId: record.officeId }, err)
   }
 
   return NextResponse.redirect(settingsUrl("success", record.plan))

@@ -74,14 +74,16 @@ interface QuickLink {
   requiresCapability?: OfficeCapability
 }
 
-const QUICK_LINKS: QuickLink[] = [
-  { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
-  { href: "/files", label: "فایل‌ها", icon: FolderOpen },
-  { href: "/crm", label: "مشتریان", icon: Users },
-  { href: "/agents", label: "مشاوران", icon: UserCheck, requiresCapability: "manageAgents" },
-  { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
-  { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
-]
+function buildQuickLinks(multiBranchEnabled: boolean): QuickLink[] {
+  return [
+    { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
+    { href: "/files", label: "فایل‌ها", icon: FolderOpen },
+    { href: "/crm", label: "مشتریان", icon: Users },
+    { href: "/agents", label: multiBranchEnabled ? "تیم" : "مشاوران", icon: UserCheck, requiresCapability: "manageAgents" },
+    { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
+    { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
+  ]
+}
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
@@ -89,12 +91,14 @@ interface SearchDialogProps {
   open: boolean
   onClose: () => void
   sessionUser: SessionUserForNav
+  multiBranchEnabled?: boolean
 }
 
-export function SearchDialog({ open, onClose, sessionUser }: SearchDialogProps) {
+export function SearchDialog({ open, onClose, sessionUser, multiBranchEnabled }: SearchDialogProps) {
   const router = useRouter()
   const canSearchAgents = canOfficeDo(sessionUser, "manageAgents")
   const canSearchContracts = canOfficeDo(sessionUser, "viewContracts")
+  const teamLabel = multiBranchEnabled ? "تیم" : "مشاوران"
 
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResults | null>(null)
@@ -169,7 +173,7 @@ export function SearchDialog({ open, onClose, sessionUser }: SearchDialogProps) 
               primary: a.displayName,
               secondary: a.phone ?? "",
               icon: UserCheck,
-              category: "مشاوران",
+              category: teamLabel,
             }))
           : []),
         ...(canSearchContracts
@@ -228,7 +232,7 @@ export function SearchDialog({ open, onClose, sessionUser }: SearchDialogProps) 
     categories[categories.length - 1].items.push(item)
   }
 
-  const quickLinks = QUICK_LINKS.filter(
+  const quickLinks = buildQuickLinks(!!multiBranchEnabled).filter(
     (l) => !l.requiresCapability || canOfficeDo(sessionUser, l.requiresCapability)
   )
 

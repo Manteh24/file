@@ -25,6 +25,7 @@ interface MobileMoreSheetProps {
   open: boolean
   onClose: () => void
   sessionUser: SessionUserForNav
+  multiBranchEnabled?: boolean
 }
 
 interface Item {
@@ -38,12 +39,14 @@ const GENERAL: Item[] = [
   { href: "/calendar", label: "تقویم", icon: CalendarDays },
 ]
 
-const MANAGEMENT: Item[] = [
-  { href: "/agents", label: "مشاوران", icon: UserCheck, requiresCapability: "manageAgents" },
-  { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
-  { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
-  { href: "/messages", label: "مرکز پیام", icon: MessageSquare, requiresCapability: "sendBulkSms" },
-]
+function buildManagement(multiBranchEnabled: boolean): Item[] {
+  return [
+    { href: "/agents", label: multiBranchEnabled ? "تیم" : "مشاوران", icon: UserCheck, requiresCapability: "manageAgents" },
+    { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
+    { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
+    { href: "/messages", label: "مرکز پیام", icon: MessageSquare, requiresCapability: "sendBulkSms" },
+  ]
+}
 
 const ACCOUNT: Item[] = [
   { href: "/profile", label: "پروفایل", icon: UserCircle },
@@ -54,7 +57,9 @@ const ACCOUNT: Item[] = [
   { href: "/support", label: "پشتیبانی", icon: HelpCircle },
 ]
 
-export function MobileMoreSheet({ open, onClose, sessionUser }: MobileMoreSheetProps) {
+export function MobileMoreSheet({ open, onClose, sessionUser, multiBranchEnabled }: MobileMoreSheetProps) {
+  const MANAGEMENT = buildManagement(!!multiBranchEnabled)
+
   const itemVisible = (item: Item) =>
     !item.requiresCapability || canOfficeDo(sessionUser, item.requiresCapability)
 

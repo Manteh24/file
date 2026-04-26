@@ -93,3 +93,27 @@ export function resolveBranchScope(
   if (requestedBranchId) return { branchId: requestedBranchId }
   return {}
 }
+
+/**
+ * User/team-member counterpart of `resolveBranchScope`. There is no
+ * `shareUsersAcrossBranches` toggle — every user belongs to one branch (or
+ * none, for legacy/office-wide users) — so the rules are simpler:
+ *
+ *   - multi-branch off → no filter.
+ *   - MANAGER / `viewAllBranches` → see everyone, narrow only when the
+ *     switcher passes a `requestedBranchId`.
+ *   - branch-scoped viewer → pinned to their own branch, requested value
+ *     is ignored (visibility wins, same as `resolveBranchScope`).
+ */
+export function resolveUserBranchScope(
+  user: BranchScopeUser,
+  office: Pick<BranchScopeOffice, "multiBranchEnabled">,
+  requestedBranchId?: string | null
+): BranchFilter {
+  if (!office.multiBranchEnabled) return {}
+  if (user.role === "MANAGER" || canOfficeDo(user, "viewAllBranches")) {
+    return requestedBranchId ? { branchId: requestedBranchId } : {}
+  }
+  if (user.branchId) return { branchId: user.branchId }
+  return {}
+}

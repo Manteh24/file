@@ -118,7 +118,7 @@ export default async function AdminDashboardPage() {
   const planData = [
     { name: "رایگان", value: freePlanCount, color: "#94a3b8" },
     { name: "حرفه‌ای", value: proCount, color: "#4ade80" },
-    { name: "تیمی", value: teamCount, color: "#a78bfa" },
+    { name: "تیم", value: teamCount, color: "#a78bfa" },
   ].filter((d) => d.value > 0)
 
   const statusData = [

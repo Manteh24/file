@@ -21,6 +21,9 @@ export default async function AdminSettingsPage() {
     freeMaxAiMonth,
     freeMaxSmsMonth,
     defaultReferralCommission,
+    referralBonusPercent,
+    referralBonusMaxToman,
+    referralBonusLifetimeCap,
   ] = await Promise.all([
     getSetting("TRIAL_LENGTH_DAYS", "30"),
     getSetting("MAINTENANCE_MODE", "false"),
@@ -31,6 +34,9 @@ export default async function AdminSettingsPage() {
     getSetting("FREE_MAX_AI_MONTH", "10"),
     getSetting("FREE_MAX_SMS_MONTH", "30"),
     getSetting("DEFAULT_REFERRAL_COMMISSION", "50000"),
+    getSetting("REFERRAL_BONUS_PERCENT", "25"),
+    getSetting("REFERRAL_BONUS_MAX_TOMAN", "150000"),
+    getSetting("REFERRAL_BONUS_LIFETIME_CAP", "10"),
   ])
 
   return (
@@ -49,6 +55,9 @@ export default async function AdminSettingsPage() {
         freeMaxAiMonth={freeMaxAiMonth}
         freeMaxSmsMonth={freeMaxSmsMonth}
         defaultReferralCommission={defaultReferralCommission}
+        referralBonusPercent={referralBonusPercent}
+        referralBonusMaxToman={referralBonusMaxToman}
+        referralBonusLifetimeCap={referralBonusLifetimeCap}
       />
     </div>
   )

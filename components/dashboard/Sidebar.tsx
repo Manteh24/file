@@ -40,26 +40,28 @@ interface NavItem {
   tutorialId?: string
 }
 
-const navGroups: { label: string; items: NavItem[] }[] = [
-  {
-    label: "اصلی",
-    items: [
-      { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
-      { href: "/files", label: "فایل‌ها", icon: FolderOpen, tutorialId: "nav-files" },
-      { href: "/crm", label: "مشتریان", icon: Users, tutorialId: "nav-crm" },
-      { href: "/calendar", label: "تقویم", icon: CalendarDays, tutorialId: "nav-calendar" },
-    ],
-  },
-  {
-    label: "مدیریت",
-    items: [
-      { href: "/agents", label: "مشاوران", icon: UserCheck, requiresCapability: "manageAgents", tutorialId: "nav-agents" },
-      { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
-      { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
-      { href: "/messages", label: "مرکز پیام", icon: MessageSquare, requiresCapability: "sendBulkSms" },
-    ],
-  },
-]
+function buildNavGroups(multiBranchEnabled: boolean): { label: string; items: NavItem[] }[] {
+  return [
+    {
+      label: "اصلی",
+      items: [
+        { href: "/dashboard", label: "داشبورد", icon: LayoutDashboard },
+        { href: "/files", label: "فایل‌ها", icon: FolderOpen, tutorialId: "nav-files" },
+        { href: "/crm", label: "مشتریان", icon: Users, tutorialId: "nav-crm" },
+        { href: "/calendar", label: "تقویم", icon: CalendarDays, tutorialId: "nav-calendar" },
+      ],
+    },
+    {
+      label: "مدیریت",
+      items: [
+        { href: "/agents", label: multiBranchEnabled ? "تیم" : "مشاوران", icon: UserCheck, requiresCapability: "manageAgents", tutorialId: "nav-agents" },
+        { href: "/contracts", label: "قراردادها", icon: FileText, requiresCapability: "viewContracts" },
+        { href: "/reports", label: "گزارش‌ها", icon: BarChart2, requiresCapability: "viewReports" },
+        { href: "/messages", label: "مرکز پیام", icon: MessageSquare, requiresCapability: "sendBulkSms" },
+      ],
+    },
+  ]
+}
 
 /* ─── Plan Badge ─────────────────────────────────────────────────────────── */
 
@@ -162,6 +164,8 @@ interface SidebarProps {
   /** Office popover open state — lifted to DashboardShell so topbar avatar can also open it */
   popoverOpen: boolean
   onPopoverChange: (v: boolean) => void
+  /** When true, the office has multi-branch turned on — relabel "مشاوران" → "تیم". */
+  multiBranchEnabled?: boolean
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -176,7 +180,9 @@ export function Sidebar({
   onToggleCollapsed,
   popoverOpen,
   onPopoverChange,
+  multiBranchEnabled,
 }: SidebarProps) {
+  const navGroups = buildNavGroups(!!multiBranchEnabled)
   const pathname = usePathname()
   const router = useRouter()
   const [trialLoading, setTrialLoading] = useState(false)

@@ -8,11 +8,12 @@ export const createBranchSchema = z.object({
   address: z
     .string()
     .max(300, "آدرس نمی‌تواند بیشتر از ۳۰۰ کاراکتر باشد")
+    .nullable()
     .optional()
     .or(z.literal("")),
   // Optional: user to promote to BRANCH_MANAGER of this branch. Must be an AGENT
   // in the same office. Route layer enforces that plus the @unique managerId.
-  managerId: z.string().optional(),
+  managerId: z.string().nullable().optional(),
 })
 
 export type CreateBranchInput = z.infer<typeof createBranchSchema>

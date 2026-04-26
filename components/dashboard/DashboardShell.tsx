@@ -142,6 +142,7 @@ export function DashboardShell({
         onToggleCollapsed={toggleCollapsed}
         popoverOpen={popoverOpen}
         onPopoverChange={setPopoverOpen}
+        multiBranchEnabled={multiBranchEnabled}
       />
 
       {/* Main content — margin-right handled by CSS data attribute (desktop only) */}
@@ -157,6 +158,7 @@ export function DashboardShell({
           onToggleDark={toggleDark}
           onSearchOpen={() => setSearchOpen(true)}
           role={role}
+          multiBranchEnabled={multiBranchEnabled}
         />
 
         {trialBannerProps && (
@@ -179,11 +181,16 @@ export function DashboardShell({
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-6 [&>*]:mx-auto">{children}</main>
       </div>
 
-      <MobileBottomNav sessionUser={sessionUser} />
+      <MobileBottomNav sessionUser={sessionUser} multiBranchEnabled={multiBranchEnabled} />
 
       {showOnboarding && <OnboardingTutorial />}
       <PWAInstallPrompt />
-      <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} sessionUser={sessionUser} />
+      <SearchDialog
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        sessionUser={sessionUser}
+        multiBranchEnabled={multiBranchEnabled}
+      />
     </div>
   )
 }

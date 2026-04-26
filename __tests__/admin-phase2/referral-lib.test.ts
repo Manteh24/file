@@ -86,9 +86,10 @@ describe("generateMonthlySnapshot", () => {
     await expect(generateMonthlySnapshot("code-1", "2026-03")).rejects.toThrow()
   })
 
-  it("upserts earnings for new month", async () => {
+  it("upserts earnings for new month (partner code)", async () => {
     mockDb.referralMonthlyEarning.findUnique.mockResolvedValue(null)
-    mockDb.referralCode.findUnique.mockResolvedValue({ id: "code-1", commissionPerOfficePerMonth: 100 })
+    // Partner code: officeId is null. Office-owned codes go through the bonus model now.
+    mockDb.referralCode.findUnique.mockResolvedValue({ id: "code-1", officeId: null, commissionPerOfficePerMonth: 100 })
     mockDb.referral.findMany.mockResolvedValue([{ officeId: "off-1" }])
     mockDb.subscription.findMany.mockResolvedValue([{ officeId: "off-1" }])
     mockDb.referralMonthlyEarning.upsert.mockResolvedValue({
@@ -101,6 +102,12 @@ describe("generateMonthlySnapshot", () => {
     const result = await generateMonthlySnapshot("code-1", "2026-03")
     expect(result.activeOfficeCount).toBe(1)
     expect(mockDb.referralMonthlyEarning.upsert).toHaveBeenCalledTimes(1)
+  })
+
+  it("throws for office-owned codes (one-time bonus model)", async () => {
+    mockDb.referralMonthlyEarning.findUnique.mockResolvedValue(null)
+    mockDb.referralCode.findUnique.mockResolvedValue({ id: "code-1", officeId: "office-1", commissionPerOfficePerMonth: 0 })
+    await expect(generateMonthlySnapshot("code-1", "2026-03")).rejects.toThrow("یکباره")
   })
 
   it("throws when code is not found", async () => {

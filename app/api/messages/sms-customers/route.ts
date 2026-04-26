@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   const subscription = await db.subscription.findFirst({ where: { officeId } })
   if (!subscription || subscription.plan === "FREE") {
     return NextResponse.json(
-      { success: false, error: "ارسال پیامک گروهی به مشتریان فقط در پلن‌های حرفه‌ای و تیمی امکان‌پذیر است", code: "PLAN_FEATURE_BLOCKED" },
+      { success: false, error: "ارسال پیامک گروهی به مشتریان فقط در پلن‌های حرفه‌ای و تیم امکان‌پذیر است", code: "PLAN_FEATURE_BLOCKED" },
       { status: 403 }
     )
   }

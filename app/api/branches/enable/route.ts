@@ -53,7 +53,7 @@ export async function POST() {
     return NextResponse.json(
       {
         success: false,
-        error: "این قابلیت فقط در پلن تیمی فعال است",
+        error: "این قابلیت فقط در پلن تیم فعال است",
         code: "TEAM_REQUIRED",
       },
       { status: 403 }

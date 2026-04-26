@@ -145,7 +145,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         </Button>
         {canManageAgents && (
           <Button variant="outline" asChild>
-            <Link href="/agents/new">دعوت مشاور</Link>
+            <Link href="/agents/new">{office?.multiBranchEnabled ? "دعوت عضو تیم" : "دعوت مشاور"}</Link>
           </Button>
         )}
       </div>

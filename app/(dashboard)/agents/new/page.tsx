@@ -17,12 +17,18 @@ export default async function NewAgentPage() {
     getEffectiveSubscription(officeId),
   ])
 
+  const multiBranchEnabled = office?.multiBranchEnabled ?? false
+  const headerTitle = multiBranchEnabled ? "عضو جدید تیم" : "مشاور جدید"
+  const headerDescription = multiBranchEnabled
+    ? "اطلاعات عضو جدید تیم را وارد کنید"
+    : "اطلاعات مشاور را وارد کنید"
+
   return (
     <div className="space-y-6 max-w-lg">
-      <PageHeader title="مشاور جدید" description="اطلاعات مشاور را وارد کنید" />
+      <PageHeader title={headerTitle} description={headerDescription} />
       <AgentForm
         plan={sub?.plan ?? "FREE"}
-        multiBranchEnabled={office?.multiBranchEnabled ?? false}
+        multiBranchEnabled={multiBranchEnabled}
       />
     </div>
   )

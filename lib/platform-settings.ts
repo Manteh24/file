@@ -10,6 +10,9 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   FREE_MAX_AI_MONTH: "10",
   FREE_MAX_SMS_MONTH: "30",
   DEFAULT_REFERRAL_COMMISSION: "50000",
+  REFERRAL_BONUS_PERCENT: "25",
+  REFERRAL_BONUS_MAX_TOMAN: "150000",
+  REFERRAL_BONUS_LIFETIME_CAP: "10",
 }
 
 // ─── 30-Second In-Process Cache ───────────────────────────────────────────────
@@ -115,6 +118,38 @@ export async function getDefaultReferralCommission(): Promise<number> {
   const raw = await getSetting("DEFAULT_REFERRAL_COMMISSION", "50000")
   const parsed = parseInt(raw, 10)
   return isNaN(parsed) || parsed < 0 ? 50000 : parsed
+}
+
+/**
+ * Returns the percent of the first verified payment to pay as a referral bonus (default 25).
+ * Used in tandem with REFERRAL_BONUS_MAX_TOMAN as the per-payout cap.
+ */
+export async function getReferralBonusPercent(): Promise<number> {
+  const raw = await getSetting("REFERRAL_BONUS_PERCENT", "25")
+  const parsed = parseInt(raw, 10)
+  if (isNaN(parsed) || parsed < 0) return 25
+  if (parsed > 100) return 100
+  return parsed
+}
+
+/**
+ * Returns the per-payout cap in Toman (default 150,000).
+ * Bonus = min(floor(payment × percent/100), maxToman).
+ */
+export async function getReferralBonusMaxToman(): Promise<number> {
+  const raw = await getSetting("REFERRAL_BONUS_MAX_TOMAN", "150000")
+  const parsed = parseInt(raw, 10)
+  return isNaN(parsed) || parsed < 0 ? 150000 : parsed
+}
+
+/**
+ * Returns the lifetime cap on number of bonus payouts per referrer code (default 10).
+ * Once reached, the code still tracks signups but no new bonuses accrue.
+ */
+export async function getReferralBonusLifetimeCap(): Promise<number> {
+  const raw = await getSetting("REFERRAL_BONUS_LIFETIME_CAP", "10")
+  const parsed = parseInt(raw, 10)
+  return isNaN(parsed) || parsed < 0 ? 10 : parsed
 }
 
 /**

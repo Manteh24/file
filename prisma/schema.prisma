@@ -188,6 +188,9 @@ model Office {
   supportTickets           SupportTicket[]
   // Referral earning snapshots that included this office as an active referred office
   referralEarningSnapshots ReferralMonthlyEarningOffice[]
+  // One-time referral bonus earned because this office was referred (set when the
+  // office completes its first verified Zarinpal payment). At most one row per office.
+  referralBonusEarned      ReferralBonusPayout?
   // One-time trial phone record — prevents the same mobile from starting multiple trials
   trialPhone               TrialPhone?
   scheduledSms             ScheduledSms[]
@@ -255,6 +258,7 @@ model User {
   adminActions          AdminActionLog[]
   adminCreatedCodes     ReferralCode[]           @relation("AdminCreatedReferralCodes")
   adminPaidEarnings     ReferralMonthlyEarning[] @relation("AdminPaidEarnings")
+  adminPaidBonusPayouts ReferralBonusPayout[]    @relation("AdminPaidBonusPayouts")
   sentBroadcasts        AdminBroadcast[]
   adminLoginLogs        AdminLoginLog[]          @relation("AdminLoginLogs")
   createdTickets        SupportTicket[]          @relation("TicketCreator")
@@ -622,6 +626,8 @@ model PaymentRecord {
   updatedAt    DateTime     @updatedAt
 
   office Office @relation(fields: [officeId], references: [id])
+  // One-time referral bonus triggered by this payment, if eligible. At most one row.
+  bonusPayout ReferralBonusPayout?
 
   @@index([officeId])
   @@map("payment_records")
@@ -772,6 +778,7 @@ model ReferralCode {
 
   referrals       Referral[]
   monthlyEarnings ReferralMonthlyEarning[]
+  bonusPayouts    ReferralBonusPayout[]
 
   @@map("referral_codes")
 }
@@ -824,6 +831,40 @@ model ReferralMonthlyEarningOffice {
 
   @@id([earningId, officeId])
   @@map("referral_monthly_earning_offices")
+}
+
+// One-time referral bonus paid to the owner of an office-owned ReferralCode when
+// a referred office completes its FIRST verified Zarinpal payment.
+// At most one row per referred office (enforced by @unique). The amount is computed
+// at creation time from PlatformSetting values, which are snapshotted onto the row
+// so later setting changes don't rewrite history.
+model ReferralBonusPayout {
+  id               String        @id @default(cuid())
+  referralCodeId   String
+  referralCode     ReferralCode  @relation(fields: [referralCodeId], references: [id])
+  // Each referred office triggers exactly one bonus, ever
+  referredOfficeId String        @unique
+  referredOffice   Office        @relation(fields: [referredOfficeId], references: [id])
+  // Triggering payment (one-to-one — the same payment never triggers two bonuses)
+  paymentRecordId  String        @unique
+  paymentRecord    PaymentRecord @relation(fields: [paymentRecordId], references: [id])
+  // Computed bonus in Toman
+  amountToman      Int
+  // The first verified payment in Toman (snapshot for audit; PaymentRecord.amount is in Rials)
+  paymentToman     Int
+  // PlatformSetting snapshots at creation
+  percentApplied   Int
+  capApplied       Int
+  // PENDING → admin marks PAID; VOIDED if manually reversed (does not refund the bonus)
+  status           String        @default("PENDING")
+  paidAt           DateTime?
+  paidByAdminId    String?
+  paidByAdmin      User?         @relation("AdminPaidBonusPayouts", fields: [paidByAdminId], references: [id])
+  createdAt        DateTime      @default(now())
+
+  @@index([referralCodeId])
+  @@index([status])
+  @@map("referral_bonus_payouts")
 }
 
 // Record of admin broadcast messages sent to office managers.

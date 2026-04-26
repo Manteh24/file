@@ -73,15 +73,25 @@ export async function GET(
         },
         orderBy: { yearMonth: "desc" },
       },
+      bonusPayouts: {
+        include: {
+          referredOffice: { select: { id: true, name: true } },
+          paidByAdmin: { select: { displayName: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      },
     },
   })
 
   if (!code) return NextResponse.json({ success: false, error: "یافت نشد" }, { status: 404 })
 
-  const activeOfficeIds = await findActiveReferredOffices(codeId)
+  // Office-owned codes use the bonus model — skip the costly active-office count.
+  const isOfficeOwned = code.officeId !== null
+  const activeOfficeIds = isOfficeOwned ? [] : await findActiveReferredOffices(codeId)
 
   const data = {
     ...code,
+    isOfficeOwned,
     monthlyEarnings: code.monthlyEarnings.map((e) => ({
       ...e,
       commissionAmount: bigIntToNumber(e.commissionAmount),

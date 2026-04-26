@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
-import { findActiveReferredOffices } from "@/lib/referral"
-import { bigIntToNumber } from "@/lib/utils"
-import { getDefaultReferralCommission } from "@/lib/platform-settings"
+import {
+  getReferralBonusPercent,
+  getReferralBonusMaxToman,
+  getReferralBonusLifetimeCap,
+} from "@/lib/platform-settings"
 import { PageHeader } from "@/components/shared/PageHeader"
 import { ReferralDashboard } from "@/components/referral/ReferralDashboard"
 import { canOfficeDo } from "@/lib/office-permissions"
@@ -16,13 +18,14 @@ export default async function ReferralPage() {
   const { officeId } = session.user
   if (!officeId) redirect("/admin/dashboard")
 
-  const [referralCode, office, defaultCommission] = await Promise.all([
+  const [referralCode, office, bonusPercent, bonusMaxToman, bonusLifetimeCap] = await Promise.all([
     db.referralCode.findUnique({
       where: { officeId },
       include: {
-        monthlyEarnings: {
-          orderBy: { yearMonth: "desc" },
-          take: 12,
+        bonusPayouts: {
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          include: { referredOffice: { select: { name: true } } },
         },
       },
     }),
@@ -30,36 +33,39 @@ export default async function ReferralPage() {
       where: { id: officeId },
       select: { cardNumber: true, shebaNumber: true, cardHolderName: true },
     }),
-    getDefaultReferralCommission(),
+    getReferralBonusPercent(),
+    getReferralBonusMaxToman(),
+    getReferralBonusLifetimeCap(),
   ])
 
-  const activeOfficeCount = referralCode
-    ? (await findActiveReferredOffices(referralCode.id)).length
-    : 0
+  const nonVoidedPayouts = referralCode
+    ? referralCode.bonusPayouts.filter((p) => p.status !== "VOIDED")
+    : []
+  const totalEarnedToman = nonVoidedPayouts
+    .filter((p) => p.status === "PAID")
+    .reduce((s, p) => s + p.amountToman, 0)
+  const pendingToman = nonVoidedPayouts
+    .filter((p) => p.status === "PENDING")
+    .reduce((s, p) => s + p.amountToman, 0)
 
   const initialData = {
     referralCode: referralCode
-      ? {
-          id: referralCode.id,
-          code: referralCode.code,
-          commissionPerOfficePerMonth: referralCode.commissionPerOfficePerMonth,
-          isActive: referralCode.isActive,
-        }
+      ? { id: referralCode.id, code: referralCode.code, isActive: referralCode.isActive }
       : null,
-    activeOfficeCount,
-    estimatedMonthlyEarning: referralCode
-      ? activeOfficeCount * referralCode.commissionPerOfficePerMonth
-      : 0,
-    monthlyEarnings: referralCode
-      ? referralCode.monthlyEarnings.map((e) => ({
-          id: e.id,
-          yearMonth: e.yearMonth,
-          activeOfficeCount: e.activeOfficeCount,
-          commissionAmount: bigIntToNumber(e.commissionAmount),
-          isPaid: e.isPaid,
-          paidAt: e.paidAt ? e.paidAt.toISOString() : null,
+    payouts: referralCode
+      ? referralCode.bonusPayouts.map((p) => ({
+          id: p.id,
+          createdAt: p.createdAt.toISOString(),
+          paidAt: p.paidAt ? p.paidAt.toISOString() : null,
+          paymentToman: p.paymentToman,
+          amountToman: p.amountToman,
+          status: p.status as "PENDING" | "PAID" | "VOIDED",
+          referredOfficeName: p.referredOffice.name,
         }))
       : [],
+    payoutCount: nonVoidedPayouts.length,
+    totalEarnedToman,
+    pendingToman,
     bankDetails: {
       cardNumber: office?.cardNumber ?? null,
       shebaNumber: office?.shebaNumber ?? null,
@@ -71,9 +77,14 @@ export default async function ReferralPage() {
     <div className="mx-auto max-w-2xl space-y-10 px-0 md:px-4">
       <PageHeader
         title="کد معرفی"
-        description="درآمد از معرفی دفاتر جدید به سامانه"
+        description="پاداش یکباره برای هر دفتری که با کد شما اولین پرداخت موفق را انجام دهد"
       />
-      <ReferralDashboard initialData={initialData} defaultCommission={defaultCommission} />
+      <ReferralDashboard
+        initialData={initialData}
+        bonusPercent={bonusPercent}
+        bonusMaxToman={bonusMaxToman}
+        bonusLifetimeCap={bonusLifetimeCap}
+      />
     </div>
   )
 }

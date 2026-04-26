@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest"
-import { buildBranchFilter, resolveBranchScope } from "@/lib/branch-scope"
+import {
+  buildBranchFilter,
+  resolveBranchScope,
+  resolveUserBranchScope,
+} from "@/lib/branch-scope"
 
 // Shorthand constructors so each case reads as close to the rule matrix as possible.
 const office = (flags: Partial<{
@@ -252,4 +256,84 @@ describe("buildBranchFilter — full matrix smoke", () => {
       expect(result).toEqual(c.expected)
     })
   }
+})
+
+describe("resolveUserBranchScope", () => {
+  const userOffice = (multiBranchEnabled: boolean) => ({ multiBranchEnabled })
+
+  it("returns empty when multi-branch is disabled (request ignored)", () => {
+    const result = resolveUserBranchScope(
+      { role: "MANAGER", branchId: null },
+      userOffice(false),
+      "branch-a"
+    )
+    expect(result).toEqual({})
+  })
+
+  it("MANAGER with no requested branch sees everyone", () => {
+    const result = resolveUserBranchScope(
+      { role: "MANAGER", branchId: null },
+      userOffice(true)
+    )
+    expect(result).toEqual({})
+  })
+
+  it("MANAGER narrows when ?branchId is passed", () => {
+    const result = resolveUserBranchScope(
+      { role: "MANAGER", branchId: null },
+      userOffice(true),
+      "branch-x"
+    )
+    expect(result).toEqual({ branchId: "branch-x" })
+  })
+
+  it("non-manager with viewAllBranches narrows when ?branchId is passed", () => {
+    const result = resolveUserBranchScope(
+      {
+        role: "AGENT",
+        officeMemberRole: "ACCOUNTANT", // preset grants viewAllBranches
+        branchId: null,
+      },
+      userOffice(true),
+      "branch-y"
+    )
+    expect(result).toEqual({ branchId: "branch-y" })
+  })
+
+  it("non-manager with viewAllBranches sees everyone when no ?branchId", () => {
+    const result = resolveUserBranchScope(
+      {
+        role: "AGENT",
+        officeMemberRole: "ACCOUNTANT",
+        branchId: null,
+      },
+      userOffice(true)
+    )
+    expect(result).toEqual({})
+  })
+
+  it("branch-scoped viewer is pinned to their own branch (request ignored)", () => {
+    const result = resolveUserBranchScope(
+      {
+        role: "AGENT",
+        officeMemberRole: "BRANCH_MANAGER",
+        branchId: "branch-b",
+      },
+      userOffice(true),
+      "branch-a" // attempt to widen — must be ignored
+    )
+    expect(result).toEqual({ branchId: "branch-b" })
+  })
+
+  it("branch-scoped viewer with no branchId falls through to no filter", () => {
+    const result = resolveUserBranchScope(
+      {
+        role: "AGENT",
+        officeMemberRole: "AGENT",
+        branchId: null,
+      },
+      userOffice(true)
+    )
+    expect(result).toEqual({})
+  })
 })

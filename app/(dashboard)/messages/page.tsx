@@ -118,13 +118,13 @@ export default function MessagesPage() {
                 <Lock className="h-5 w-5 text-muted-foreground" />
               </div>
               <div className="space-y-1">
-                <p className="font-medium">پیامک انبوه فقط در پلن تیمی</p>
+                <p className="font-medium">پیامک انبوه فقط در پلن تیم</p>
                 <p className="text-sm text-muted-foreground">
-                  برای ارسال پیامک به مشتریان، اشتراک تیمی را فعال کنید.
+                  برای ارسال پیامک به مشتریان، اشتراک تیم را فعال کنید.
                 </p>
               </div>
               <Button asChild size="sm">
-                <Link href="/settings#billing">ارتقا به تیمی</Link>
+                <Link href="/settings#billing">ارتقا به تیم</Link>
               </Button>
             </div>
           )
