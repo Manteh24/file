@@ -19,9 +19,16 @@ interface DeactivateAgentButtonProps {
   agentId: string
   agentName: string
   isActive: boolean
+  multiBranchEnabled?: boolean
 }
 
-export function DeactivateAgentButton({ agentId, agentName, isActive }: DeactivateAgentButtonProps) {
+export function DeactivateAgentButton({
+  agentId,
+  agentName,
+  isActive,
+  multiBranchEnabled = false,
+}: DeactivateAgentButtonProps) {
+  const memberNoun = multiBranchEnabled ? "کاربر" : "مشاور"
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,15 +82,15 @@ export function DeactivateAgentButton({ agentId, agentName, isActive }: Deactiva
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="destructive" disabled={loading}>
-            {loading ? "در حال غیرفعال‌سازی..." : "غیرفعال‌سازی مشاور"}
+            {loading ? "در حال غیرفعال‌سازی..." : `غیرفعال‌سازی ${memberNoun}`}
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>غیرفعال‌سازی مشاور</AlertDialogTitle>
+            <AlertDialogTitle>{`غیرفعال‌سازی ${memberNoun}`}</AlertDialogTitle>
             <AlertDialogDescription>
               آیا مطمئن هستید که می‌خواهید <strong>{agentName}</strong> را غیرفعال کنید؟
-              این مشاور دیگر قادر به ورود به سیستم نخواهد بود.
+              این {memberNoun} دیگر قادر به ورود به سیستم نخواهد بود.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

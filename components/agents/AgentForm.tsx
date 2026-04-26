@@ -4,7 +4,11 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
-import { createAgentSchema, type CreateAgentInput } from "@/lib/validations/agent"
+import {
+  createAgentSchema,
+  updateAgentSchema,
+  type CreateAgentInput,
+} from "@/lib/validations/agent"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -68,6 +72,7 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
     ? PLAN_FEATURES[plan].hasCustomStaffRoles
     : false
   const showBranchSelector = !!multiBranchEnabled
+  const memberNoun = multiBranchEnabled ? "عضو" : "مشاور"
 
   useEffect(() => {
     if (!showBranchSelector) return
@@ -80,9 +85,11 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
   }, [showBranchSelector])
 
   const form = useForm<CreateAgentInput>({
-    // Cast needed: standardSchemaResolver's return type has a different third generic
-    // than useForm<CreateAgentInput> expects. Runtime behavior is correct.
-    resolver: standardSchemaResolver(createAgentSchema) as Resolver<CreateAgentInput>,
+    // In edit mode, password is hidden — validate against updateAgentSchema so the
+    // empty-password default doesn't silently fail submission.
+    resolver: standardSchemaResolver(
+      isEdit ? updateAgentSchema : createAgentSchema,
+    ) as unknown as Resolver<CreateAgentInput>,
     defaultValues: {
       username: initialData?.username ?? "",
       displayName: initialData?.displayName ?? "",
@@ -98,18 +105,23 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
     const url = isEdit ? `/api/agents/${agentId}` : "/api/agents"
     const method = isEdit ? "PATCH" : "POST"
 
-    // In edit mode, only send the editable fields (including capability fields)
+    // In edit mode, only send the editable fields (including capability fields).
+    // On TEAM, omit canFinalizeContracts — the matrix's finalizeContract row owns it.
     const body = isEdit
       ? {
           displayName: values.displayName,
           email: values.email,
-          canFinalizeContracts: values.canFinalizeContracts,
+          ...(!showStaffRoleSelector && { canFinalizeContracts: values.canFinalizeContracts }),
           ...(showStaffRoleSelector && { officeMemberRole, permissionsOverride }),
           ...(showBranchSelector && { branchId }),
         }
       : {
           ...values,
-          ...(showStaffRoleSelector && { officeMemberRole, permissionsOverride: permissionsOverride ?? undefined }),
+          ...(showStaffRoleSelector && {
+            canFinalizeContracts: undefined,
+            officeMemberRole,
+            permissionsOverride: permissionsOverride ?? undefined,
+          }),
           ...(showBranchSelector && { branchId }),
         }
 
@@ -160,7 +172,6 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
               <FormControl>
                 <Input
                   placeholder="agent_username"
-                  dir="ltr"
                   disabled={isEdit}
                   {...field}
                 />
@@ -178,7 +189,7 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
             <FormItem>
               <FormLabel>نام نمایشی *</FormLabel>
               <FormControl>
-                <Input placeholder="نام و نام خانوادگی مشاور" {...field} />
+                <Input placeholder={`نام و نام خانوادگی ${memberNoun}`} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -194,7 +205,7 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
               <FormItem>
                 <FormLabel>رمز عبور *</FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="حداقل ۸ کاراکتر" dir="ltr" {...field} />
+                  <Input type="password" placeholder="حداقل ۸ کاراکتر" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -210,7 +221,7 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
             <FormItem>
               <FormLabel>ایمیل</FormLabel>
               <FormControl>
-                <Input placeholder="example@email.com" dir="ltr" {...field} />
+                <Input placeholder="example@email.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -222,6 +233,7 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
           <div className="space-y-2">
             <label className="text-sm font-medium">نقش کاربر</label>
             <Select
+              dir="rtl"
               value={officeMemberRole}
               onValueChange={(v) => {
                 setOfficeMemberRole(v as OfficeMemberRole)
@@ -251,6 +263,7 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
           <div className="space-y-2">
             <label className="text-sm font-medium">شعبه</label>
             <Select
+              dir="rtl"
               value={branchId ?? "__none__"}
               onValueChange={(v) => setBranchId(v === "__none__" ? null : v)}
             >
@@ -279,27 +292,30 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
           />
         )}
 
-        {/* canFinalizeContracts — permission toggle (legacy; superseded on TEAM by matrix) */}
-        <FormField
-          control={form.control}
-          name="canFinalizeContracts"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">اجازه بستن قرارداد</FormLabel>
-                <FormDescription>
-                  این مشاور می‌تواند قراردادها را نهایی کند
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        {/* canFinalizeContracts — legacy toggle, hidden on TEAM where the
+            PermissionMatrix exposes finalizeContract directly. */}
+        {!showStaffRoleSelector && (
+          <FormField
+            control={form.control}
+            name="canFinalizeContracts"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">اجازه بستن قرارداد</FormLabel>
+                  <FormDescription>
+                    این مشاور می‌تواند قراردادها را نهایی کند
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
 
         <div className="flex gap-3">
           <Button type="submit" disabled={form.formState.isSubmitting}>
@@ -307,7 +323,7 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
               ? "در حال ذخیره..."
               : isEdit
                 ? "ذخیره تغییرات"
-                : "ایجاد مشاور"}
+                : `ایجاد ${memberNoun}`}
           </Button>
           <Button
             type="button"

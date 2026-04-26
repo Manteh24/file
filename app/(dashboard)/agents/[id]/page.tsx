@@ -40,26 +40,34 @@ export default async function AgentPage({ params }: AgentPageProps) {
   const { id } = await params
   const { officeId } = session.user
 
-  const agent = await db.user.findFirst({
-    where: { id, officeId, role: "AGENT" },
-    select: {
-      id: true,
-      username: true,
-      displayName: true,
-      email: true,
-      isActive: true,
-      createdAt: true,
-      _count: { select: { fileAssignments: true } },
-      fileAssignments: {
-        select: {
-          file: { select: { id: true, transactionType: true, status: true } },
+  const [agent, office] = await Promise.all([
+    db.user.findFirst({
+      where: { id, officeId, role: "AGENT" },
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        email: true,
+        isActive: true,
+        createdAt: true,
+        _count: { select: { fileAssignments: true } },
+        fileAssignments: {
+          select: {
+            file: { select: { id: true, transactionType: true, status: true } },
+          },
+          orderBy: { assignedAt: "desc" },
         },
-        orderBy: { assignedAt: "desc" },
       },
-    },
-  })
+    }),
+    db.office.findUnique({
+      where: { id: officeId! },
+      select: { multiBranchEnabled: true },
+    }),
+  ])
 
   if (!agent) notFound()
+
+  const multiBranchEnabled = office?.multiBranchEnabled ?? false
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -108,6 +116,7 @@ export default async function AgentPage({ params }: AgentPageProps) {
           agentId={agent.id}
           agentName={agent.displayName}
           isActive={agent.isActive}
+          multiBranchEnabled={multiBranchEnabled}
         />
       </div>
 
