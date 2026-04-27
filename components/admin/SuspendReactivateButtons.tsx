@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import type { SubStatus } from "@/types"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface SuspendReactivateButtonsProps {
   officeId: string
@@ -36,9 +37,12 @@ export function SuspendReactivateButtons({
       const res = await fetch(`/api/admin/offices/${officeId}/${action}`, { method: "POST" })
       const json = await res.json() as { success: boolean; error?: string }
       if (!json.success) throw new Error(json.error ?? "عملیات ناموفق بود")
+      toastSuccess(action === "suspend" ? "اشتراک معلق شد" : "اشتراک فعال شد")
       router.refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : "خطای ناشناخته")
+      const errorMsg = err instanceof Error ? err.message : "خطای ناشناخته"
+      setError(errorMsg)
+      toastError(errorMsg)
     } finally {
       setLoading(false)
     }

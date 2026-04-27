@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SmsPanel } from "@/components/shared/SmsPanel"
 import { PriceInput } from "@/components/forms/PriceInput"
 import { buildFileShareMessage } from "@/lib/sms"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface ShareLink {
   id: string
@@ -149,7 +150,9 @@ export function ShareLinksPanel({
       })
       const body = await res.json()
       if (!body.success) {
-        setCreateError(body.error ?? "خطا در ایجاد لینک")
+        const errorMsg = body.error ?? "خطا در ایجاد لینک"
+        setCreateError(errorMsg)
+        toastError(errorMsg)
         return
       }
       // Prepend new link and close form
@@ -158,9 +161,11 @@ export function ShareLinksPanel({
       setCustomPriceInput(undefined)
       setCustomDepositInput(undefined)
       setSelectedAgentId(defaultAgentId)
+      toastSuccess("لینک اشتراک‌گذاری ساخته شد")
       router.refresh()
     } catch {
       setCreateError("خطا در ارتباط با سرور")
+      toastError("خطا در ارتباط با سرور")
     } finally {
       setSaving(false)
     }
@@ -177,10 +182,13 @@ export function ShareLinksPanel({
         )
         // Close SMS panel if it was open for this link
         if (smsOpenForLink === id) setSmsOpenForLink(null)
+        toastSuccess("لینک غیرفعال شد")
         router.refresh()
+      } else {
+        toastError(body.error ?? "خطا در غیرفعال‌سازی لینک")
       }
     } catch {
-      // Silently ignore — UI state stays; user can retry
+      toastError("خطا در ارتباط با سرور")
     } finally {
       setDeactivating(null)
     }

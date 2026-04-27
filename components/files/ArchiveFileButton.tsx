@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Archive } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface ArchiveFileButtonProps {
   fileId: string
@@ -32,13 +33,17 @@ export function ArchiveFileButton({ fileId }: ArchiveFileButtonProps) {
       const result = (await response.json()) as { success: boolean; error?: string }
 
       if (!result.success) {
-        setError(result.error ?? "خطا در بایگانی فایل")
+        const errorMsg = result.error ?? "خطا در بایگانی فایل"
+        setError(errorMsg)
+        toastError(errorMsg)
         return
       }
 
+      toastSuccess("فایل بایگانی شد")
       router.refresh()
     } catch {
       setError("خطا در ارتباط با سرور")
+      toastError("خطا در ارتباط با سرور")
     } finally {
       setLoading(false)
     }

@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import type { Plan, SubStatus } from "@/types"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 const PLAN_LABELS: Record<Plan, string> = {
   FREE: "رایگان",
@@ -30,18 +32,17 @@ export function SubscriptionManager({
   currentStatus,
   currentIsTrial,
 }: SubscriptionManagerProps) {
+  const router = useRouter()
   const [plan, setPlan] = useState<Plan>(currentPlan)
   const [status, setStatus] = useState<SubStatus>(currentStatus)
   const [isTrial, setIsTrial] = useState<boolean>(currentIsTrial)
   const [extendDays, setExtendDays] = useState("")
   const [loading, setLoading] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [error, setError] = useState("")
 
   async function handleSave() {
     setLoading(true)
     setError("")
-    setSaved(false)
     try {
       const body: Record<string, unknown> = {}
       if (plan !== currentPlan) body.plan = plan
@@ -63,12 +64,15 @@ export function SubscriptionManager({
 
       if (!res.ok) {
         const json = await res.json()
-        setError(json.error ?? "خطا در ذخیره‌سازی")
+        const errorMsg = json.error ?? "خطا در ذخیره‌سازی"
+        setError(errorMsg)
+        toastError(errorMsg)
         return
       }
 
-      setSaved(true)
+      toastSuccess("اشتراک به‌روزرسانی شد")
       setExtendDays("")
+      router.refresh()
     } finally {
       setLoading(false)
     }
@@ -84,7 +88,7 @@ export function SubscriptionManager({
           <label className="block text-xs text-muted-foreground mb-1">پلن</label>
           <select
             value={plan}
-            onChange={(e) => { setPlan(e.target.value as Plan); setSaved(false) }}
+            onChange={(e) => setPlan(e.target.value as Plan)}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           >
             {(["FREE", "PRO", "TEAM"] as Plan[]).map((p) => (
@@ -98,7 +102,7 @@ export function SubscriptionManager({
           <label className="block text-xs text-muted-foreground mb-1">وضعیت</label>
           <select
             value={status}
-            onChange={(e) => { setStatus(e.target.value as SubStatus); setSaved(false) }}
+            onChange={(e) => setStatus(e.target.value as SubStatus)}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           >
             {(["ACTIVE", "GRACE", "LOCKED", "CANCELLED"] as SubStatus[]).map((s) => (
@@ -115,7 +119,7 @@ export function SubscriptionManager({
             min={1}
             max={365}
             value={extendDays}
-            onChange={(e) => { setExtendDays(e.target.value); setSaved(false) }}
+            onChange={(e) => setExtendDays(e.target.value)}
             placeholder="مثلاً ۳۰"
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
@@ -127,7 +131,7 @@ export function SubscriptionManager({
         <input
           type="checkbox"
           checked={isTrial}
-          onChange={(e) => { setIsTrial(e.target.checked); setSaved(false) }}
+          onChange={(e) => setIsTrial(e.target.checked)}
           className="rounded border-border"
         />
         دوره آزمایشی
@@ -137,7 +141,6 @@ export function SubscriptionManager({
         <Button onClick={handleSave} disabled={loading} size="sm">
           {loading ? "در حال ذخیره..." : "ذخیره تغییرات"}
         </Button>
-        {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
         {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
     </div>

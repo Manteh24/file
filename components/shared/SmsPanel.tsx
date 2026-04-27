@@ -14,6 +14,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface Contact {
   name: string | null
@@ -43,7 +44,6 @@ export function SmsPanel({
   const [phone, setPhone] = useState(defaultPhone)
   const [message, setMessage] = useState(defaultMessage)
   const [sending, setSending] = useState(false)
-  const [result, setResult] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   // Combobox state
   const [open, setOpen] = useState(false)
@@ -61,7 +61,6 @@ export function SmsPanel({
 
   async function handleSend() {
     setSending(true)
-    setResult(null)
 
     try {
       const res = await fetch("/api/sms/send", {
@@ -71,12 +70,12 @@ export function SmsPanel({
       })
       const body = await res.json()
       if (body.success) {
-        setResult({ type: "success", text: "پیامک با موفقیت ارسال شد" })
+        toastSuccess("پیامک با موفقیت ارسال شد")
       } else {
-        setResult({ type: "error", text: body.error ?? "خطا در ارسال پیامک" })
+        toastError(body.error ?? "خطا در ارسال پیامک")
       }
     } catch {
-      setResult({ type: "error", text: "خطا در ارتباط با سرور" })
+      toastError("خطا در ارتباط با سرور")
     } finally {
       setSending(false)
     }
@@ -203,13 +202,6 @@ export function SmsPanel({
           {message.length.toLocaleString('fa-IR')} / ۵۰۰
         </p>
       </div>
-
-      {/* Result feedback */}
-      {result && (
-        <p className={`text-xs ${result.type === "success" ? "text-green-600" : "text-destructive"}`}>
-          {result.text}
-        </p>
-      )}
 
       <Button size="sm" onClick={handleSend} disabled={!canSend}>
         {sending ? (

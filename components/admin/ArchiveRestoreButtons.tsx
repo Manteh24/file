@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface ArchiveRestoreButtonsProps {
   officeId: string
@@ -30,9 +31,12 @@ export function ArchiveRestoreButtons({ officeId, officeName, isArchived }: Arch
     const json = await res.json() as { success: boolean; error?: string }
 
     if (json.success) {
+      toastSuccess(isArchived ? "دفتر بازیابی شد" : "دفتر بایگانی شد")
       router.refresh()
     } else {
-      setError(json.error ?? "خطا")
+      const errorMsg = json.error ?? "خطا"
+      setError(errorMsg)
+      toastError(errorMsg)
     }
     setLoading(false)
   }

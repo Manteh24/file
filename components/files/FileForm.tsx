@@ -22,6 +22,7 @@ import { UpgradePrompt } from "@/components/shared/UpgradePrompt"
 import { useDraft } from "@/hooks/useDraft"
 import { usePlanStatus } from "@/hooks/usePlanStatus"
 import { toFarsiDigits, parseFarsiNumber } from "@/lib/utils"
+import { toastSuccess, toastError } from "@/lib/toast"
 import { LocationAnalysisDisplay } from "@/components/files/LocationAnalysisDisplay"
 import { PhotoGallery } from "@/components/files/PhotoGallery"
 import type { PropertyFileDetail, LocationAnalysis } from "@/types"
@@ -232,9 +233,13 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
         setFilePlanLimit(true)
         return
       }
-      form.setError("root", { message: result.error ?? "خطا در ذخیره فایل" })
+      const errorMsg = result.error ?? "خطا در ذخیره فایل"
+      form.setError("root", { message: errorMsg })
+      toastError(errorMsg)
       return
     }
+
+    toastSuccess(isEdit ? "تغییرات ذخیره شد" : "فایل ایجاد شد")
 
     const targetId = isEdit ? fileId! : result.data?.id
     if (targetId) setSavedFileId(targetId)

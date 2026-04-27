@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
 import "./globals.css"
+import { Toaster } from "@/components/ui/sonner"
 
 const iranYekan = localFont({
   src: [
@@ -83,6 +84,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased" suppressHydrationWarning>
         {children}
+        <Toaster />
       </body>
     </html>
   )
