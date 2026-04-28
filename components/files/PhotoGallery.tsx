@@ -1,8 +1,10 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { Camera, ImagePlus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Camera, ImagePlus, Trash2, X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toastError } from "@/lib/toast"
 import type { FilePhoto } from "@/types"
 
 interface PhotoProcessingMode {
@@ -17,12 +19,17 @@ interface PhotoGalleryProps {
   photoProcessingMode?: PhotoProcessingMode
 }
 
+interface InProgressUpload {
+  tempId: string
+  progress: number
+  phase: "uploading" | "processing"
+}
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
 export function PhotoGallery({ initialPhotos, fileId, canEdit, photoProcessingMode }: PhotoGalleryProps) {
   const [photos, setPhotos] = useState<FilePhoto[]>(initialPhotos)
-  const [uploading, setUploading] = useState(false)
-  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [inProgress, setInProgress] = useState<InProgressUpload[]>([])
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   // ASK mode checkbox state — defaults to true (enhance + watermark on)
@@ -35,49 +42,95 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit, photoProcessingMo
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
+  const uploading = inProgress.length > 0
+
   // ── Upload ──────────────────────────────────────────────────────────────────
 
-  async function handleFilesSelected(files: FileList) {
-    setUploadError(null)
-    setUploading(true)
+  function uploadOne(file: File): Promise<void> {
+    const tempId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    setInProgress((prev) => [...prev, { tempId, progress: 0, phase: "uploading" }])
 
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("fileId", fileId)
+    formData.append("enhancePhoto", askEnhance ? "true" : "false")
+    formData.append("addWatermark", askWatermark ? "true" : "false")
+
+    return new Promise<void>((resolve) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open("POST", "/api/upload")
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (!e.lengthComputable) return
+        const pct = Math.round((e.loaded / e.total) * 100)
+        setInProgress((prev) =>
+          prev.map((u) =>
+            u.tempId === tempId
+              ? { ...u, progress: pct, phase: pct >= 100 ? "processing" : "uploading" }
+              : u
+          )
+        )
+      })
+
+      xhr.upload.addEventListener("load", () => {
+        // Bytes are out the door — server-side Sharp window starts now.
+        setInProgress((prev) =>
+          prev.map((u) =>
+            u.tempId === tempId ? { ...u, progress: 100, phase: "processing" } : u
+          )
+        )
+      })
+
+      xhr.addEventListener("load", () => {
+        try {
+          const result = JSON.parse(xhr.responseText) as {
+            success: boolean
+            data?: FilePhoto
+            error?: string
+          }
+          if (result.success && result.data) {
+            setPhotos((prev) => [...prev, result.data!])
+          } else {
+            toastError(result.error ?? "خطا در بارگذاری تصویر")
+          }
+        } catch {
+          toastError("خطا در بارگذاری تصویر")
+        }
+        setInProgress((prev) => prev.filter((u) => u.tempId !== tempId))
+        resolve()
+      })
+
+      xhr.addEventListener("error", () => {
+        toastError("خطا در اتصال به سرور")
+        setInProgress((prev) => prev.filter((u) => u.tempId !== tempId))
+        resolve()
+      })
+
+      xhr.addEventListener("abort", () => {
+        setInProgress((prev) => prev.filter((u) => u.tempId !== tempId))
+        resolve()
+      })
+
+      xhr.send(formData)
+    })
+  }
+
+  async function handleFilesSelected(files: FileList) {
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/")) {
-        setUploadError("فقط فایل‌های تصویری مجاز هستند")
+        toastError("فقط فایل‌های تصویری مجاز هستند")
         continue
       }
       if (file.size > MAX_FILE_SIZE) {
-        setUploadError("حداکثر حجم هر تصویر ۱۰ مگابایت است")
+        toastError("حداکثر حجم هر تصویر ۱۰ مگابایت است")
         continue
       }
-
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("fileId", fileId)
-      // Send client hints for ASK mode (server ignores them for ALWAYS/NEVER)
-      formData.append("enhancePhoto", askEnhance ? "true" : "false")
-      formData.append("addWatermark", askWatermark ? "true" : "false")
-
-      try {
-        const res = await fetch("/api/upload", { method: "POST", body: formData })
-        const result = (await res.json()) as {
-          success: boolean
-          data?: FilePhoto
-          error?: string
-        }
-        if (result.success && result.data) {
-          setPhotos((prev) => [...prev, result.data!])
-        } else {
-          setUploadError(result.error ?? "خطا در بارگذاری تصویر")
-        }
-      } catch {
-        setUploadError("خطا در اتصال به سرور")
-      }
+      // Sequential to keep server pressure (and ordering) predictable.
+      await uploadOne(file)
     }
-
-    setUploading(false)
     // Reset file input so the same file can be re-selected after a failed upload
     if (fileInputRef.current) fileInputRef.current.value = ""
+    if (cameraInputRef.current) cameraInputRef.current.value = ""
   }
 
   // ── Delete ──────────────────────────────────────────────────────────────────
@@ -116,12 +169,12 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit, photoProcessingMo
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  if (photos.length === 0 && !canEdit) return null
+  if (photos.length === 0 && !canEdit && inProgress.length === 0) return null
 
   return (
     <div className="space-y-3">
-      {/* Photo grid */}
-      {photos.length > 0 && (
+      {/* Photo grid — includes in-progress placeholders */}
+      {(photos.length > 0 || inProgress.length > 0) && (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {photos.map((photo, index) => (
             <div key={photo.id} className="relative group aspect-[4/3] overflow-hidden rounded-lg">
@@ -141,6 +194,36 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit, photoProcessingMo
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
+              )}
+            </div>
+          ))}
+
+          {inProgress.map((u) => (
+            <div
+              key={u.tempId}
+              className="relative aspect-[4/3] overflow-hidden rounded-lg"
+              aria-live="polite"
+            >
+              <Skeleton className="absolute inset-0 rounded-lg" />
+              {u.phase === "uploading" ? (
+                <>
+                  <div className="absolute inset-x-0 bottom-0 h-1 bg-muted-foreground/20">
+                    <div
+                      className="h-full bg-primary transition-[width] duration-150 ease-out"
+                      style={{ width: `${u.progress}%` }}
+                    />
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="rounded-full bg-background/85 px-2 py-0.5 text-xs font-medium tabular-nums text-foreground">
+                      {u.progress.toLocaleString("fa-IR")}٪
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <span className="text-xs text-muted-foreground">در حال پردازش...</span>
+                </div>
               )}
             </div>
           ))}
@@ -220,9 +303,6 @@ export function PhotoGallery({ initialPhotos, fileId, canEdit, photoProcessingMo
               {uploading ? "در حال بارگذاری..." : "انتخاب از گالری"}
             </Button>
           </div>
-          {uploadError && (
-            <p className="text-xs text-destructive">{uploadError}</p>
-          )}
           <p className="text-xs text-muted-foreground">
             حداکثر ۲۰ تصویر · هر تصویر تا ۱۰ مگابایت · فرمت‌های JPEG، PNG، WebP
           </p>

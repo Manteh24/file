@@ -86,18 +86,18 @@ export function SubscriptionBanner({
     return (
       <Alert className="rounded-none border-x-0 border-t-0 border-yellow-200 bg-yellow-50 text-yellow-900 [&>svg]:text-yellow-700 dark:border-yellow-800/40 dark:bg-yellow-950/40 dark:text-yellow-300 dark:[&>svg]:text-yellow-400">
         <Clock />
-        {isManager && <AlertTitle>اشتراک در حال انقضا</AlertTitle>}
+        {isManager && <AlertTitle>همچنان از همه قابلیت‌ها استفاده کنید</AlertTitle>}
         <AlertDescription className="text-yellow-800 dark:text-yellow-400 flex items-center justify-between gap-2">
           <span>
             {isManager ? (
               <>
-                {subscriptionLabel} شما {daysLeftPersian} روز دیگر به پایان می‌رسد.{" "}
+                {daysLeftPersian} روز از دوره {subscriptionLabel} باقی مانده — برای ادامه دسترسی نامحدود اشتراک خود را تمدید کنید.{" "}
                 <Link href="/settings" className="font-medium underline underline-offset-2 hover:no-underline">
                   تمدید اشتراک
                 </Link>
               </>
             ) : (
-              `اشتراک ${subscriptionLabel} دفتر در ${daysLeftPersian} روز دیگر منقضی می‌شود. با مدیر خود تماس بگیرید.`
+              `اشتراک ${subscriptionLabel} دفتر ${daysLeftPersian} روز دیگر تمام می‌شود. برای تمدید با مدیر خود هماهنگ کنید.`
             )}
           </span>
           <DismissButton />

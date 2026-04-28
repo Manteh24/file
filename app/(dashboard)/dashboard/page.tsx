@@ -15,6 +15,7 @@ import { formatToman } from "@/lib/utils"
 import { FileStatusRing } from "@/components/dashboard/FileStatusRing"
 import { ExpiringContractsWidget } from "@/components/dashboard/ExpiringContractsWidget"
 import { PlanUpgradeCelebration } from "@/components/dashboard/PlanUpgradeCelebration"
+import { FirstRunChecklist } from "@/components/dashboard/FirstRunChecklist"
 import type { Plan } from "@/types"
 import { canOfficeDo } from "@/lib/office-permissions"
 import { resolveBranchScope } from "@/lib/branch-scope"
@@ -67,7 +68,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     params.branchId ?? null
   )
 
-  const [teamCount, activeFilesCount, customerCount, fileStatusGroups, monthContractData] = await Promise.all([
+  // Counts feeding the FirstRunChecklist (MANAGER only — skip for AGENT to keep
+  // the dashboard query identical for them).
+  const isManager = role === "MANAGER"
+
+  const [
+    teamCount,
+    activeFilesCount,
+    customerCount,
+    fileStatusGroups,
+    monthContractData,
+    totalFilesCount,
+    shareLinksCount,
+  ] = await Promise.all([
     db.user.count({ where: { officeId } }),
     db.propertyFile.count({
       where: {
@@ -90,6 +103,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       _count: { id: true },
       _sum: { commissionAmount: true },
     }),
+    isManager ? db.propertyFile.count({ where: { officeId } }) : Promise.resolve(0),
+    isManager
+      ? db.shareLink.count({ where: { file: { officeId } } })
+      : Promise.resolve(0),
   ])
 
   const fileStatusData = fileStatusGroups.map((g) => ({
@@ -134,6 +151,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           خوش آمدید، {session.user.name}
         </p>
       </div>
+
+      {isManager && (
+        <FirstRunChecklist
+          filesCount={totalFilesCount}
+          shareLinksCount={shareLinksCount}
+        />
+      )}
 
       {/* Quick actions */}
       <div className="flex flex-wrap gap-3">

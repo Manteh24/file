@@ -22,12 +22,12 @@ The app is feature-complete and architecturally sound. The biggest UX leaks are 
 | 1 | ~~**No global toast / feedback system.**~~ ✅ **Resolved (Cluster C, 2026-04-28).** `sonner` + `lib/toast.ts` + RTL/dark-mode-aware `<Toaster />` mounted in root layout. Tier-1 surfaces (FileForm, ShareLinksPanel, SmsPanel, ArchiveFileButton, admin Archive/Suspend, SubscriptionManager) wired in Cluster C Phase 2. Tier-2 + Tier-3 surfaces (AgentForm, CustomerForm, ContractForm, OfficeProfileForm, UserProfileForm, TeamBranchesSection, ReferralDashboard, broadcast page, AdminSettingsForm, MidAdminForm, OfficeNotesPanel) wired in Cluster C Phase 3. | ✅ | ★★★★★ | — | — |
 | 2 | **Registration form is too long for a trial signup.** Office name, manager name, username, password, confirm-password, phone, city, plan selection on one screen. Stripe / Linear gate signup at email + password and collect the rest post-activation. | 🟠 | ★★★★★ | S | `app/(auth)/register/page.tsx` |
 | 3 | ~~**`window.confirm()` for destructive admin actions**~~ ✅ **Resolved (Cluster D Phase 1, 2026-04-28).** Replaced all four `window.confirm()` callsites with shadcn `AlertDialog`: `ArchiveFileButton`, `SuspendReactivateButtons`, `ArchiveRestoreButtons`, `ContractSmsActions` (cancel-schedule). RTL-correct, dark-mode-aware, theme-consistent. Type-to-confirm pattern for office-deletion / force-logout-all is still backlog (Cluster D Phase 2). | ✅ | ★★★★ | — | — |
-| 4 | **File quick-create entry is invisible on mobile.** The dashed "تکمیل فایل" toggle sits below the fold on small screens, and there is no visual signal that the form is intentionally collapsed. New agents fill out only required fields and never discover photos / price / amenities. | 🟠 | ★★★★ | S | `components/files/FileForm.tsx` (collapse section header) |
+| 4 | ~~**File quick-create entry is invisible on mobile.**~~ ✅ **Resolved (Cluster B, 2026-04-28).** Pill wrapper goes sticky on mobile (`sticky bottom-[calc(4rem+env(safe-area-inset-bottom))]`) above the `MobileBottomNav` while collapsed; chip-row hint "عکس · قیمت · امکانات · توضیحات" added underneath. Desktop unchanged. | ✅ | ★★★★ | — | — |
 | 5 | **Hero value prop is generic.** Landing page leads with "سامانه مدیریت املاک" without naming the job-to-be-done (share listings, close deals, track agents). No differentiator vs. Divar/Sheypoor in the first 5 seconds. | 🟠 | ★★★★ | S | `app/page.tsx`, `components/landing/Hero.tsx` |
-| 6 | **Photo upload has no progress indicator.** Sharp processing is server-side and synchronous; on slow Iranian connections this is 5–20 seconds per image with no UI feedback. Users assume it froze and re-click. | 🟠 | ★★★★ | S | upload pipeline in `FileForm` photos section |
+| 6 | ~~**Photo upload has no progress indicator.**~~ ✅ **Resolved (Cluster B, 2026-04-28).** `PhotoGallery.tsx` migrated `fetch` → `XMLHttpRequest`; per-image placeholder with 0–100% bar during the network upload phase, then `Loader2` spinner + "در حال پردازش..." during the server-side Sharp window we cannot observe. Errors now toast via `lib/toast.ts` instead of the silent inline pill. | ✅ | ★★★★ | — | — |
 | 7 | **Plan-tier walls feel punitive, not aspirational.** TEAM-only features show "این قابلیت در پلن شما نیست" with a generic upgrade button. No teaching moment, no preview, no value framing. Stripe and Linear show the feature *and* the price next to it. | 🟠 | ★★★★ | M | `TrialFeatureWarning.tsx`, gates across `MessagesPage`, `TeamBranchesSection.tsx` |
-| 8 | **First-run dashboard has no guided next step.** A brand-new manager lands on `/dashboard` and sees four empty KPI cards, an empty recent-files list, and a sidebar full of items with no priority. There is no "create your first file" CTA. | 🟠 | ★★★★ | M | `app/(dashboard)/dashboard/page.tsx`, `OnboardingTutorial.tsx` |
-| 9 | **Trial countdown banner reads as anxious.** "X روز مانده" in red without context creates trial dread instead of activation pressure. Compare to Linear's "free until you upgrade — explore everything." | 🟡 | ★★★ | XS | `TrialActivationBanner.tsx`, `SubscriptionBanner.tsx` |
+| 8 | ~~**First-run dashboard has no guided next step.**~~ ✅ **Resolved (Cluster B, 2026-04-28).** New `FirstRunChecklist` (MANAGER-only) renders above the KPI cards: 2-step (file → share link), auto-hides on completion, Linear-style × dismiss persisted in `localStorage`, footer link to `/guide` (covers F-2.5). | ✅ | ★★★★ | — | — |
+| 9 | ~~**Trial countdown banner reads as anxious.**~~ ✅ **Partially resolved (Cluster B, 2026-04-28).** `SubscriptionBanner.tsx` near_expiry copy reframed gift-style ("همچنان از همه قابلیت‌ها استفاده کنید"); `TrialActivationBanner.tsx` was already gift-framed teal. Grace + locked banners intentionally untouched (post-expiry warning framing is correct). | ✅ | ★★★ | — | — |
 | 10 | **Mid-admin tier capabilities are not communicated to the mid-admin user.** A SUPPORT-tier admin sees buttons that 403 when clicked. Capability badges should appear in the admin top bar. | 🟡 | ★★★ | S | `app/(admin)/admin/layout.tsx` |
 
 ### Strategic themes (synthesized from §5)
@@ -169,10 +169,10 @@ A new manager registers, lands on `/dashboard`, and has 60 seconds before they d
 | ID | Finding | Sev | Impact | Effort | Evidence |
 |----|---------|-----|--------|--------|----------|
 | F-2.1 | No persistent onboarding checklist after WelcomeModal dismissed | 🟠 | ★★★★ | M | `OnboardingTutorial.tsx`, `WelcomeModal.tsx` |
-| F-2.2 | Empty dashboard for new manager has no primary action | 🟠 | ★★★★ | S | `app/(dashboard)/dashboard/page.tsx` |
-| F-2.3 | Trial banner uses red/orange — reads as warning | 🟡 | ★★★ | XS | `TrialActivationBanner.tsx` |
+| F-2.2 | ~~Empty dashboard for new manager has no primary action~~ ✅ **Resolved (Cluster B).** `FirstRunChecklist` renders above KPI cards. | ✅ | ★★★★ | — | — |
+| F-2.3 | ~~Trial banner uses red/orange — reads as warning~~ ✅ **Resolved (Cluster B).** `SubscriptionBanner` near_expiry softened. | ✅ | ★★★ | — | — |
 | F-2.4 | OnboardingTutorial is a tour, not a checklist — users dismiss and lose progress | 🟠 | ★★★★ | M | tutorial |
-| F-2.5 | `/guide` page exists but no link from dashboard empty states | 🟡 | ★★★ | XS | `/guide/page.tsx` |
+| F-2.5 | ~~`/guide` page exists but no link from dashboard empty states~~ ✅ **Resolved (Cluster B).** Footer link in `FirstRunChecklist`. | ✅ | ★★★ | — | — |
 | F-2.6 | Empty file list says "هنوز فایلی ثبت نشده" with a small button — should be a hero card | 🟠 | ★★★ | S | files empty |
 | F-2.7 | Empty CRM/agents/contracts: same pattern, all undirected | 🟡 | ★★ | S | feature pages |
 | F-2.8 | No "first file" celebration / micro-reward | 🔵 | ★★ | S | post-create flow |
@@ -185,12 +185,12 @@ A new manager registers, lands on `/dashboard`, and has 60 seconds before they d
 
 | ID | Finding | Sev | Impact | Effort | Evidence |
 |----|---------|-----|--------|--------|----------|
-| F-3a.1 | **Quick-create toggle invisible on mobile** | 🟠 | ★★★★ | S | `FileForm.tsx` collapse pill |
+| F-3a.1 | ~~**Quick-create toggle invisible on mobile**~~ ✅ **Resolved (Cluster B).** Mobile-sticky pill + chip-row hint. | ✅ | ★★★★ | — | — |
 | F-3a.2 | "ایجاد سریع فایل" submit label changes — good intent, but jarring when label flickers on toggle | 🔵 | ★ | XS | same |
 | F-3a.3 | LocationPicker has no loading skeleton | 🟡 | ★★ | XS | `LocationPicker.tsx` |
 | F-3a.4 | Phone input rejects `+98` / spaces on paste | 🟠 | ★★★★ | XS | contacts section |
 | F-3a.5 | Required-contact validation only fires on submit | 🟡 | ★★★ | XS | RHF mode |
-| F-3a.6 | **Photo upload no progress indicator** | 🟠 | ★★★★ | S | photos section |
+| F-3a.6 | ~~**Photo upload no progress indicator**~~ ✅ **Resolved (Cluster B).** XHR per-image progress + processing spinner. | ✅ | ★★★★ | — | — |
 | F-3a.7 | Photo reorder: drag handle absent on mobile | 🟡 | ★★ | S | photos section |
 | F-3a.8 | AI description overwrites without warning | 🟡 | ★★★ | XS | AI tone selector |
 | F-3a.9 | AI description: tone difference not previewed | 🔵 | ★★ | S | AI section |
@@ -360,10 +360,10 @@ These need product input before I can recommend a direction:
 
 This audit is **not prescriptive**. Each finding is a starting point. Recommended next step: walk through §1 Executive Summary together, decide which top-10 items to greenlight, and start a separate plan-mode session per cluster:
 - **Cluster A** (Conversion): F-1.6, F-1.11, F-1.28 + landing dark-mode pass
-- **Cluster B** (Activation): F-2.1, F-2.2, F-3a.1 + onboarding checklist
+- ~~**Cluster B** (Activation): F-2.2, F-2.5, F-3a.1, F-3a.6, top-10 #4/#6/#8/#9 (near_expiry portion)~~ ✅ **Done 2026-04-28.** `FirstRunChecklist` + photo-upload XHR progress + mobile-sticky collapse pill + SubscriptionBanner near_expiry copy reframe. F-2.1 and F-2.4 (OnboardingTutorial → checklist refactor) deferred to a later phase.
 - ~~**Cluster C** (Feedback): toast system rollout (§5.1)~~ ✅ **Done 2026-04-28.** sonner + `lib/toast.ts`; ~25 mutation surfaces wired across Tier-1/2/3.
 - ~~**Cluster D Phase 1** (Destructive trust): replace `window.confirm()` with shadcn `AlertDialog`~~ ✅ **Done 2026-04-28.** Four callsites converted (ArchiveFile, Suspend/Reactivate, Archive/Restore, ContractSmsActions cancel).
 - **Cluster D Phase 2** (Destructive trust, advanced): type-to-confirm pattern for high-risk destructive actions (office archive, force-logout-all, delete-data).
-- **Cluster E** (File-form polish): F-3a.4, F-3a.6, F-3a.11, F-3a.15, F-3a.16
+- **Cluster E** (File-form polish): F-3a.4 (phone tolerance), F-3a.11 (mainContact validation), F-3a.15 (SMS preview), F-3a.16 (SMS silent success). [F-3a.6 photo progress moved to Cluster B-done.]
 
 Each remaining cluster is 1–3 days of work.

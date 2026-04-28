@@ -855,16 +855,33 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           )}
         </section>
 
-        {/* Expand toggle — create mode only */}
+        {/* Expand toggle — create mode only.
+            On mobile (<md), while collapsed, the wrapper sticks above the
+            MobileBottomNav (h-14 + safe-area) so a new agent who never scrolls
+            past contacts still sees a clear "this form has more" affordance.
+            On expand or desktop, it sits inline. */}
         {!isEdit && (
-          <button
-            type="button"
-            onClick={() => setIsExpanded((v) => !v)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[var(--color-border-default)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] transition-colors"
+          <div
+            className={
+              !isExpanded
+                ? "md:static sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 md:z-auto md:shadow-none shadow-lg md:bg-transparent bg-background md:p-0 p-2 md:rounded-none rounded-xl md:border-0 border md:mx-0 -mx-2 md:my-0"
+                : ""
+            }
           >
-            <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-            {isExpanded ? "بستن جزئیات" : "تکمیل فایل"}
-          </button>
+            <button
+              type="button"
+              onClick={() => setIsExpanded((v) => !v)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-dashed border-[var(--color-border-default)] text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] transition-colors"
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+              {isExpanded ? "بستن جزئیات" : "تکمیل فایل"}
+            </button>
+            {!isExpanded && (
+              <p className="mt-1.5 text-center text-xs text-muted-foreground">
+                عکس · قیمت · امکانات · توضیحات
+              </p>
+            )}
+          </div>
         )}
 
         {/* Description — optional in create mode */}
