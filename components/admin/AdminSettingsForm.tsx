@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface AdminSettingsFormProps {
   trialLengthDays: string
@@ -38,37 +39,31 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
   const [bonusLifetimeCap, setBonusLifetimeCap] = useState(props.referralBonusLifetimeCap)
 
   const [loadingSection, setLoadingSection] = useState<SectionKey | null>(null)
-  const [savedSection, setSavedSection] = useState<SectionKey | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   async function saveSection(section: SectionKey, payload: Record<string, string>) {
-    setError(null)
-    setSavedSection(null)
     setLoadingSection(section)
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const json = (await res.json()) as { success: boolean; error?: string }
 
-    const res = await fetch("/api/admin/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    })
-    const json = await res.json() as { success: boolean; error?: string }
-
-    if (json.success) {
-      setSavedSection(section)
-    } else {
-      setError(json.error ?? "خطا")
+      if (json.success) {
+        toastSuccess("تنظیمات ذخیره شد")
+      } else {
+        toastError(json.error ?? "خطا در ذخیره تنظیمات")
+      }
+    } catch {
+      toastError("خطا در اتصال به سرور")
+    } finally {
+      setLoadingSection(null)
     }
-    setLoadingSection(null)
   }
 
   return (
     <div className="space-y-6">
-      {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
       {/* Section 1 — System / Maintenance */}
       <section className="rounded-lg border border-border p-5 space-y-4">
         <h2 className="text-sm font-semibold">سیستم</h2>
@@ -102,7 +97,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           >
             {loadingSection === "system" ? "در حال ذخیره..." : "ذخیره"}
           </button>
-          {savedSection === "system" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+          
         </div>
       </section>
 
@@ -146,7 +141,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           >
             {loadingSection === "payment" ? "در حال ذخیره..." : "ذخیره"}
           </button>
-          {savedSection === "payment" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+          
         </div>
       </section>
 
@@ -161,7 +156,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           <input
             type="text"
             value={avalaiModel}
-            onChange={(e) => { setAvalaiModel(e.target.value); setSavedSection(null) }}
+            onChange={(e) => { setAvalaiModel(e.target.value) }}
             placeholder="gpt-4o-mini"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
           />
@@ -169,7 +164,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              if (!avalaiModel.trim()) { setError("نام مدل نمی‌تواند خالی باشد"); return }
+              if (!avalaiModel.trim()) { toastError("نام مدل نمی‌تواند خالی باشد"); return }
               saveSection("ai", { AVALAI_MODEL: avalaiModel.trim() })
             }}
             disabled={loadingSection === "ai"}
@@ -177,7 +172,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           >
             {loadingSection === "ai" ? "در حال ذخیره..." : "ذخیره"}
           </button>
-          {savedSection === "ai" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+          
         </div>
       </section>
 
@@ -193,7 +188,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             <input
               type="number"
               value={freeMaxUsers}
-              onChange={(e) => { setFreeMaxUsers(e.target.value); setSavedSection(null) }}
+              onChange={(e) => { setFreeMaxUsers(e.target.value) }}
               min="0"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
@@ -203,7 +198,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             <input
               type="number"
               value={freeMaxFiles}
-              onChange={(e) => { setFreeMaxFiles(e.target.value); setSavedSection(null) }}
+              onChange={(e) => { setFreeMaxFiles(e.target.value) }}
               min="0"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
@@ -213,7 +208,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             <input
               type="number"
               value={freeMaxAiMonth}
-              onChange={(e) => { setFreeMaxAiMonth(e.target.value); setSavedSection(null) }}
+              onChange={(e) => { setFreeMaxAiMonth(e.target.value) }}
               min="0"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
@@ -223,7 +218,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             <input
               type="number"
               value={freeMaxSmsMonth}
-              onChange={(e) => { setFreeMaxSmsMonth(e.target.value); setSavedSection(null) }}
+              onChange={(e) => { setFreeMaxSmsMonth(e.target.value) }}
               min="0"
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
@@ -244,7 +239,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           >
             {loadingSection === "freeLimits" ? "در حال ذخیره..." : "ذخیره"}
           </button>
-          {savedSection === "freeLimits" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+          
         </div>
       </section>
 
@@ -261,7 +256,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             <input
               type="number"
               value={days}
-              onChange={(e) => { setDays(e.target.value); setSavedSection(null) }}
+              onChange={(e) => { setDays(e.target.value) }}
               min="1"
               max="365"
               required
@@ -276,7 +271,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             onClick={() => {
               const n = parseInt(days, 10)
               if (isNaN(n) || n < 1 || n > 365) {
-                setError("مدت آزمایشی باید بین ۱ تا ۳۶۵ روز باشد")
+                toastError("مدت آزمایشی باید بین ۱ تا ۳۶۵ روز باشد")
                 return
               }
               saveSection("trial", { TRIAL_LENGTH_DAYS: String(n) })
@@ -286,7 +281,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           >
             {loadingSection === "trial" ? "در حال ذخیره..." : "ذخیره"}
           </button>
-          {savedSection === "trial" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+          
         </div>
       </section>
 
@@ -304,7 +299,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             <input
               type="number"
               value={defaultReferralCommission}
-              onChange={(e) => { setDefaultReferralCommission(e.target.value); setSavedSection(null) }}
+              onChange={(e) => { setDefaultReferralCommission(e.target.value) }}
               min="0"
               step="1000"
               className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -318,7 +313,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
             onClick={() => {
               const n = parseInt(defaultReferralCommission, 10)
               if (isNaN(n) || n < 0) {
-                setError("مبلغ کمیسیون باید ۰ یا بیشتر باشد")
+                toastError("مبلغ کمیسیون باید ۰ یا بیشتر باشد")
                 return
               }
               saveSection("referral", { DEFAULT_REFERRAL_COMMISSION: String(n) })
@@ -328,7 +323,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           >
             {loadingSection === "referral" ? "در حال ذخیره..." : "ذخیره"}
           </button>
-          {savedSection === "referral" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+          
         </div>
       </section>
 
@@ -348,7 +343,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
               <input
                 type="number"
                 value={bonusPercent}
-                onChange={(e) => { setBonusPercent(e.target.value); setSavedSection(null) }}
+                onChange={(e) => { setBonusPercent(e.target.value) }}
                 min="1"
                 max="100"
                 step="1"
@@ -364,7 +359,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
               <input
                 type="number"
                 value={bonusMaxToman}
-                onChange={(e) => { setBonusMaxToman(e.target.value); setSavedSection(null) }}
+                onChange={(e) => { setBonusMaxToman(e.target.value) }}
                 min="0"
                 step="1000"
                 className="w-32 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -379,7 +374,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
               <input
                 type="number"
                 value={bonusLifetimeCap}
-                onChange={(e) => { setBonusLifetimeCap(e.target.value); setSavedSection(null) }}
+                onChange={(e) => { setBonusLifetimeCap(e.target.value) }}
                 min="1"
                 max="1000"
                 step="1"
@@ -396,9 +391,9 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
               const p = parseInt(bonusPercent, 10)
               const m = parseInt(bonusMaxToman, 10)
               const c = parseInt(bonusLifetimeCap, 10)
-              if (isNaN(p) || p < 1 || p > 100) { setError("درصد پاداش باید بین ۱ تا ۱۰۰ باشد"); return }
-              if (isNaN(m) || m < 0) { setError("سقف هر پاداش باید ۰ یا بیشتر باشد"); return }
-              if (isNaN(c) || c < 1 || c > 1000) { setError("سقف تعداد پاداش‌ها باید بین ۱ تا ۱۰۰۰ باشد"); return }
+              if (isNaN(p) || p < 1 || p > 100) { toastError("درصد پاداش باید بین ۱ تا ۱۰۰ باشد"); return }
+              if (isNaN(m) || m < 0) { toastError("سقف هر پاداش باید ۰ یا بیشتر باشد"); return }
+              if (isNaN(c) || c < 1 || c > 1000) { toastError("سقف تعداد پاداش‌ها باید بین ۱ تا ۱۰۰۰ باشد"); return }
               saveSection("referralBonus", {
                 REFERRAL_BONUS_PERCENT: String(p),
                 REFERRAL_BONUS_MAX_TOMAN: String(m),
@@ -410,7 +405,7 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
           >
             {loadingSection === "referralBonus" ? "در حال ذخیره..." : "ذخیره"}
           </button>
-          {savedSection === "referralBonus" && <span className="text-sm text-green-600">✓ ذخیره شد</span>}
+          
         </div>
       </section>
     </div>

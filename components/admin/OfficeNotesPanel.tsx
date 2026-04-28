@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { format } from "date-fns-jalali"
+import { toastSuccess, toastError } from "@/lib/toast"
 import type { OfficeNoteItem } from "@/types"
 
 interface OfficeNotesPanelProps {
@@ -14,7 +15,6 @@ export function OfficeNotesPanel({ officeId }: OfficeNotesPanelProps) {
   const [error, setError] = useState<string | null>(null)
   const [content, setContent] = useState("")
   const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const loadNotes = useCallback(async () => {
     setLoading(true)
@@ -37,7 +37,6 @@ export function OfficeNotesPanel({ officeId }: OfficeNotesPanelProps) {
     e.preventDefault()
     if (!content.trim()) return
     setSubmitting(true)
-    setSubmitError(null)
     try {
       const res = await fetch(`/api/admin/offices/${officeId}/notes`, {
         method: "POST",
@@ -48,8 +47,9 @@ export function OfficeNotesPanel({ officeId }: OfficeNotesPanelProps) {
       if (!json.success) throw new Error(json.error ?? "خطا در ثبت یادداشت")
       if (json.data) setNotes((prev) => [json.data!, ...prev])
       setContent("")
+      toastSuccess("یادداشت ثبت شد")
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "خطای ناشناخته")
+      toastError(err instanceof Error ? err.message : "خطای ناشناخته")
     } finally {
       setSubmitting(false)
     }
@@ -69,7 +69,6 @@ export function OfficeNotesPanel({ officeId }: OfficeNotesPanelProps) {
           maxLength={2000}
           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        {submitError && <p className="text-xs text-red-600">{submitError}</p>}
         <div className="flex items-center justify-between">
           <span className="text-xs text-muted-foreground">{content.length.toLocaleString('fa-IR')}/۲۰۰۰</span>
           <button

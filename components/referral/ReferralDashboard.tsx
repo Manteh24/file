@@ -4,6 +4,7 @@ import { useState } from "react"
 import { format } from "date-fns-jalali"
 import { Copy, Check, CreditCard, Building2, Award } from "lucide-react"
 import { formatToman } from "@/lib/utils"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface BonusPayout {
   id: string
@@ -47,7 +48,6 @@ export function ReferralDashboard({
   const [shebaNumber, setShebaNumber] = useState(initialData.bankDetails.shebaNumber ?? "")
   const [cardHolderName, setCardHolderName] = useState(initialData.bankDetails.cardHolderName ?? "")
   const [saving, setSaving] = useState(false)
-  const [saveMsg, setSaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   async function copyCode() {
     if (!data.referralCode) return
@@ -59,19 +59,23 @@ export function ReferralDashboard({
   async function saveBankDetails(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    setSaveMsg(null)
-    const res = await fetch("/api/referral/bank-details", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardNumber, shebaNumber, cardHolderName }),
-    })
-    const json = await res.json()
-    setSaveMsg(
-      json.success
-        ? { type: "success", text: "اطلاعات بانکی با موفقیت ذخیره شد" }
-        : { type: "error", text: json.error ?? "خطا در ذخیره‌سازی" }
-    )
-    setSaving(false)
+    try {
+      const res = await fetch("/api/referral/bank-details", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cardNumber, shebaNumber, cardHolderName }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        toastSuccess("اطلاعات بانکی ذخیره شد")
+      } else {
+        toastError(json.error ?? "خطا در ذخیره‌سازی")
+      }
+    } catch {
+      toastError("خطا در اتصال به سرور")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const capReached = data.payoutCount >= bonusLifetimeCap
@@ -227,18 +231,6 @@ export function ReferralDashboard({
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
-
-          {saveMsg && (
-            <p
-              className={`rounded-lg px-3 py-2 text-sm ${
-                saveMsg.type === "success"
-                  ? "bg-green-50 text-green-700 dark:bg-green-900/20"
-                  : "bg-red-50 text-red-600 dark:bg-red-900/20"
-              }`}
-            >
-              {saveMsg.text}
-            </p>
-          )}
 
           <button
             type="submit"

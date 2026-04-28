@@ -2,6 +2,16 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { toastSuccess, toastError } from "@/lib/toast"
 
 interface ArchiveRestoreButtonsProps {
@@ -11,40 +21,44 @@ interface ArchiveRestoreButtonsProps {
 }
 
 export function ArchiveRestoreButtons({ officeId, officeName, isArchived }: ArchiveRestoreButtonsProps) {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
-  async function handleAction() {
+  async function runAction() {
     const action = isArchived ? "restore" : "archive"
-    if (!isArchived) {
-      const confirmed = window.confirm(
-        `آیا مطمئن هستید که می‌خواهید دفتر «${officeName}» را بایگانی کنید؟\n\nدفتر از لیست فعال حذف می‌شود اما داده‌ها حفظ می‌مانند.`
-      )
-      if (!confirmed) return
-    }
-
     setLoading(true)
-    setError(null)
+    try {
+      const res = await fetch(`/api/admin/offices/${officeId}/${action}`, { method: "POST" })
+      const json = (await res.json()) as { success: boolean; error?: string }
 
-    const res = await fetch(`/api/admin/offices/${officeId}/${action}`, { method: "POST" })
-    const json = await res.json() as { success: boolean; error?: string }
-
-    if (json.success) {
-      toastSuccess(isArchived ? "دفتر بازیابی شد" : "دفتر بایگانی شد")
-      router.refresh()
-    } else {
-      const errorMsg = json.error ?? "خطا"
-      setError(errorMsg)
-      toastError(errorMsg)
+      if (json.success) {
+        toastSuccess(isArchived ? "دفتر بازیابی شد" : "دفتر بایگانی شد")
+        setConfirmOpen(false)
+        router.refresh()
+      } else {
+        toastError(json.error ?? "خطا")
+      }
+    } catch {
+      toastError("خطا در ارتباط با سرور")
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
+  }
+
+  function handleClick() {
+    // Restore is reversible — fire immediately. Archive needs confirmation.
+    if (isArchived) {
+      runAction()
+    } else {
+      setConfirmOpen(true)
+    }
   }
 
   return (
     <div className="flex items-center gap-3">
       <button
-        onClick={handleAction}
+        onClick={handleClick}
         disabled={loading}
         className={
           isArchived
@@ -54,7 +68,23 @@ export function ArchiveRestoreButtons({ officeId, officeName, isArchived }: Arch
       >
         {loading ? "در حال اجرا..." : isArchived ? "بازیابی دفتر" : "بایگانی دفتر"}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <AlertDialog open={confirmOpen} onOpenChange={(v) => !loading && setConfirmOpen(v)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>بایگانی دفتر؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              آیا مطمئن هستید که می‌خواهید دفتر «{officeName}» را بایگانی کنید؟ دفتر از لیست فعال حذف می‌شود اما داده‌ها حفظ می‌مانند.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>انصراف</AlertDialogCancel>
+            <AlertDialogAction onClick={runAction} disabled={loading}>
+              {loading ? "در حال اجرا..." : "بایگانی"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

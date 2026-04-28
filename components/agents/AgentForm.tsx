@@ -36,6 +36,7 @@ import {
   type PermissionsOverride,
 } from "@/lib/office-permissions"
 import { PLAN_FEATURES } from "@/lib/plan-constants-client"
+import { toastSuccess, toastError } from "@/lib/toast"
 import type { AgentDetail, Plan } from "@/types"
 
 interface BranchOption {
@@ -139,9 +140,13 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
         setShowPlanLimit(true)
         return
       }
-      form.setError("root", { message: data.error ?? "خطایی رخ داد" })
+      const errorMsg = data.error ?? "خطایی رخ داد"
+      form.setError("root", { message: errorMsg })
+      toastError(errorMsg)
       return
     }
+
+    toastSuccess(isEdit ? "تغییرات ذخیره شد" : `${memberNoun} ایجاد شد`)
 
     if (isEdit) {
       router.push(`/agents/${agentId}`)

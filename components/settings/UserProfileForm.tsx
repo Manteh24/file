@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Camera, Check, Loader2, X } from "lucide-react"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface UserProfileFormProps {
   initialData: {
@@ -30,7 +30,6 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
 
   const [saving, setSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [showSmileTip, setShowSmileTip] = useState(false)
 
@@ -52,7 +51,6 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
     if (!file) return
 
     setUploadingAvatar(true)
-    setError(null)
 
     const formData = new FormData()
     formData.append("file", file)
@@ -61,13 +59,14 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
       const res = await fetch("/api/auth/profile/avatar", { method: "POST", body: formData })
       const data = (await res.json()) as { success: boolean; error?: string; data?: { avatarUrl: string } }
       if (!data.success) {
-        setError(data.error ?? "خطا در بارگذاری تصویر")
+        toastError(data.error ?? "خطا در بارگذاری تصویر")
         return
       }
       if (data.data?.avatarUrl) setAvatarUrl(data.data.avatarUrl)
+      toastSuccess("تصویر پروفایل به‌روزرسانی شد")
       router.refresh()
     } catch {
-      setError("خطا در اتصال به سرور")
+      toastError("خطا در اتصال به سرور")
     } finally {
       setUploadingAvatar(false)
       // Reset input so same file can be re-selected
@@ -77,11 +76,10 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
     setSaved(false)
 
     if (!displayName.trim()) {
-      setError("نام نمایشی الزامی است")
+      toastError("نام نمایشی الزامی است")
       return
     }
 
@@ -94,13 +92,14 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
       })
       const data = (await res.json()) as { success: boolean; error?: string }
       if (!data.success) {
-        setError(data.error ?? "خطایی رخ داد")
+        toastError(data.error ?? "خطایی رخ داد")
         return
       }
       setSaved(true)
+      toastSuccess("پروفایل ذخیره شد")
       router.refresh()
     } catch {
-      setError("خطا در اتصال به سرور")
+      toastError("خطا در اتصال به سرور")
     } finally {
       setSaving(false)
     }
@@ -156,19 +155,6 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
           </p>
         </div>
       </div>
-
-      {/* ── Alerts ──────────────────────────────────────────────────── */}
-      {error && (
-        <Alert variant="destructive" className="mb-5">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {saved && (
-        <Alert className="mb-5 border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
-          <Check className="h-4 w-4" />
-          <AlertDescription>پروفایل با موفقیت ذخیره شد.</AlertDescription>
-        </Alert>
-      )}
 
       {/* ── Smile tip ───────────────────────────────────────────────── */}
       {showSmileTip && (

@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { CustomerTypeSelector } from "@/components/crm/CustomerTypeSelector"
+import { toastSuccess, toastError } from "@/lib/toast"
 import type { CustomerDetail, CustomerType } from "@/types"
 
 interface CustomerFormProps {
@@ -55,9 +56,13 @@ export function CustomerForm({ initialData, customerId }: CustomerFormProps) {
       await response.json()
 
     if (!data.success) {
-      form.setError("root", { message: data.error ?? "خطایی رخ داد" })
+      const errorMsg = data.error ?? "خطایی رخ داد"
+      form.setError("root", { message: errorMsg })
+      toastError(errorMsg)
       return
     }
+
+    toastSuccess(isEdit ? "تغییرات ذخیره شد" : "مشتری ثبت شد")
 
     if (isEdit) {
       router.push(`/crm/${customerId}`)

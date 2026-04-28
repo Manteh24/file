@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, type Resolver } from "react-hook-form"
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema"
 import { updateOfficeProfileSchema, type UpdateOfficeProfileInput } from "@/lib/validations/settings"
 import { IRANIAN_CITIES } from "@/lib/cities"
+import { toastSuccess, toastError } from "@/lib/toast"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -32,7 +33,6 @@ interface OfficeProfileFormProps {
 
 export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
   const router = useRouter()
-  const [saved, setSaved] = useState(false)
   const [logoUploading, setLogoUploading] = useState(false)
   const [logoUrl, setLogoUrl] = useState<string | null>(initialData.logoUrl)
   const logoInputRef = useRef<HTMLInputElement>(null)
@@ -61,10 +61,13 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
       const data: { success: boolean; data?: { logoUrl: string }; error?: string } = await res.json()
       if (data.success && data.data) {
         setLogoUrl(data.data.logoUrl)
+        toastSuccess("لوگو به‌روزرسانی شد")
         router.refresh()
+      } else {
+        toastError(data.error ?? "خطا در بارگذاری لوگو")
       }
     } catch {
-      // Silent — logo upload failure is non-critical
+      toastError("خطا در بارگذاری لوگو")
     } finally {
       setLogoUploading(false)
       if (logoInputRef.current) logoInputRef.current.value = ""
@@ -81,20 +84,15 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
     const data: { success: boolean; error?: string } = await response.json()
 
     if (!data.success) {
-      form.setError("root", { message: data.error ?? "خطایی رخ داد" })
+      const errorMsg = data.error ?? "خطایی رخ داد"
+      form.setError("root", { message: errorMsg })
+      toastError(errorMsg)
       return
     }
 
-    setSaved(true)
+    toastSuccess("تغییرات ذخیره شد")
     router.refresh()
   }
-
-  // Clear the success indicator after 3 seconds
-  useEffect(() => {
-    if (!saved) return
-    const timer = setTimeout(() => setSaved(false), 3000)
-    return () => clearTimeout(timer)
-  }, [saved])
 
   const isSubmitting = form.formState.isSubmitting
 
@@ -318,9 +316,6 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
           >
             {isSubmitting ? "در حال ذخیره..." : "ذخیره تغییرات"}
           </Button>
-          {saved && (
-            <p className="text-sm text-emerald-600">تغییرات با موفقیت ذخیره شد</p>
-          )}
         </div>
       </form>
 
@@ -334,9 +329,6 @@ export function OfficeProfileForm({ initialData }: OfficeProfileFormProps) {
         >
           {isSubmitting ? "در حال ذخیره..." : "ذخیره تغییرات"}
         </Button>
-        {saved && (
-          <p className="text-sm text-emerald-600 whitespace-nowrap">ذخیره شد ✓</p>
-        )}
       </div>
     </Form>
   )

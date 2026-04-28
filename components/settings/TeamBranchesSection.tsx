@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { toastSuccess, toastError } from "@/lib/toast"
 import type { Plan } from "@/types"
 
 interface Branch {
@@ -121,15 +122,19 @@ export function TeamBranchesSection({
       const res = await fetch("/api/branches/enable", { method: "POST" })
       const body = await res.json()
       if (!body.success) {
-        setError(body.error ?? "خطا در فعال‌سازی")
+        const msg = body.error ?? "خطا در فعال‌سازی"
+        setError(msg)
+        toastError(msg)
       } else {
         setMultiBranchEnabled(true)
         setEnableConfirmOpen(false)
+        toastSuccess("چند شعبه فعال شد")
         notifyBranchListChanged()
         router.refresh()
       }
     } catch {
       setError("خطا در اتصال به سرور")
+      toastError("خطا در اتصال به سرور")
     } finally {
       setEnabling(false)
     }
@@ -137,20 +142,44 @@ export function TeamBranchesSection({
 
   async function handleToggleShareFiles(value: boolean) {
     setShareFiles(value)
-    await fetch("/api/branches/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shareFilesAcrossBranches: value }),
-    }).catch(() => setShareFiles(!value))
+    try {
+      const res = await fetch("/api/branches/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shareFilesAcrossBranches: value }),
+      })
+      const body = await res.json()
+      if (!body.success) {
+        setShareFiles(!value)
+        toastError(body.error ?? "خطا در ذخیره تنظیم")
+      } else {
+        toastSuccess("تنظیم ذخیره شد")
+      }
+    } catch {
+      setShareFiles(!value)
+      toastError("خطا در اتصال به سرور")
+    }
   }
 
   async function handleToggleShareCustomers(value: boolean) {
     setShareCustomers(value)
-    await fetch("/api/branches/settings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ shareCustomersAcrossBranches: value }),
-    }).catch(() => setShareCustomers(!value))
+    try {
+      const res = await fetch("/api/branches/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shareCustomersAcrossBranches: value }),
+      })
+      const body = await res.json()
+      if (!body.success) {
+        setShareCustomers(!value)
+        toastError(body.error ?? "خطا در ذخیره تنظیم")
+      } else {
+        toastSuccess("تنظیم ذخیره شد")
+      }
+    } catch {
+      setShareCustomers(!value)
+      toastError("خطا در اتصال به سرور")
+    }
   }
 
   function openCreate() {
@@ -187,14 +216,18 @@ export function TeamBranchesSection({
       })
       const body = await res.json()
       if (!body.success) {
-        setFormError(body.error ?? "خطا در ذخیره")
+        const msg = body.error ?? "خطا در ذخیره"
+        setFormError(msg)
+        toastError(msg)
       } else {
         setDialogOpen(false)
+        toastSuccess(editingBranch ? "شعبه ویرایش شد" : "شعبه ایجاد شد")
         await fetchBranches()
         notifyBranchListChanged()
       }
     } catch {
       setFormError("خطا در اتصال به سرور")
+      toastError("خطا در اتصال به سرور")
     } finally {
       setSaving(false)
     }
@@ -208,13 +241,17 @@ export function TeamBranchesSection({
       const body = await res.json()
       if (body.success) {
         setDeletingBranch(null)
+        toastSuccess("شعبه حذف شد")
         await fetchBranches()
         notifyBranchListChanged()
       } else {
-        setError(body.error ?? "خطا در حذف")
+        const msg = body.error ?? "خطا در حذف"
+        setError(msg)
+        toastError(msg)
       }
     } catch {
       setError("خطا در اتصال به سرور")
+      toastError("خطا در اتصال به سرور")
     } finally {
       setDeleting(false)
     }

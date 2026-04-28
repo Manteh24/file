@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { IRANIAN_CITIES } from "@/lib/cities"
+import { toastSuccess, toastError } from "@/lib/toast"
 import type {
   AdminAccessRuleInput,
   AdminAccessRuleSummary,
@@ -242,7 +243,9 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
       })
       const json = await res.json()
       if (!res.ok) {
-        setError(json.error ?? "خطا در ایجاد حساب")
+        const msg = json.error ?? "خطا در ایجاد حساب"
+        setError(msg)
+        toastError(msg)
         return
       }
 
@@ -266,6 +269,7 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
         })
       }
 
+      toastSuccess("عضو تیم ایجاد شد")
       router.refresh()
       setOpen(false)
       setFields({ username: "", displayName: "", email: "", password: "" })
@@ -452,14 +456,10 @@ export function EditProfileForm({ adminId, currentDisplayName, currentEmail }: E
   const [email, setEmail] = useState(currentEmail ?? "")
   const [newPassword, setNewPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState("")
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    setSaved(false)
-    setError("")
     try {
       const res = await fetch(`/api/admin/mid-admins/${adminId}`, {
         method: "PATCH",
@@ -468,10 +468,10 @@ export function EditProfileForm({ adminId, currentDisplayName, currentEmail }: E
       })
       const json = await res.json()
       if (!res.ok) {
-        setError(json.error ?? "خطا در ذخیره")
+        toastError(json.error ?? "خطا در ذخیره")
         return
       }
-      setSaved(true)
+      toastSuccess("اطلاعات ذخیره شد")
       setNewPassword("")
       router.refresh()
     } finally {
@@ -487,7 +487,7 @@ export function EditProfileForm({ adminId, currentDisplayName, currentEmail }: E
           <input
             required
             value={displayName}
-            onChange={(e) => { setDisplayName(e.target.value); setSaved(false) }}
+            onChange={(e) => setDisplayName(e.target.value)}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
@@ -497,7 +497,7 @@ export function EditProfileForm({ adminId, currentDisplayName, currentEmail }: E
             type="email"
             dir="ltr"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); setSaved(false) }}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
@@ -509,7 +509,7 @@ export function EditProfileForm({ adminId, currentDisplayName, currentEmail }: E
             type="password"
             dir="ltr"
             value={newPassword}
-            onChange={(e) => { setNewPassword(e.target.value); setSaved(false) }}
+            onChange={(e) => setNewPassword(e.target.value)}
             placeholder="حداقل ۸ کاراکتر"
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
@@ -520,8 +520,6 @@ export function EditProfileForm({ adminId, currentDisplayName, currentEmail }: E
         <Button type="submit" disabled={loading} size="sm">
           {loading ? "در حال ذخیره..." : "ذخیره اطلاعات"}
         </Button>
-        {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
-        {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
     </form>
   )
@@ -538,13 +536,9 @@ export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
   const router = useRouter()
   const [tier, setTier] = useState<AdminTier | "">(currentTier ?? "")
   const [loading, setLoading] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState("")
 
   async function handleSave() {
     setLoading(true)
-    setSaved(false)
-    setError("")
     try {
       const res = await fetch(`/api/admin/mid-admins/${adminId}`, {
         method: "PATCH",
@@ -553,10 +547,10 @@ export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
       })
       if (!res.ok) {
         const json = await res.json()
-        setError(json.error ?? "خطا در ذخیره")
+        toastError(json.error ?? "خطا در ذخیره")
         return
       }
-      setSaved(true)
+      toastSuccess("سطح دسترسی ذخیره شد")
       router.refresh()
     } finally {
       setLoading(false)
@@ -580,7 +574,7 @@ export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
               name="edit-tier"
               value={opt.value}
               checked={tier === opt.value}
-              onChange={() => { setTier(opt.value); setSaved(false) }}
+              onChange={() => setTier(opt.value)}
               className="mt-0.5 h-4 w-4"
             />
             <div>
@@ -601,7 +595,7 @@ export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
             name="edit-tier"
             value=""
             checked={tier === ""}
-            onChange={() => { setTier(""); setSaved(false) }}
+            onChange={() => setTier("")}
             className="mt-0.5 h-4 w-4"
           />
           <div>
@@ -615,8 +609,6 @@ export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
         <Button onClick={handleSave} disabled={loading} size="sm">
           {loading ? "در حال ذخیره..." : "ذخیره سطح دسترسی"}
         </Button>
-        {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
-        {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
     </div>
   )
@@ -640,20 +632,15 @@ export function EditAssignmentsForm({
     currentAssignments.map((a) => a.officeId)
   )
   const [loading, setLoading] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState("")
 
   function toggleOffice(id: string) {
     setSelectedOfficeIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
-    setSaved(false)
   }
 
   async function handleSave() {
     setLoading(true)
-    setError("")
-    setSaved(false)
     try {
       const res = await fetch(`/api/admin/mid-admins/${adminId}/assignments`, {
         method: "PUT",
@@ -662,10 +649,10 @@ export function EditAssignmentsForm({
       })
       if (!res.ok) {
         const json = await res.json()
-        setError(json.error ?? "خطا در ذخیره")
+        toastError(json.error ?? "خطا در ذخیره")
         return
       }
-      setSaved(true)
+      toastSuccess("دسترسی دفاتر ذخیره شد")
       router.refresh()
     } finally {
       setLoading(false)
@@ -698,8 +685,6 @@ export function EditAssignmentsForm({
         <Button onClick={handleSave} disabled={loading} size="sm">
           {loading ? "در حال ذخیره..." : `ذخیره (${selectedOfficeIds.length} دفتر)`}
         </Button>
-        {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
-        {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
     </div>
   )
@@ -718,7 +703,6 @@ export function EditAccessRulesForm({ adminId, currentRules }: EditAccessRulesFo
     currentRules.map((r) => ({ cities: r.cities, plans: r.plans, trialFilter: r.trialFilter }))
   )
   const [loading, setLoading] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [error, setError] = useState("")
 
   async function handleSave() {
@@ -729,7 +713,6 @@ export function EditAccessRulesForm({ adminId, currentRules }: EditAccessRulesFo
 
     setLoading(true)
     setError("")
-    setSaved(false)
     try {
       const res = await fetch(`/api/admin/mid-admins/${adminId}/access-rules`, {
         method: "PUT",
@@ -738,10 +721,12 @@ export function EditAccessRulesForm({ adminId, currentRules }: EditAccessRulesFo
       })
       if (!res.ok) {
         const json = await res.json()
-        setError(json.error ?? "خطا در ذخیره")
+        const msg = json.error ?? "خطا در ذخیره"
+        setError(msg)
+        toastError(msg)
         return
       }
-      setSaved(true)
+      toastSuccess("قوانین دسترسی ذخیره شد")
       router.refresh()
     } finally {
       setLoading(false)
@@ -750,19 +735,12 @@ export function EditAccessRulesForm({ adminId, currentRules }: EditAccessRulesFo
 
   return (
     <div className="space-y-4">
-      <AccessRulesEditor
-        rules={rules}
-        onChange={(next) => {
-          setRules(next)
-          setSaved(false)
-        }}
-      />
+      <AccessRulesEditor rules={rules} onChange={setRules} />
 
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={loading} size="sm">
           {loading ? "در حال ذخیره..." : `ذخیره (${rules.length.toLocaleString("fa-IR")} قانون)`}
         </Button>
-        {saved && <span className="text-xs text-green-600">✓ ذخیره شد</span>}
         {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
     </div>

@@ -19,9 +19,9 @@ The app is feature-complete and architecturally sound. The biggest UX leaks are 
 
 | # | Finding | Severity | Impact | Effort | Evidence |
 |---|---------|----------|--------|--------|----------|
-| 1 | **No global toast / feedback system.** Every mutation in the app relies on `router.refresh()` for silent success. Users can't tell if a save worked, a share link was copied, an SMS sent, an agent deactivated. This is the single biggest source of "did that work?" support friction. | 🔴 | ★★★★★ | M | Cross-cutting; absent in `components/files/FileForm.tsx`, `ShareLinksPanel.tsx`, `AgentForm.tsx`, every admin write |
+| 1 | ~~**No global toast / feedback system.**~~ ✅ **Resolved (Cluster C, 2026-04-28).** `sonner` + `lib/toast.ts` + RTL/dark-mode-aware `<Toaster />` mounted in root layout. Tier-1 surfaces (FileForm, ShareLinksPanel, SmsPanel, ArchiveFileButton, admin Archive/Suspend, SubscriptionManager) wired in Cluster C Phase 2. Tier-2 + Tier-3 surfaces (AgentForm, CustomerForm, ContractForm, OfficeProfileForm, UserProfileForm, TeamBranchesSection, ReferralDashboard, broadcast page, AdminSettingsForm, MidAdminForm, OfficeNotesPanel) wired in Cluster C Phase 3. | ✅ | ★★★★★ | — | — |
 | 2 | **Registration form is too long for a trial signup.** Office name, manager name, username, password, confirm-password, phone, city, plan selection on one screen. Stripe / Linear gate signup at email + password and collect the rest post-activation. | 🟠 | ★★★★★ | S | `app/(auth)/register/page.tsx` |
-| 3 | **`window.confirm()` for destructive admin actions** (archive office, suspend subscription, force-logout, deactivate user). Native browser dialog is unstyled, RTL-broken, ignores dark mode, and gives no second-step hint of consequences. | 🟠 | ★★★★ | S | `components/admin/ArchiveRestoreButtons.tsx`, `SubscriptionManager.tsx`, etc. |
+| 3 | ~~**`window.confirm()` for destructive admin actions**~~ ✅ **Resolved (Cluster D Phase 1, 2026-04-28).** Replaced all four `window.confirm()` callsites with shadcn `AlertDialog`: `ArchiveFileButton`, `SuspendReactivateButtons`, `ArchiveRestoreButtons`, `ContractSmsActions` (cancel-schedule). RTL-correct, dark-mode-aware, theme-consistent. Type-to-confirm pattern for office-deletion / force-logout-all is still backlog (Cluster D Phase 2). | ✅ | ★★★★ | — | — |
 | 4 | **File quick-create entry is invisible on mobile.** The dashed "تکمیل فایل" toggle sits below the fold on small screens, and there is no visual signal that the form is intentionally collapsed. New agents fill out only required fields and never discover photos / price / amenities. | 🟠 | ★★★★ | S | `components/files/FileForm.tsx` (collapse section header) |
 | 5 | **Hero value prop is generic.** Landing page leads with "سامانه مدیریت املاک" without naming the job-to-be-done (share listings, close deals, track agents). No differentiator vs. Divar/Sheypoor in the first 5 seconds. | 🟠 | ★★★★ | S | `app/page.tsx`, `components/landing/Hero.tsx` |
 | 6 | **Photo upload has no progress indicator.** Sharp processing is server-side and synchronous; on slow Iranian connections this is 5–20 seconds per image with no UI feedback. Users assume it froze and re-click. | 🟠 | ★★★★ | S | upload pipeline in `FileForm` photos section |
@@ -361,8 +361,9 @@ These need product input before I can recommend a direction:
 This audit is **not prescriptive**. Each finding is a starting point. Recommended next step: walk through §1 Executive Summary together, decide which top-10 items to greenlight, and start a separate plan-mode session per cluster:
 - **Cluster A** (Conversion): F-1.6, F-1.11, F-1.28 + landing dark-mode pass
 - **Cluster B** (Activation): F-2.1, F-2.2, F-3a.1 + onboarding checklist
-- **Cluster C** (Feedback): toast system rollout (§5.1)
-- **Cluster D** (Destructive trust): ConfirmDialog rollout (§5.8) + admin quick wins
+- ~~**Cluster C** (Feedback): toast system rollout (§5.1)~~ ✅ **Done 2026-04-28.** sonner + `lib/toast.ts`; ~25 mutation surfaces wired across Tier-1/2/3.
+- ~~**Cluster D Phase 1** (Destructive trust): replace `window.confirm()` with shadcn `AlertDialog`~~ ✅ **Done 2026-04-28.** Four callsites converted (ArchiveFile, Suspend/Reactivate, Archive/Restore, ContractSmsActions cancel).
+- **Cluster D Phase 2** (Destructive trust, advanced): type-to-confirm pattern for high-risk destructive actions (office archive, force-logout-all, delete-data).
 - **Cluster E** (File-form polish): F-3a.4, F-3a.6, F-3a.11, F-3a.15, F-3a.16
 
-Each cluster is 1–3 days of work. Total to clear the top-10 + cross-cuts: ~2 weeks.
+Each remaining cluster is 1–3 days of work.

@@ -4,8 +4,19 @@ import { useState, useEffect, useCallback } from "react"
 import { MessageSquare, ChevronDown, ChevronUp, Clock, Trash2, CheckCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { SmsPanel } from "@/components/shared/SmsPanel"
 import { buildRatingRequestMessage, buildRentFollowupMessage } from "@/lib/sms"
+import { toastSuccess, toastError } from "@/lib/toast"
 import { format, addMonths, subMonths } from "date-fns-jalali"
 
 interface Contact {
@@ -61,6 +72,7 @@ export function ContractSmsActions({
   const [scheduleMessage, setScheduleMessage] = useState(buildRentFollowupMessage({ officeName }))
   const [submitting, setSubmitting] = useState(false)
   const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const [cancelOpen, setCancelOpen] = useState(false)
 
   const isRental = transactionType === "LONG_TERM_RENT"
 
@@ -120,29 +132,37 @@ export function ContractSmsActions({
       if (data.success) {
         setSchedule(data.data ?? null)
         setShowScheduleForm(false)
+        toastSuccess("زمان‌بندی پیامک ذخیره شد")
       } else {
-        setScheduleError(data.error ?? "خطا در تنظیم زمان‌بندی")
+        const msg = data.error ?? "خطا در تنظیم زمان‌بندی"
+        setScheduleError(msg)
+        toastError(msg)
       }
     } catch {
       setScheduleError("خطا در ارتباط با سرور")
+      toastError("خطا در ارتباط با سرور")
     } finally {
       setSubmitting(false)
     }
   }
 
   async function handleCancelSchedule() {
-    if (!confirm("آیا مطمئن هستید که می‌خواهید زمان‌بندی را لغو کنید؟")) return
+    setCancelOpen(false)
     try {
       const res = await fetch(`/api/contracts/${contractId}/schedule-sms`, { method: "DELETE" })
       const data = await res.json() as { success: boolean; error?: string }
       if (data.success) {
         setSchedule(null)
         setShowScheduleForm(false)
+        toastSuccess("زمان‌بندی لغو شد")
       } else {
-        setScheduleError(data.error ?? "خطا در لغو زمان‌بندی")
+        const msg = data.error ?? "خطا در لغو زمان‌بندی"
+        setScheduleError(msg)
+        toastError(msg)
       }
     } catch {
       setScheduleError("خطا در ارتباط با سرور")
+      toastError("خطا در ارتباط با سرور")
     }
   }
 
@@ -253,13 +273,28 @@ export function ContractSmsActions({
                       size="sm"
                       variant="ghost"
                       className="h-7 px-2 text-destructive hover:text-destructive"
-                      onClick={handleCancelSchedule}
+                      onClick={() => setCancelOpen(true)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 </div>
               )}
+
+              <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>لغو زمان‌بندی پیامک؟</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      آیا مطمئن هستید که می‌خواهید زمان‌بندی را لغو کنید؟
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>انصراف</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleCancelSchedule}>لغو زمان‌بندی</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
               {schedule !== undefined && schedule !== null && schedule.sentAt && (
                 <div className="flex items-center gap-2 rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3">

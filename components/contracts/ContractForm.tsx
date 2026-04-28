@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { CustomerPicker } from "@/components/contracts/CustomerPicker"
+import { toastSuccess, toastError } from "@/lib/toast"
 import type { ActiveFileSummary, TransactionType, CustomerType } from "@/types"
 
 const transactionTypeLabels: Record<TransactionType, string> = {
@@ -255,9 +256,13 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
       await response.json()
 
     if (!data.success) {
-      form.setError("root", { message: data.error ?? "خطایی رخ داد" })
+      const errorMsg = data.error ?? "خطایی رخ داد"
+      form.setError("root", { message: errorMsg })
+      toastError(errorMsg)
       return
     }
+
+    toastSuccess("قرارداد ثبت شد")
 
     router.push(`/contracts/${data.data!.id}`)
     router.refresh()

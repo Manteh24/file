@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Send } from "lucide-react"
 import { IRANIAN_CITIES } from "@/lib/cities"
+import { toastSuccess, toastError } from "@/lib/toast"
 
 interface Office {
   id: string
@@ -22,8 +23,6 @@ export default function BroadcastPage() {
   const [offices, setOffices] = useState<Office[]>([])
   const [officesLoading, setOfficesLoading] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<{ recipientCount: number } | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (targetType === "ONE") {
@@ -37,8 +36,6 @@ export default function BroadcastPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
-    setResult(null)
     setLoading(true)
 
     const payload: Record<string, unknown> = {
@@ -64,14 +61,15 @@ export default function BroadcastPage() {
       })
       const json = await res.json()
       if (json.success) {
-        setResult(json.data)
+        const count = (json.data?.recipientCount ?? 0).toLocaleString("fa-IR")
+        toastSuccess(`پیام برای ${count} مدیر ارسال شد`)
         setSubject("")
         setBody("")
       } else {
-        setError(json.error ?? "خطا")
+        toastError(json.error ?? "خطا در ارسال پیام")
       }
     } catch {
-      setError("خطا در ارتباط با سرور")
+      toastError("خطا در ارتباط با سرور")
     } finally {
       setLoading(false)
     }
@@ -88,16 +86,6 @@ export default function BroadcastPage() {
           تاریخچه پیام‌ها
         </Link>
       </div>
-
-      {result && (
-        <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-400">
-          پیام برای {result.recipientCount.toLocaleString("fa-IR")} مدیر ارسال شد.
-        </div>
-      )}
-
-      {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20">{error}</p>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-5 rounded-lg border border-border p-6">
         {/* Target selector */}

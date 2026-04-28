@@ -4,6 +4,17 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Archive } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { toastSuccess, toastError } from "@/lib/toast"
 
 interface ArchiveFileButtonProps {
@@ -13,15 +24,10 @@ interface ArchiveFileButtonProps {
 export function ArchiveFileButton({ fileId }: ArchiveFileButtonProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
 
   async function handleArchive() {
-    if (!confirm("آیا از بایگانی این فایل مطمئن هستید؟ تمام لینک‌های اشتراک‌گذاری غیرفعال می‌شوند.")) {
-      return
-    }
-
     setLoading(true)
-    setError(null)
 
     try {
       const response = await fetch(`/api/files/${fileId}/status`, {
@@ -33,16 +39,14 @@ export function ArchiveFileButton({ fileId }: ArchiveFileButtonProps) {
       const result = (await response.json()) as { success: boolean; error?: string }
 
       if (!result.success) {
-        const errorMsg = result.error ?? "خطا در بایگانی فایل"
-        setError(errorMsg)
-        toastError(errorMsg)
+        toastError(result.error ?? "خطا در بایگانی فایل")
         return
       }
 
       toastSuccess("فایل بایگانی شد")
+      setOpen(false)
       router.refresh()
     } catch {
-      setError("خطا در ارتباط با سرور")
       toastError("خطا در ارتباط با سرور")
     } finally {
       setLoading(false)
@@ -50,12 +54,27 @@ export function ArchiveFileButton({ fileId }: ArchiveFileButtonProps) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <Button variant="outline" onClick={handleArchive} disabled={loading}>
-        <Archive className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
-        {loading ? "در حال بایگانی..." : "بایگانی"}
-      </Button>
-      {error && <p className="text-xs text-destructive">{error}</p>}
-    </div>
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" disabled={loading}>
+          <Archive className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
+          {loading ? "در حال بایگانی..." : "بایگانی"}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>بایگانی فایل؟</AlertDialogTitle>
+          <AlertDialogDescription>
+            آیا از بایگانی این فایل مطمئن هستید؟ تمام لینک‌های اشتراک‌گذاری غیرفعال می‌شوند.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={loading}>انصراف</AlertDialogCancel>
+          <AlertDialogAction onClick={handleArchive} disabled={loading}>
+            {loading ? "در حال بایگانی..." : "بایگانی"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
