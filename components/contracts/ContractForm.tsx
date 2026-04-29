@@ -128,6 +128,7 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
     // Cast needed: standardSchemaResolver's return type has a different third generic
     // than useForm<CreateContractInput> expects. Runtime behavior is correct.
     resolver: standardSchemaResolver(createContractSchema) as Resolver<CreateContractInput>,
+    mode: "onTouched",
     defaultValues: {
       fileId: initialFileId ?? "",
       finalPrice: initialPrice,

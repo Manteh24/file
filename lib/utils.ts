@@ -99,3 +99,24 @@ export function parseFarsiNumber(v: string): number | undefined {
   const n = parseInt(latin, 10)
   return isNaN(n) ? undefined : n
 }
+
+/**
+ * Normalizes Iranian phone numbers pasted from contact apps into canonical
+ * `0XXXXXXXXXX` form before regex validation. Does not validate length —
+ * downstream Zod regex handles that.
+ *
+ * Handles Persian and Arabic-Indic digits, spaces, dashes, dots, parens,
+ * and leading `+98` / `0098` / bare `98`.
+ */
+export function normalizePhone(input: string): string {
+  const ascii = input
+    .replace(/[۰-۹]/g, (c) => String(c.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x0660))
+  const trimmed = ascii.trim()
+  const hasPlus = trimmed.startsWith("+")
+  const digits = trimmed.replace(/[^\d]/g, "")
+  if (hasPlus && digits.startsWith("98")) return "0" + digits.slice(2)
+  if (digits.startsWith("0098")) return "0" + digits.slice(4)
+  if (digits.startsWith("98") && digits.length === 12) return "0" + digits.slice(2)
+  return digits
+}

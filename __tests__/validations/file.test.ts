@@ -45,6 +45,47 @@ describe("contactSchema", () => {
       expect(result.success).toBe(true)
     }
   })
+
+  it("normalizes a +98-prefixed phone with spaces to canonical form", () => {
+    const result = contactSchema.safeParse({
+      type: "OWNER",
+      phone: "+98 912 123 4567",
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.phone).toBe("09121234567")
+  })
+
+  it("normalizes a dash-separated phone", () => {
+    const result = contactSchema.safeParse({
+      type: "OWNER",
+      phone: "0912-123-4567",
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.phone).toBe("09121234567")
+  })
+
+  it("normalizes a parenthesized landline", () => {
+    const result = contactSchema.safeParse({
+      type: "OWNER",
+      phone: "(021) 1234-5678",
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.phone).toBe("02112345678")
+  })
+
+  it("normalizes a Persian-digit phone", () => {
+    const result = contactSchema.safeParse({
+      type: "OWNER",
+      phone: "۰۹۱۲۱۲۳۴۵۶۷",
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.phone).toBe("09121234567")
+  })
+
+  it("rejects too-short input even after normalization", () => {
+    const result = contactSchema.safeParse({ type: "OWNER", phone: "0912-123" })
+    expect(result.success).toBe(false)
+  })
 })
 
 // ─── createFileSchema ──────────────────────────────────────────────────────────

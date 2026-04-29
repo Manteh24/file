@@ -1,16 +1,23 @@
 import { z } from "zod"
+import { normalizePhone } from "@/lib/utils"
 
 // ─── Contact Schema ────────────────────────────────────────────────────────────
 
 export const contactSchema = z.object({
   type: z.enum(["OWNER", "TENANT", "LANDLORD", "BUYER"]),
   name: z.string().max(100).optional().or(z.literal("")),
-  // Iranian phone: 11-digit starting with 0 (mobile: 09..., landline: 021..., etc.)
-  // or +98 followed by 10 digits
+  // Iranian phone: 11-digit starting with 0 (mobile: 09..., landline: 021..., etc.).
+  // Pasted formats with +98, spaces, dashes, parens, or Persian digits are normalized
+  // by `normalizePhone` before the regex check.
   phone: z
     .string()
     .min(1, "شماره تماس الزامی است")
-    .regex(/^(0[0-9]{10}|\+98[0-9]{10})$/, "شماره تماس باید ۱۱ رقم باشد (مثال: ۰۹۱۲۱۲۳۴۵۶۷ یا ۰۲۱۱۲۳۴۵۶۷۸۹)"),
+    .transform(normalizePhone)
+    .pipe(
+      z
+        .string()
+        .regex(/^0[0-9]{10}$/, "شماره تماس باید ۱۱ رقم باشد (مثال: ۰۹۱۲۱۲۳۴۵۶۷ یا ۰۲۱۱۲۳۴۵۶۷۸۹)")
+    ),
   notes: z.string().max(500).optional().or(z.literal("")),
 })
 

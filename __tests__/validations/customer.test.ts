@@ -192,6 +192,30 @@ describe("createCustomerSchema — phone edge cases", () => {
   it("rejects empty phone", () => {
     expect(createCustomerSchema.safeParse({ ...base, phone: "" }).success).toBe(false)
   })
+
+  it("normalizes +98 with spaces to canonical form", () => {
+    const result = createCustomerSchema.safeParse({ ...base, phone: "+98 912 123 4567" })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.phone).toBe("09121234567")
+  })
+
+  it("normalizes a dash-separated phone", () => {
+    const result = createCustomerSchema.safeParse({ ...base, phone: "0912-123-4567" })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.phone).toBe("09121234567")
+  })
+
+  it("normalizes a parenthesized landline", () => {
+    const result = createCustomerSchema.safeParse({ ...base, phone: "(021) 1234-5678" })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.phone).toBe("02112345678")
+  })
+
+  it("normalizes Persian digits", () => {
+    const result = createCustomerSchema.safeParse({ ...base, phone: "۰۹۱۲۱۲۳۴۵۶۷" })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.phone).toBe("09121234567")
+  })
 })
 
 // ─── updateCustomerSchema — valid partial updates ─────────────────────────────

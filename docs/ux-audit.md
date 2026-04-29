@@ -188,22 +188,22 @@ A new manager registers, lands on `/dashboard`, and has 60 seconds before they d
 | F-3a.1 | ~~**Quick-create toggle invisible on mobile**~~ ✅ **Resolved (Cluster B).** Mobile-sticky pill + chip-row hint. | ✅ | ★★★★ | — | — |
 | F-3a.2 | "ایجاد سریع فایل" submit label changes — good intent, but jarring when label flickers on toggle | 🔵 | ★ | XS | same |
 | F-3a.3 | LocationPicker has no loading skeleton | 🟡 | ★★ | XS | `LocationPicker.tsx` |
-| F-3a.4 | Phone input rejects `+98` / spaces on paste | 🟠 | ★★★★ | XS | contacts section |
-| F-3a.5 | Required-contact validation only fires on submit | 🟡 | ★★★ | XS | RHF mode |
+| F-3a.4 | ~~Phone input rejects `+98` / spaces on paste~~ ✅ **Resolved (Cluster E, 2026-04-29).** `normalizePhone()` in `lib/utils.ts` strips spaces/dashes/parens and converts `+98`/`0098`/Persian-Arabic digits → canonical `0XXXXXXXXXX`. Wired via Zod `.transform().pipe()` in `lib/validations/file.ts` and `lib/validations/customer.ts` — server reuses the same schemas, both layers covered. | ✅ | ★★★★ | — | — |
+| F-3a.5 | ~~Required-contact validation only fires on submit~~ ✅ **Resolved (Cluster E, 2026-04-29).** Added `mode: "onTouched"` to FileForm, CustomerForm, and ContractForm `useForm` configs — required-field errors fire on first blur. | ✅ | ★★★ | — | — |
 | F-3a.6 | ~~**Photo upload no progress indicator**~~ ✅ **Resolved (Cluster B).** XHR per-image progress + processing spinner. | ✅ | ★★★★ | — | — |
 | F-3a.7 | Photo reorder: drag handle absent on mobile | 🟡 | ★★ | S | photos section |
 | F-3a.8 | AI description overwrites without warning | 🟡 | ★★★ | XS | AI tone selector |
 | F-3a.9 | AI description: tone difference not previewed | 🔵 | ★★ | S | AI section |
 | F-3a.10 | No autosave indicator other than offline draft | 🟡 | ★★ | S | form |
-| F-3a.11 | Contacts: required `mainContact` rule hidden until submit | 🟠 | ★★★ | XS | validation |
+| F-3a.11 | ~~Contacts: required `mainContact` rule hidden until submit~~ ✅ **Resolved (Cluster E, 2026-04-29).** Audit's `mainContact` field never existed; the actual rule is `contacts.min(1)`. Surfaced via static helper line "حداقل یک مخاطب با شماره تماس الزامی است" beside the section header in FileForm; combined with `onTouched` mode (F-3a.5) the per-field phone error also appears on first blur. | ✅ | ★★★ | — | — |
 | F-3a.12 | File detail page info-dense, hard to scan | 🟡 | ★★★ | M | `app/(dashboard)/files/[id]/page.tsx` |
 | F-3a.13 | ShareLinksPanel: "کپی شد" feedback is a transient toast inside the panel — good — but creating a link is silent | 🟠 | ★★★ | S | `ShareLinksPanel.tsx` |
 | F-3a.14 | Share link agent attribution dropdown unclear when manager assigns vs agent assigns | 🟡 | ★★ | S | same |
-| F-3a.15 | **SMS send: no preview of final message** | 🟠 | ★★★★ | S | share SMS flow |
-| F-3a.16 | SMS send: silent success | 🟠 | ★★★★ | S | same |
+| F-3a.15 | ~~**SMS send: no preview of final message**~~ ✅ **Resolved (Cluster E, 2026-04-29).** Single-send via `SmsPanel` already shows the fully-interpolated message in the editable textarea (backend builders in `lib/sms.ts` pre-render). Bulk-send (`CustomerSmsForm`) now opens an AlertDialog with recipient count, sample customer (name + phone), and the final message in a bordered box before firing. | ✅ | ★★★★ | — | — |
+| F-3a.16 | ~~SMS send: silent success~~ ✅ **Resolved (Cluster E, 2026-04-29).** `SmsPanel` and `ContractSmsActions` were wired in Cluster C; `CustomerSmsForm` was the last silent surface and now uses `toastSuccess` / `toastError` (replacing the inline `<p>` result). | ✅ | ★★★★ | — | — |
 | F-3a.17 | Contract finalization form long; section anchors missing | 🟡 | ★★ | M | `ContractForm.tsx` |
 | F-3a.18 | Commission split: no live preview of split amounts as percentages change | 🟡 | ★★★ | S | same |
-| F-3a.19 | CustomerForm phone validation duplicates file-form bug | 🟠 | ★★★ | XS | `CustomerForm.tsx` |
+| F-3a.19 | ~~CustomerForm phone validation duplicates file-form bug~~ ✅ **Resolved (Cluster E, 2026-04-29).** Same Zod transform applied in `lib/validations/customer.ts` (regex tightened to `/^0[0-9]{10}$/` after normalization, matching file rule). | ✅ | ★★★ | — | — |
 | F-3a.20 | CRM list: no phone search | 🟠 | ★★★★ | S | `/crm` page |
 | F-3a.21 | CRM detail: contact history scrollable but not filterable | 🟡 | ★★ | S | crm detail |
 | F-3a.22 | ContractCustomer link UX: picker dropdown loads all customers without search | 🟡 | ★★★ | S | ContractForm picker |
@@ -225,8 +225,8 @@ A new manager registers, lands on `/dashboard`, and has 60 seconds before they d
 | F-3b.8 | Reports page: 3 tabs but no period state preserved across tab switches | 🟡 | ★★★ | S | `app/(dashboard)/reports/page.tsx` |
 | F-3b.9 | Reports charts: tooltip text overflows in RTL | 🟡 | ★★ | S | charts |
 | F-3b.10 | Reports: no export to CSV/PDF (managers want this for tax) | 🟠 | ★★★★ | M | reports |
-| F-3b.11 | MessagesPage: bulk SMS gating UI doesn't show projected SMS count | 🟠 | ★★★ | S | `app/(dashboard)/messages/page.tsx` |
-| F-3b.12 | MessagesPage: no preview of merged template | 🟠 | ★★★★ | S | same |
+| F-3b.11 | ~~MessagesPage: bulk SMS gating UI doesn't show projected SMS count~~ ✅ **Resolved (Cluster E, 2026-04-29).** New `GET /api/messages/sms-customers/preview` returns `{ count, sample }`; `CustomerSmsForm` debounces a 300 ms fetch on filter change and shows "ارسال به ۴۷ مشتری" beside the submit button. | ✅ | ★★★ | — | — |
+| F-3b.12 | ~~MessagesPage: no preview of merged template~~ ✅ **Resolved (Cluster E, 2026-04-29).** Confirm AlertDialog before send shows count + sample customer + the final message body. (Bulk endpoint sends raw text per CLAUDE.md §12 — no per-customer interpolation; treating textarea-as-final as the "merged template".) | ✅ | ★★★★ | — | — |
 | F-3b.13 | MessagesPage: history pagination missing | 🟡 | ★★ | S | same |
 | F-3b.14 | Calendar: chevrons backward in RTL (next month / prev month flipped) | 🟠 | ★★★ | XS | `CalendarPageClient.tsx` |
 | F-3b.15 | Calendar event create: time picker uses LTR | 🟡 | ★★ | S | calendar event form |
@@ -364,6 +364,6 @@ This audit is **not prescriptive**. Each finding is a starting point. Recommende
 - ~~**Cluster C** (Feedback): toast system rollout (§5.1)~~ ✅ **Done 2026-04-28.** sonner + `lib/toast.ts`; ~25 mutation surfaces wired across Tier-1/2/3.
 - ~~**Cluster D Phase 1** (Destructive trust): replace `window.confirm()` with shadcn `AlertDialog`~~ ✅ **Done 2026-04-28.** Four callsites converted (ArchiveFile, Suspend/Reactivate, Archive/Restore, ContractSmsActions cancel).
 - **Cluster D Phase 2** (Destructive trust, advanced): type-to-confirm pattern for high-risk destructive actions (office archive, force-logout-all, delete-data).
-- **Cluster E** (File-form polish): F-3a.4 (phone tolerance), F-3a.11 (mainContact validation), F-3a.15 (SMS preview), F-3a.16 (SMS silent success). [F-3a.6 photo progress moved to Cluster B-done.]
+- ~~**Cluster E** (File-form polish + bulk-SMS): F-3a.4, F-3a.5, F-3a.11, F-3a.15, F-3a.16, F-3a.19, F-3b.11, F-3b.12~~ ✅ **Done 2026-04-29.** Added `normalizePhone()` util + Zod transforms across file/customer schemas; switched FileForm/CustomerForm/ContractForm to `mode: "onTouched"`; added `GET /api/messages/sms-customers/preview` + recipient-count chip + AlertDialog confirm step + toasts on `CustomerSmsForm`. Audit's `mainContact` field (F-3a.11) was a phantom finding — surfaced the actual `contacts.min(1)` rule via a static helper line.
 
 Each remaining cluster is 1–3 days of work.

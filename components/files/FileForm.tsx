@@ -134,6 +134,7 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
     // Cast needed: standardSchemaResolver's return type has a different third generic
     // than useForm<CreateFileInput> expects. Runtime behavior is correct.
     resolver: standardSchemaResolver(createFileSchema) as Resolver<CreateFileInput>,
+    mode: "onTouched",
     defaultValues: {
       transactionType: (initialData?.transactionType as CreateFileInput["transactionType"]) ?? "SALE",
       propertyType: initialData?.propertyType ?? undefined,
@@ -763,9 +764,14 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
         {/* Contacts */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">
-              مخاطبین <span className="text-destructive">*</span>
-            </h2>
+            <div className="space-y-0.5">
+              <h2 className="text-base font-semibold">
+                مخاطبین <span className="text-destructive">*</span>
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                حداقل یک مخاطب با شماره تماس الزامی است
+              </p>
+            </div>
             <Button
               type="button"
               variant="outline"

@@ -33,6 +33,7 @@ export function CustomerForm({ initialData, customerId }: CustomerFormProps) {
     // Cast needed: standardSchemaResolver's return type has a different third generic
     // than useForm<CreateCustomerInput> expects. Runtime behavior is correct.
     resolver: standardSchemaResolver(createCustomerSchema) as Resolver<CreateCustomerInput>,
+    mode: "onTouched",
     defaultValues: {
       name: initialData?.name ?? "",
       phone: initialData?.phone ?? "",

@@ -554,8 +554,8 @@ Moved to **[`docs/file-reference.md`](docs/file-reference.md)** — look there f
 Full feature build log + status history moved to **[`docs/changelog.md`](docs/changelog.md)** — read it before starting new work to know what's done, what's pending tests, and what's "Up next."
 
 ### Quick pointers
-- **Last completed:** UX Cluster B — Activation polish (see changelog for details).
-- **Tests:** 747 passing, 0 failing (50 test files). Typecheck: 24 pre-existing errors (all in `__tests__/` or `FileMapView.tsx`).
+- **Last completed:** UX Cluster E — File-form polish + bulk-SMS preview/feedback (2026-04-29). Phone normalization (Zod transform), `onTouched` validation across FileForm/CustomerForm/ContractForm, recipient-count + confirm dialog + toasts on `CustomerSmsForm`, new `GET /api/messages/sms-customers/preview` endpoint. See `docs/ux-audit.md` for full resolution notes.
+- **Tests:** 772 passing, 0 failing (51 test files). Typecheck: 24 pre-existing errors (all in `__tests__/` or `FileMapView.tsx`).
 - **Dev note:** If `/admin/dashboard` returns 404 after network interruptions during dev, delete `.next/` and restart — Next.js route cache can corrupt mid-write.
 
 ### Reference Docs

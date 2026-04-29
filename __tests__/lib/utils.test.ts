@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { formatToman, formatJalali } from "@/lib/utils"
+import { formatToman, formatJalali, normalizePhone } from "@/lib/utils"
 
 // toLocaleString("fa-IR") uses the Arabic Thousands Separator ٬ (U+066C),
 // not the ASCII comma. These strings are exact copies of actual runtime output.
@@ -42,5 +42,51 @@ describe("formatJalali", () => {
     const date = new Date("2026-02-19T00:00:00.000Z")
     // Only the year
     expect(formatJalali(date, "yyyy")).toBe("۱۴۰۴")
+  })
+})
+
+describe("normalizePhone", () => {
+  it("returns an already-canonical mobile number unchanged", () => {
+    expect(normalizePhone("09121234567")).toBe("09121234567")
+  })
+
+  it("strips spaces from a +98 mobile number", () => {
+    expect(normalizePhone("+98 912 123 4567")).toBe("09121234567")
+  })
+
+  it("strips dashes from a 0-prefixed mobile number", () => {
+    expect(normalizePhone("0912-123-4567")).toBe("09121234567")
+  })
+
+  it("strips parentheses and spaces from a landline", () => {
+    expect(normalizePhone("(021) 1234-5678")).toBe("02112345678")
+  })
+
+  it("converts +98 prefix without separators", () => {
+    expect(normalizePhone("+989121234567")).toBe("09121234567")
+  })
+
+  it("converts 0098 prefix to 0", () => {
+    expect(normalizePhone("00989121234567")).toBe("09121234567")
+  })
+
+  it("converts a bare 98 prefix when total length is 12", () => {
+    expect(normalizePhone("989121234567")).toBe("09121234567")
+  })
+
+  it("converts Persian digits to ASCII", () => {
+    expect(normalizePhone("۰۹۱۲۱۲۳۴۵۶۷")).toBe("09121234567")
+  })
+
+  it("converts Arabic-Indic digits to ASCII", () => {
+    expect(normalizePhone("٠٩١٢١٢٣٤٥٦٧")).toBe("09121234567")
+  })
+
+  it("returns digit-only remainder for unparseable input (let regex catch it)", () => {
+    expect(normalizePhone("abc123xyz")).toBe("123")
+  })
+
+  it("handles surrounding whitespace", () => {
+    expect(normalizePhone("  09121234567  ")).toBe("09121234567")
   })
 })

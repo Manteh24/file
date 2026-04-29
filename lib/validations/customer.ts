@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { normalizePhone } from "@/lib/utils"
 
 // ─── Customer Type Enum ─────────────────────────────────────────────────────────
 
@@ -8,11 +9,14 @@ export const CustomerTypeEnum = z.enum(["BUYER", "RENTER", "SELLER", "LANDLORD"]
 
 export const createCustomerSchema = z.object({
   name: z.string().min(1, "نام الزامی است").max(100),
-  // Iranian phone: 11 digits starting with 09, or 10-digit landline, or +98 prefix
+  // Iranian phone: 11-digit starting with 0 (mobile: 09..., landline: 021..., etc.).
+  // Pasted formats with +98, spaces, dashes, parens, or Persian digits are normalized
+  // by `normalizePhone` before the regex check.
   phone: z
     .string()
     .min(1, "شماره تماس الزامی است")
-    .regex(/^(\+98|0)?[0-9]{9,11}$/, "شماره تماس معتبر نیست"),
+    .transform(normalizePhone)
+    .pipe(z.string().regex(/^0[0-9]{10}$/, "شماره تماس معتبر نیست")),
   email: z.string().email("ایمیل معتبر نیست").optional().or(z.literal("")),
   // Multi-type: at least one type required
   types: z.array(CustomerTypeEnum).min(1, "حداقل یک نوع مشتری انتخاب کنید"),
