@@ -725,12 +725,12 @@ export function HeroSection() {
               className="font-semibold text-[var(--color-text-primary)] leading-[1.15] mb-6"
               style={{ fontSize: "clamp(2rem, 5vw, 3.25rem)" }}
             >
-              تمام فایل‌های ملکی‌تان
+              وقتی مشتری زنگ زد،
               <br />
-              <span className="text-[var(--color-teal-500)]">یک‌جا</span>
+              <span className="text-[var(--color-teal-500)]">یک لینک حرفه‌ای</span> برایش بفرست
             </h1>
             <p className="text-[var(--color-text-secondary)] text-lg mb-2 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              از ثبت فایل تا اشتراک‌گذاری با مشتری، از CRM تا گزارش مالی — همه در یک پلتفرم
+              فایل را ثبت کن، عکس و توضیحات را آماده کن، با یک تپ بفرست — همه‌اش از همان گوشی.
             </p>
             <p className="text-[var(--color-text-tertiary)] text-sm mb-10">
               ۱ ماه آزمایشی کاملاً رایگان

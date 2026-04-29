@@ -153,7 +153,7 @@ html.dark {
   /* Text */
   --color-text-primary:   #F5F5F4;
   --color-text-secondary: #A8A29E;
-  --color-text-tertiary:  #78716C;
+  --color-text-tertiary:  #94908A; /* AA-safe on surface-1 (~4.9:1); was #78716C (4.2:1) */
   --color-text-inverse:   #FFFFFF;
 
   /* Teal — same hues, same contrast on dark surfaces */

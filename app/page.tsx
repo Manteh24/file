@@ -5,6 +5,7 @@ import { HeroSection } from "@/components/marketing/HeroSection"
 import { FeaturesSection } from "@/components/marketing/FeaturesSection"
 import { PricingSection } from "@/components/marketing/PricingSection"
 import { TrustStrip } from "@/components/marketing/TrustStrip"
+import { LivePulseStrip } from "@/components/marketing/LivePulseStrip"
 import { FaqSection } from "@/components/marketing/FaqSection"
 import { LandingFooter } from "@/components/marketing/LandingFooter"
 
@@ -21,6 +22,7 @@ export default async function HomePage() {
         <HeroSection />
         <FeaturesSection />
         <PricingSection />
+        <LivePulseStrip />
         <TrustStrip />
         <FaqSection />
       </main>
