@@ -15,29 +15,87 @@ interface SessionUser {
 
 export type AdminCapability = "manageSubscriptions" | "manageUsers" | "securityActions" | "broadcast"
 
+export const ADMIN_CAPABILITIES: AdminCapability[] = [
+  "manageSubscriptions",
+  "manageUsers",
+  "securityActions",
+  "broadcast",
+]
+
+export const ADMIN_CAPABILITY_LABELS: Record<AdminCapability, string> = {
+  manageSubscriptions: "مدیریت اشتراک (تمدید آزمایشی، تغییر پلن، تعلیق)",
+  manageUsers:         "مدیریت کاربران (فعال/غیرفعال‌سازی)",
+  securityActions:     "اقدامات امنیتی (خروج اجباری، بازنشانی رمز)",
+  broadcast:           "ارسال پیام همگانی",
+}
+
 const TIER_CAPABILITIES: Record<AdminTier, Record<AdminCapability, boolean>> = {
   SUPPORT:     { manageSubscriptions: false, manageUsers: true,  securityActions: true,  broadcast: true  },
   FINANCE:     { manageSubscriptions: true,  manageUsers: false, securityActions: false, broadcast: true  },
   FULL_ACCESS: { manageSubscriptions: true,  manageUsers: true,  securityActions: true,  broadcast: true  },
 }
 
-/**
- * Returns whether the given admin user has permission to perform a capability.
- * SUPER_ADMIN always returns true. MID_ADMIN with no tier = read-only (false).
- */
 export const TIER_LABELS: Record<string, string> = {
   SUPPORT: "پشتیبانی",
   FINANCE: "مالی",
   FULL_ACCESS: "دسترسی کامل",
 }
 
+/**
+ * Per-capability overrides on top of the tier preset. `true` grants the
+ * capability; `false` revokes it; absent = inherit from tier. Stored on
+ * User.permissionsOverride (shared with office-member overrides; admins have
+ * officeId=null so the keysets do not collide with office capabilities in
+ * practice — but the same column is used).
+ */
+export type AdminPermissionsOverride = Partial<Record<AdminCapability, boolean>>
+
+/**
+ * Returns the effective set of capabilities for an admin user, after merging
+ * tier defaults with any per-capability overrides.
+ */
+export function getAdminCapabilities(
+  user: {
+    role: Role
+    adminTier?: AdminTier | null
+    permissionsOverride?: AdminPermissionsOverride | unknown | null
+  }
+): Record<AdminCapability, boolean> {
+  if (user.role === "SUPER_ADMIN") {
+    return { manageSubscriptions: true, manageUsers: true, securityActions: true, broadcast: true }
+  }
+
+  const base: Record<AdminCapability, boolean> = user.adminTier
+    ? { ...TIER_CAPABILITIES[user.adminTier] }
+    : { manageSubscriptions: false, manageUsers: false, securityActions: false, broadcast: false }
+
+  // Treat the JSON column as untyped — only honour known capability keys with boolean values.
+  const override = (user.permissionsOverride ?? null) as Record<string, unknown> | null
+  if (override && typeof override === "object") {
+    for (const cap of ADMIN_CAPABILITIES) {
+      const v = override[cap]
+      if (typeof v === "boolean") base[cap] = v
+    }
+  }
+  return base
+}
+
+/**
+ * Returns whether the given admin user has permission to perform a capability.
+ * SUPER_ADMIN always returns true. MID_ADMIN with no tier = read-only by
+ * default — but per-capability overrides on `permissionsOverride` win over the
+ * tier preset, so a tier-less mid-admin can still be granted a single ability.
+ */
 export function canAdminDo(
-  user: { role: Role; adminTier?: AdminTier | null },
+  user: {
+    role: Role
+    adminTier?: AdminTier | null
+    permissionsOverride?: AdminPermissionsOverride | unknown | null
+  },
   capability: AdminCapability
 ): boolean {
   if (user.role === "SUPER_ADMIN") return true
-  if (!user.adminTier) return false
-  return TIER_CAPABILITIES[user.adminTier][capability] ?? false
+  return getAdminCapabilities(user)[capability] ?? false
 }
 
 // Estimated cost per AI description call in Toman (approximate AvalAI pricing).

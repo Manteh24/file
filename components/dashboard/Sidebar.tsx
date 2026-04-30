@@ -124,15 +124,30 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
 
 /* ─── Notification count hook ────────────────────────────────────────────── */
 
-function useUnreadCount() {
-  const [count, setCount] = useState(0)
+// Notification types that should surface on the "ارتقا اشتراک" popover link.
+// Matched as prefixes so PLAN_UPGRADED_PRO/TEAM and TRIAL_REMINDER_14/23 all hit.
+const BILLING_NOTIFICATION_TYPES = ["PLAN_UPGRADED", "TRIAL_REMINDER", "SUBSCRIPTION"]
+
+interface UnreadCounts {
+  total: number
+  billing: number
+  refresh: () => void
+  clearBilling: () => Promise<void>
+}
+
+function useUnreadCount(): UnreadCounts {
+  const [counts, setCounts] = useState({ total: 0, billing: 0 })
 
   const fetchCount = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications")
       const body = await res.json()
       if (body.success && Array.isArray(body.data)) {
-        setCount((body.data as { read: boolean }[]).filter((n) => !n.read).length)
+        const unread = (body.data as { read: boolean; type: string }[]).filter((n) => !n.read)
+        const billing = unread.filter((n) =>
+          BILLING_NOTIFICATION_TYPES.some((t) => n.type.startsWith(t))
+        ).length
+        setCounts({ total: unread.length, billing })
       }
     } catch {
       // Silently ignore
@@ -145,7 +160,21 @@ function useUnreadCount() {
     return () => clearInterval(timer)
   }, [fetchCount])
 
-  return count
+  const clearBilling = useCallback(async () => {
+    try {
+      await fetch("/api/notifications/read-all", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ types: BILLING_NOTIFICATION_TYPES }),
+      })
+    } finally {
+      // Optimistic + re-sync from server
+      setCounts((prev) => ({ total: Math.max(0, prev.total - prev.billing), billing: 0 }))
+      fetchCount()
+    }
+  }, [fetchCount])
+
+  return { total: counts.total, billing: counts.billing, refresh: fetchCount, clearBilling }
 }
 
 /* ─── Props ──────────────────────────────────────────────────────────────── */
@@ -190,7 +219,7 @@ export function Sidebar({
   const [showWelcome, setShowWelcome] = useState(false)
   const mobilePopoverRef = useRef<HTMLDivElement>(null)
   const desktopPopoverRef = useRef<HTMLDivElement>(null)
-  const unreadCount = useUnreadCount()
+  const { total: unreadCount, billing: billingCount, clearBilling } = useUnreadCount()
 
   const plan = subscription?.plan ?? "FREE"
   const isTrial = subscription?.isTrial ?? false
@@ -308,7 +337,7 @@ export function Sidebar({
             >
               <img
                 src="/logo-black.png"
-                alt="املاکبین"
+                alt="املاک‌بین"
                 className="h-7 w-7 rounded-lg shrink-0 dark:invert transition-opacity duration-150 group-hover:opacity-0"
               />
               <ChevronLeft
@@ -319,7 +348,7 @@ export function Sidebar({
             <>
               <div className="flex items-center gap-2.5">
                 <img src="/logo-black.png" alt="" className="h-7 w-7 rounded-lg shrink-0 dark:invert" />
-                <span className="text-lg font-semibold tracking-tight">املاکبین</span>
+                <span className="text-lg font-semibold tracking-tight">املاک‌بین</span>
               </div>
               <button
                 onClick={onToggleCollapsed}
@@ -414,14 +443,25 @@ export function Sidebar({
 
                 {/* Actions */}
                 <div className="py-1">
-                  {canManageOffice && (plan === "FREE" || isTrial) && (
+                  {canManageOffice && (plan === "FREE" || isTrial || billingCount > 0) && (
                     <Link
                       href="/settings#billing"
-                      onClick={handlePopoverNav}
+                      onClick={() => {
+                        if (billingCount > 0) void clearBilling()
+                        handlePopoverNav()
+                      }}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-teal-600)] dark:text-[var(--color-teal-400)] hover:bg-[var(--color-surface-2)] dark:hover:bg-[var(--color-surface-3)] transition-colors"
                     >
                       <CreditCard className="h-4 w-4 shrink-0" />
-                      ارتقا اشتراک
+                      <span className="flex-1">ارتقا اشتراک</span>
+                      {billingCount > 0 && (
+                        <span
+                          className="shrink-0 flex items-center justify-center rounded-full text-white text-[10px] font-bold px-1.5 h-4"
+                          style={{ background: "#EF4444", minWidth: 16 }}
+                        >
+                          {billingCount > 9 ? "۹+" : billingCount.toLocaleString("fa-IR")}
+                        </span>
+                      )}
                     </Link>
                   )}
                   {canManageOffice && (
@@ -557,7 +597,7 @@ export function Sidebar({
                           : "var(--color-plan-team-text)",
                     }}
                   >
-                    {isTrial ? "آزمایشی" : (PLAN_LABELS[plan] ?? plan)}
+                    {PLAN_LABELS[plan] ?? plan}
                   </span>
                 </p>
               </div>

@@ -116,47 +116,8 @@ export function PricingCards() {
         </div>
       </div>
 
-      {/* Plan cards — Team | Pro (highlighted) | Free — RTL so visually: Free | Pro | Team */}
+      {/* Plan cards — Free | Pro (highlighted) | Team — RTL so visually: Team | Pro | Free */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        {/* TEAM */}
-        <PlanCard
-          name="تیم"
-          price={PLAN_PRICES_TOMAN.TEAM[billingCycle]}
-          billingCycle={billingCycle}
-          tagline="کمتر از حقوق یک منشی"
-          features={[
-            "مشاور نامحدود",
-            "فایل نامحدود",
-            "توضیحات هوشمند نامحدود",
-            "پیامک و نقشه",
-            "گزارش‌های مالی",
-            "آنالیز پیشرفته",
-            "چند شعبه (به زودی)",
-          ]}
-          cta="انتخاب پلن تیم"
-          ctaHref={`/register?plan=team`}
-        />
-
-        {/* PRO — highlighted */}
-        <PlanCard
-          name="حرفه‌ای"
-          price={PLAN_PRICES_TOMAN.PRO[billingCycle]}
-          billingCycle={billingCycle}
-          tagline="کمتر از کارمزد یک اجاره‌نامه در ماه"
-          features={[
-            "تا ۷ مشاور",
-            "فایل نامحدود",
-            "توضیحات هوشمند نامحدود",
-            "پیامک و نقشه",
-            "گزارش‌های مالی",
-            "پشتیبانی اولویت‌دار",
-          ]}
-          cta="انتخاب پلن حرفه‌ای"
-          ctaHref={`/register?plan=pro&intent=pro_trial`}
-          highlighted
-          badge="محبوب‌ترین"
-        />
-
         {/* FREE */}
         <PlanCard
           name="رایگان"
@@ -171,6 +132,45 @@ export function PricingCards() {
           ]}
           cta="شروع رایگان"
           ctaHref="/register?plan=free"
+        />
+
+        {/* PRO — highlighted */}
+        <PlanCard
+          name="حرفه‌ای"
+          price={PLAN_PRICES_TOMAN.PRO[billingCycle]}
+          billingCycle={billingCycle}
+          tagline={null}
+          features={[
+            "تا ۷ مشاور",
+            "فایل نامحدود",
+            "توضیحات هوشمند نامحدود",
+            "پیامک و نقشه",
+            "گزارش‌های مالی",
+            "پشتیبانی اولویت‌دار",
+          ]}
+          cta="انتخاب پلن حرفه‌ای"
+          ctaHref={`/register?plan=pro&intent=pro_trial`}
+          highlighted
+          badge="محبوب‌ترین"
+        />
+
+        {/* TEAM */}
+        <PlanCard
+          name="تیم"
+          price={PLAN_PRICES_TOMAN.TEAM[billingCycle]}
+          billingCycle={billingCycle}
+          tagline={null}
+          features={[
+            "مشاور نامحدود",
+            "فایل نامحدود",
+            "توضیحات هوشمند نامحدود",
+            "پیامک و نقشه",
+            "گزارش‌های مالی",
+            "آنالیز پیشرفته",
+            "چند شعبه (به زودی)",
+          ]}
+          cta="انتخاب پلن تیم"
+          ctaHref={`/register?plan=team`}
         />
       </div>
 

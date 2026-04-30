@@ -223,7 +223,7 @@ export function UserProfileForm({ initialData }: UserProfileFormProps) {
               placeholder="۰۹۱۲۳۴۵۶۷۸۹"
               value={phone}
               onChange={(e) => { setPhone(e.target.value); setSaved(false) }}
-              className="h-11 max-w-xs"
+              className="h-11"
             />
           </div>
         </section>

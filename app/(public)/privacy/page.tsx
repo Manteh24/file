@@ -1,7 +1,7 @@
 import { LandingNav } from "@/components/marketing/LandingNav"
 import { LandingFooter } from "@/components/marketing/LandingFooter"
 
-export const metadata = { title: "حریم خصوصی — املاکبین" }
+export const metadata = { title: "حریم خصوصی — املاک‌بین" }
 
 const sections = [
   {

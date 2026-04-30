@@ -64,7 +64,7 @@ export function LandingFooter() {
           {/* Brand column */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
-              <img src="/logo-white.png" alt="املاکبین" className="h-9 w-9 rounded-xl" />
+              <img src="/logo-white.png" alt="املاک‌بین" className="h-9 w-9 rounded-xl" />
               <span className="text-lg font-semibold text-white">املاک‌بین</span>
             </div>
             <p className="text-sm text-stone-400 leading-relaxed mb-6">

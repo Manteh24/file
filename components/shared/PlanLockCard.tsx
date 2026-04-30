@@ -1,7 +1,8 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Lock, Check, type LucideIcon } from "lucide-react"
+import { Lock, Check, X, type LucideIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PLAN_LABELS, PLAN_PRICES_TOMAN } from "@/lib/plan-constants"
 import { formatToman } from "@/lib/utils"
@@ -14,6 +15,10 @@ interface PlanLockCardProps {
   bullets: string[]
   icon?: LucideIcon
   className?: string
+  /** When true with a dismissKey, the card shows an X and persists the
+      dismissal in localStorage so it never re-appears for this user. */
+  dismissible?: boolean
+  dismissKey?: string
 }
 
 export function PlanLockCard({
@@ -22,14 +27,43 @@ export function PlanLockCard({
   bullets,
   icon: Icon = Lock,
   className,
+  dismissible,
+  dismissKey,
 }: PlanLockCardProps) {
   const planLabel = PLAN_LABELS[requiredPlan]
   const monthlyPrice = formatToman(PLAN_PRICES_TOMAN[requiredPlan].MONTHLY)
 
+  // Persist dismissal forever per user (localStorage). Hydration-safe: start
+  // visible, hide on mount if the key is set so SSR + first paint match.
+  const storageKey = dismissible && dismissKey ? `plan-lock-dismissed:${dismissKey}` : null
+  const [dismissed, setDismissed] = useState(false)
+  useEffect(() => {
+    if (storageKey && localStorage.getItem(storageKey) === "1") {
+      setDismissed(true)
+    }
+  }, [storageKey])
+
+  if (dismissed) return null
+
+  function handleDismiss() {
+    if (storageKey) localStorage.setItem(storageKey, "1")
+    setDismissed(true)
+  }
+
   return (
     <div
-      className={`rounded-xl border bg-card p-6 text-center ${className ?? ""}`}
+      className={`relative rounded-xl border bg-card p-6 text-center ${className ?? ""}`}
     >
+      {dismissible && dismissKey && (
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label="بستن"
+          className="absolute top-2 end-2 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <X className="size-4" />
+        </button>
+      )}
       <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-[var(--color-teal-500)]/10 text-[var(--color-teal-600)] dark:bg-[var(--color-teal-500)]/15 dark:text-[var(--color-teal-400)]">
         <Icon className="size-5" />
       </div>

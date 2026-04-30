@@ -46,7 +46,7 @@ function getPageTitle(pathname: string, routeTitles: Record<string, string>): st
   const match = Object.keys(routeTitles).find(
     (route) => route !== "/dashboard" && pathname.startsWith(route)
   )
-  return match ? routeTitles[match] : "املاکبین"
+  return match ? routeTitles[match] : "املاک‌بین"
 }
 
 /* ─── Mini Calendar Popover ─────────────────────────────────────────────────── */

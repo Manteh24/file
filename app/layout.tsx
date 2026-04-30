@@ -51,7 +51,7 @@ const iranYekan = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "املاکبین",
+  title: "املاک‌بین",
   description: "سیستم مدیریت دفتر املاک",
   manifest: "/manifest.json",
   icons: {

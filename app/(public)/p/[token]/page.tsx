@@ -379,7 +379,7 @@ export default async function SharePage({ params }: SharePageProps) {
           </a>
         </p>
       ) : (
-        <p className="text-center text-xs text-muted-foreground pb-4">ارائه‌شده توسط سامانه املاکبین</p>
+        <p className="text-center text-xs text-muted-foreground pb-4">ارائه‌شده توسط سامانه املاک‌بین</p>
       )}
     </div>
   )

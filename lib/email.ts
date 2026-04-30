@@ -45,7 +45,7 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailResult> {
       auth: { user, pass },
     } as Record<string, unknown>)
 
-    const from = process.env.SMTP_FROM ?? "املاکبین <noreply@amlakbin.ir>"
+    const from = process.env.SMTP_FROM ?? "املاک‌بین <noreply@amlakbin.ir>"
     await transport.sendMail({
       from,
       to: Array.isArray(payload.to) ? payload.to.join(", ") : payload.to,
@@ -81,7 +81,7 @@ export function buildBroadcastEmail(subject: string, body: string): string {
 
 export function buildWelcomeEmail(officeName: string): string {
   return buildBroadcastEmail(
-    `خوش آمدید به املاکبین، ${officeName}`,
+    `خوش آمدید به املاک‌بین، ${officeName}`,
     "ثبت‌نام شما در سیستم مدیریت دفتر املاک موفقیت‌آمیز بود.\n\nاکنون می‌توانید فایل‌های ملکی خود را مدیریت کنید."
   )
 }

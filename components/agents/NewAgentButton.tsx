@@ -4,6 +4,12 @@ import { useState } from "react"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { UpgradePrompt } from "@/components/shared/UpgradePrompt"
 import { usePlanStatus } from "@/hooks/usePlanStatus"
 
@@ -50,11 +56,16 @@ export function NewAgentButton({ multiBranchEnabled }: NewAgentButtonProps = {})
         )}
       </Button>
 
-      {showLimit && (
-        <div className="mt-2">
+      {/* Limit-reached UpgradePrompt — modal so it never overflows the header
+          (PageHeader's actions slot is a tight flex row with no width budget). */}
+      <Dialog open={showLimit} onOpenChange={setShowLimit}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>سقف پلن فعلی پر شده است</DialogTitle>
+          </DialogHeader>
           <UpgradePrompt reason="users" role="MANAGER" />
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

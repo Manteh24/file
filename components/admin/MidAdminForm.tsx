@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { IRANIAN_CITIES } from "@/lib/cities"
 import { toastSuccess, toastError } from "@/lib/toast"
+import { AdminPermissionMatrix } from "./AdminPermissionMatrix"
+import type { AdminPermissionsOverride } from "@/lib/admin"
 import type {
   AdminAccessRuleInput,
   AdminAccessRuleSummary,
@@ -214,6 +216,7 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
     password: "",
   })
   const [tier, setTier] = useState<AdminTier | "">("")
+  const [permissionsOverride, setPermissionsOverride] = useState<AdminPermissionsOverride>({})
   const [selectedOfficeIds, setSelectedOfficeIds] = useState<string[]>([])
   const [rules, setRules] = useState<AdminAccessRuleInput[]>([])
 
@@ -239,7 +242,11 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
       const res = await fetch("/api/admin/mid-admins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...fields, ...(tier ? { tier } : {}) }),
+        body: JSON.stringify({
+          ...fields,
+          ...(tier ? { tier } : {}),
+          ...(Object.keys(permissionsOverride).length > 0 ? { permissionsOverride } : {}),
+        }),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -274,6 +281,7 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
       setOpen(false)
       setFields({ username: "", displayName: "", email: "", password: "" })
       setTier("")
+      setPermissionsOverride({})
       setSelectedOfficeIds([])
       setRules([])
     } finally {
@@ -386,6 +394,13 @@ export function CreateMidAdminForm({ offices }: CreateMidAdminFormProps) {
               </label>
             </div>
           </div>
+
+          {/* Per-capability permission matrix — overrides the tier preset above */}
+          <AdminPermissionMatrix
+            tier={tier === "" ? null : tier}
+            override={permissionsOverride}
+            onChange={setPermissionsOverride}
+          />
 
           {/* Office assignment multi-select */}
           <div>
@@ -530,11 +545,15 @@ export function EditProfileForm({ adminId, currentDisplayName, currentEmail }: E
 interface EditTierFormProps {
   adminId: string
   currentTier: AdminTier | null
+  currentPermissionsOverride?: AdminPermissionsOverride | null
 }
 
-export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
+export function EditTierForm({ adminId, currentTier, currentPermissionsOverride }: EditTierFormProps) {
   const router = useRouter()
   const [tier, setTier] = useState<AdminTier | "">(currentTier ?? "")
+  const [permissionsOverride, setPermissionsOverride] = useState<AdminPermissionsOverride>(
+    currentPermissionsOverride ?? {}
+  )
   const [loading, setLoading] = useState(false)
 
   async function handleSave() {
@@ -543,7 +562,10 @@ export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
       const res = await fetch(`/api/admin/mid-admins/${adminId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: tier || null }),
+        body: JSON.stringify({
+          tier: tier || null,
+          permissionsOverride,
+        }),
       })
       if (!res.ok) {
         const json = await res.json()
@@ -604,6 +626,12 @@ export function EditTierForm({ adminId, currentTier }: EditTierFormProps) {
           </div>
         </label>
       </div>
+
+      <AdminPermissionMatrix
+        tier={tier === "" ? null : tier}
+        override={permissionsOverride}
+        onChange={setPermissionsOverride}
+      />
 
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={loading} size="sm">

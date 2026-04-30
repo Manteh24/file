@@ -331,6 +331,9 @@ html.dark {
   border: 1px solid var(--color-overlay-border);
   border-radius: 16px;
   box-shadow: var(--shadow-xl);
+  /* Pin foreground to our token so third-party CSS (e.g. Neshan SDK)
+     declaring :root variables can't bleed into popover text colors. */
+  color: var(--color-text-primary);
 }
 
 @supports (backdrop-filter: blur(1px)) {

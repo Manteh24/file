@@ -310,6 +310,8 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
               "ماتریس کامل دسترسی برای هر کاربر",
               "محدود کردن دسترسی به فایل‌ها و گزارش‌ها",
             ]}
+            dismissible
+            dismissKey="agent-form-team-upsell"
           />
         )}
 

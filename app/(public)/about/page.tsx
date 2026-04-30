@@ -2,7 +2,7 @@ import { LandingNav } from "@/components/marketing/LandingNav"
 import { LandingFooter } from "@/components/marketing/LandingFooter"
 import { Users, Target, Heart, Zap } from "lucide-react"
 
-export const metadata = { title: "درباره ما — املاکبین" }
+export const metadata = { title: "درباره ما — املاک‌بین" }
 
 const values = [
   {
@@ -47,7 +47,7 @@ export default function AboutPage() {
               <span className="text-[var(--color-teal-500)]">ساخته برای ایران</span> هستیم
             </h1>
             <p className="text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto">
-              املاکبین با یک هدف ساده شروع شد: ایجاد ابزاری که مشاوران و مدیران دفاتر بتوانند
+              املاک‌بین با یک هدف ساده شروع شد: ایجاد ابزاری که مشاوران و مدیران دفاتر بتوانند
               فایل‌های ملکی، مشتریان، و قراردادهایشان را بدون دردسر مدیریت کنند — به‌زبان فارسی
               و با درک عمیق از بازار ایران.
             </p>

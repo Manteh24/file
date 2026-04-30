@@ -10,6 +10,17 @@ export const updateSubscriptionSchema = z.object({
 
 export const ADMIN_TIERS = ["SUPPORT", "FINANCE", "FULL_ACCESS"] as const
 
+// Per-capability overrides for mid-admins. Stored on User.permissionsOverride
+// (Json) — only the four admin capability keys are honoured.
+export const adminPermissionsOverrideSchema = z
+  .object({
+    manageSubscriptions: z.boolean().optional(),
+    manageUsers: z.boolean().optional(),
+    securityActions: z.boolean().optional(),
+    broadcast: z.boolean().optional(),
+  })
+  .strict()
+
 export const createMidAdminSchema = z.object({
   username: z
     .string()
@@ -20,10 +31,12 @@ export const createMidAdminSchema = z.object({
   email: z.string().email("ایمیل نامعتبر").optional().or(z.literal("")),
   password: z.string().min(8, "رمز عبور حداقل ۸ کاراکتر"),
   tier: z.enum(ADMIN_TIERS).optional(),
+  permissionsOverride: adminPermissionsOverrideSchema.optional(),
 })
 
 export const updateMidAdminTierSchema = z.object({
-  tier: z.enum(ADMIN_TIERS).nullable(),
+  tier: z.enum(ADMIN_TIERS).nullable().optional(),
+  permissionsOverride: adminPermissionsOverrideSchema.optional(),
 })
 
 export const updateMidAdminProfileSchema = z.object({

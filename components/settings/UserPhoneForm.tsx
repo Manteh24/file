@@ -72,7 +72,7 @@ export function UserPhoneForm({ initialPhone }: UserPhoneFormProps) {
           placeholder="۰۹۱۲۳۴۵۶۷۸۹"
           value={phone}
           onChange={(e) => { setPhone(e.target.value); setSaved(false) }}
-          className="max-w-xs"
+          className="h-11"
         />
       </div>
 

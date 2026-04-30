@@ -563,7 +563,7 @@ function InteractiveDemo() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-subtle)]">
           <div className="flex items-center gap-2">
             <img src="/logo-black.png" alt="" className="h-5 w-5 rounded-md" style={{ filter: "invert(1)" }} />
-            <span className="text-xs font-semibold text-[var(--color-text-primary)]">املاکبین</span>
+            <span className="text-xs font-semibold text-[var(--color-text-primary)]">املاک‌بین</span>
           </div>
           {/* Active feature label with animated dot */}
           <div

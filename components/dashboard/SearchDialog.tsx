@@ -189,6 +189,24 @@ export function SearchDialog({ open, onClose, sessionUser, multiBranchEnabled }:
       ]
     : []
 
+  // Quick links shown when there's no query
+  const quickLinks = buildQuickLinks(!!multiBranchEnabled).filter(
+    (l) => !l.requiresCapability || canOfficeDo(sessionUser, l.requiresCapability)
+  )
+
+  // Single navigable list — quick links when no query, results when query is set.
+  // Used by both keyboard navigation and the rendered list so they stay in sync.
+  const navigableItems: ResultItem[] = query
+    ? flatResults
+    : quickLinks.map((l) => ({
+        id: l.href,
+        href: l.href,
+        primary: l.label,
+        secondary: "",
+        icon: l.icon,
+        category: "دسترسی سریع",
+      }))
+
   // Keyboard navigation
   useEffect(() => {
     if (!open) return
@@ -198,16 +216,16 @@ export function SearchDialog({ open, onClose, sessionUser, multiBranchEnabled }:
         onClose()
         return
       }
-      if (flatResults.length === 0) return
+      if (navigableItems.length === 0) return
 
       if (e.key === "ArrowDown") {
         e.preventDefault()
-        setHighlightedIdx((i) => Math.min(i + 1, flatResults.length - 1))
+        setHighlightedIdx((i) => Math.min(i + 1, navigableItems.length - 1))
       } else if (e.key === "ArrowUp") {
         e.preventDefault()
         setHighlightedIdx((i) => Math.max(i - 1, 0))
       } else if (e.key === "Enter") {
-        const item = flatResults[highlightedIdx]
+        const item = navigableItems[highlightedIdx]
         if (item) {
           router.push(item.href)
           onClose()
@@ -217,7 +235,12 @@ export function SearchDialog({ open, onClose, sessionUser, multiBranchEnabled }:
 
     window.addEventListener("keydown", handleKey)
     return () => window.removeEventListener("keydown", handleKey)
-  }, [open, flatResults, highlightedIdx, onClose, router])
+  }, [open, navigableItems, highlightedIdx, onClose, router])
+
+  // Reset highlight when the navigable list changes (query toggle, results loaded)
+  useEffect(() => {
+    setHighlightedIdx(0)
+  }, [query, results])
 
   if (!open) return null
 
@@ -231,10 +254,6 @@ export function SearchDialog({ open, onClose, sessionUser, multiBranchEnabled }:
     }
     categories[categories.length - 1].items.push(item)
   }
-
-  const quickLinks = buildQuickLinks(!!multiBranchEnabled).filter(
-    (l) => !l.requiresCapability || canOfficeDo(sessionUser, l.requiresCapability)
-  )
 
   let globalIdx = 0
 
@@ -308,19 +327,26 @@ export function SearchDialog({ open, onClose, sessionUser, multiBranchEnabled }:
               >
                 دسترسی سریع
               </p>
-              {quickLinks.map((link) => (
-                <button
-                  key={link.href}
-                  onClick={() => {
-                    router.push(link.href)
-                    onClose()
-                  }}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-2)] transition-colors"
-                >
-                  <link.icon className="h-4 w-4 shrink-0 text-[var(--color-text-tertiary)]" />
-                  {link.label}
-                </button>
-              ))}
+              {quickLinks.map((link, idx) => {
+                const isHighlighted = idx === highlightedIdx
+                return (
+                  <button
+                    key={link.href}
+                    onClick={() => {
+                      router.push(link.href)
+                      onClose()
+                    }}
+                    onMouseEnter={() => setHighlightedIdx(idx)}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors"
+                    style={{
+                      background: isHighlighted ? "var(--color-surface-2)" : undefined,
+                    }}
+                  >
+                    <link.icon className="h-4 w-4 shrink-0 text-[var(--color-text-tertiary)]" />
+                    {link.label}
+                  </button>
+                )
+              })}
             </div>
           )}
 

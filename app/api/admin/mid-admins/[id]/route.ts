@@ -24,18 +24,30 @@ export async function PATCH(
   })
   if (!target) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 })
 
-  // Tier update
-  if ("tier" in body) {
+  // Tier update (and optional per-capability override matrix)
+  if ("tier" in body || "permissionsOverride" in body) {
     const parsed = updateMidAdminTierSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: parsed.error.issues[0]?.message }, { status: 400 })
     }
 
-    await db.user.update({ where: { id }, data: { adminTier: parsed.data.tier } })
+    const updateData: Record<string, unknown> = {}
+    if ("tier" in body) updateData.adminTier = parsed.data.tier
+    if ("permissionsOverride" in body) {
+      // Empty object means "clear all overrides".
+      const override = parsed.data.permissionsOverride
+      updateData.permissionsOverride =
+        override && Object.keys(override).length > 0 ? override : null
+    }
+
+    await db.user.update({ where: { id }, data: updateData })
 
     await logAdminAction(session.user.id, "UPDATE_MID_ADMIN_TIER", "MID_ADMIN", id, {
       previousTier: target.adminTier,
       newTier: parsed.data.tier,
+      overrideKeys: parsed.data.permissionsOverride
+        ? Object.keys(parsed.data.permissionsOverride)
+        : undefined,
     })
 
     return NextResponse.json({ success: true })

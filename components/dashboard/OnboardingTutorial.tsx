@@ -13,7 +13,7 @@ type Step = {
   description: string
 }
 
-type StepFlavor = "all" | "mobile-only"
+type StepFlavor = "all" | "mobile-only" | "desktop-only"
 
 interface DefinedStep extends Step {
   flavor?: StepFlavor
@@ -22,7 +22,7 @@ interface DefinedStep extends Step {
 const ALL_STEPS: DefinedStep[] = [
   {
     id: "welcome",
-    title: "به املاکبین خوش آمدید 👋",
+    title: "به املاک‌بین خوش آمدید 👋",
     description:
       "چند ثانیه وقت بگذارید تا با امکانات اصلی آشنا شوید. می‌توانید هر زمان این راهنما را رد کنید.",
   },
@@ -53,13 +53,16 @@ const ALL_STEPS: DefinedStep[] = [
     title: "تقویم و یادآوری‌ها",
     description:
       "جلسات بازدید، یادآور تماس و رویدادهای دفتر را اضافه کنید. در زمان مقرر نوتیفیکیشن با صدای هشدار دریافت می‌کنید — حتی وقتی برنامه باز نیست.",
+    // `nav-calendar` only exists on the desktop sidebar; on mobile, calendar
+    // is reached via the «بیشتر» sheet which the next step covers.
+    flavor: "desktop-only",
   },
   {
     id: "more",
     targetId: "nav-more",
     title: "امکانات بیشتر",
     description:
-      "از منوی «بیشتر» به مشاوران، قراردادها، گزارش‌ها، مرکز پیام، تنظیمات، ارتقا پلن و پشتیبانی دسترسی دارید.",
+      "از منوی «بیشتر» به تقویم، مشاوران، قراردادها، گزارش‌ها، مرکز پیام، تنظیمات، ارتقا پلن و پشتیبانی دسترسی دارید.",
     // The "بیشتر" tab lives in MobileBottomNav (lg:hidden), so on desktop the
     // sidebar already lists those items directly — this step is redundant.
     flavor: "mobile-only",
@@ -89,7 +92,7 @@ export function OnboardingTutorial() {
   const isDesktop = useIsDesktop()
   const STEPS: Step[] = isDesktop
     ? ALL_STEPS.filter((s) => s.flavor !== "mobile-only")
-    : ALL_STEPS
+    : ALL_STEPS.filter((s) => s.flavor !== "desktop-only")
 
   const [stepIdx, setStepIdx] = useState(0)
   // null = full-overlay (centered steps); rect = spotlight position

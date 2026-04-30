@@ -49,18 +49,19 @@ export function FarsiTimePicker({ value, onChange, id, className }: FarsiTimePic
   const minutes = Array.from({ length: 60 }, (_, i) => i)
 
   const selectClass =
-    "rounded-lg border px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-teal-500)] appearance-none cursor-pointer text-center font-medium"
+    "rounded-md px-1 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-teal-500)] appearance-none cursor-pointer text-center font-medium min-w-0"
   const selectStyle: React.CSSProperties = {
     background: "var(--color-surface-1)",
-    borderColor: "var(--color-border-subtle)",
     color: "var(--color-text-primary)",
+    border: "none",
+    boxShadow: "none",
   }
 
   return (
     <div
       id={id}
       dir="ltr"
-      className={`flex items-center gap-1.5 w-full rounded-lg border px-2 py-1 ${className ?? ""}`}
+      className={`flex items-center gap-1 w-full min-w-0 rounded-lg border px-2 py-1 overflow-hidden ${className ?? ""}`}
       style={{
         background: "var(--color-surface-1)",
         borderColor: "var(--color-border-subtle)",
@@ -68,8 +69,8 @@ export function FarsiTimePicker({ value, onChange, id, className }: FarsiTimePic
     >
       <svg
         viewBox="0 0 24 24"
-        width="18"
-        height="18"
+        width="16"
+        height="16"
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
@@ -85,7 +86,7 @@ export function FarsiTimePicker({ value, onChange, id, className }: FarsiTimePic
       <select
         aria-label="ساعت"
         className={selectClass}
-        style={{ ...selectStyle, border: "none", boxShadow: "none" }}
+        style={selectStyle}
         value={hasValue ? hourUi : ""}
         onChange={(e) => update({ h12: parseInt(e.target.value, 10) })}
       >
@@ -101,14 +102,14 @@ export function FarsiTimePicker({ value, onChange, id, className }: FarsiTimePic
         ))}
       </select>
 
-      <span style={{ color: "var(--color-text-secondary)" }} className="font-bold select-none">
+      <span style={{ color: "var(--color-text-secondary)" }} className="font-bold select-none shrink-0">
         :
       </span>
 
       <select
         aria-label="دقیقه"
         className={selectClass}
-        style={{ ...selectStyle, border: "none", boxShadow: "none" }}
+        style={selectStyle}
         value={hasValue ? minuteUi : ""}
         onChange={(e) => update({ m: parseInt(e.target.value, 10) })}
       >
@@ -127,7 +128,7 @@ export function FarsiTimePicker({ value, onChange, id, className }: FarsiTimePic
       <select
         aria-label="قبل/بعد از ظهر"
         className={selectClass}
-        style={{ ...selectStyle, border: "none", boxShadow: "none", marginInlineStart: "auto" }}
+        style={selectStyle}
         value={periodUi}
         onChange={(e) => update({ period: e.target.value as "am" | "pm" })}
       >

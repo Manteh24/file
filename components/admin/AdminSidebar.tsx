@@ -81,7 +81,7 @@ export function AdminSidebar({ role, isOpen, onClose }: AdminSidebarProps) {
           <div className="flex items-center gap-2.5">
             <img src="/logo.png" alt="" className="h-8 w-8 rounded-lg shrink-0" />
             <div className="flex flex-col leading-tight">
-              <span className="text-base font-bold tracking-tight">املاکبین</span>
+              <span className="text-base font-bold tracking-tight">املاک‌بین</span>
               <span className="text-[10px] text-muted-foreground">پنل مدیریت</span>
             </div>
           </div>

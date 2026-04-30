@@ -58,24 +58,24 @@ export function DashboardShell({
   // Desktop sidebar collapse — start false on server, sync from localStorage after hydration
   const [collapsed, setCollapsed] = useState(false)
 
-  // Dark mode — start false on server, sync from localStorage after hydration
-  const [isDark, setIsDark] = useState(false)
+  // Dark mode — initialize from the DOM class set by the inline pre-hydration
+  // script in app/layout.tsx so the first render matches what's already painted.
+  // Removing the previous extra effect that toggled the class to `isDark=false`
+  // on mount fixes a brief flash to light at the end of the loading screen.
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("dark")
+  )
 
   // Loading screen — show until fonts/session are ready
   const [showLoader, setShowLoader] = useState(true)
 
   useEffect(() => {
-    // Sync persisted preferences after hydration (safe to read localStorage here)
+    // Sync sidebar collapse preference after hydration. Dark mode is already
+    // applied by the inline script + initial state above — touching the class
+    // here would round-trip through `false` and flash light momentarily.
     setCollapsed(localStorage.getItem("sidebarCollapsed") === "1")
-    const dark = localStorage.getItem("dark") === "1"
-    setIsDark(dark)
-    document.documentElement.classList.toggle("dark", dark)
   }, [])
-
-  useEffect(() => {
-    // Keep dark class in sync when toggled during the session
-    document.documentElement.classList.toggle("dark", isDark)
-  }, [isDark])
 
   useEffect(() => {
     // Hide loading screen once the shell has mounted (session is resolved

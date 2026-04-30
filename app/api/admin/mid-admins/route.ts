@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: parsed.error.issues[0]?.message }, { status: 400 })
   }
 
-  const { username, displayName, email, password, tier } = parsed.data
+  const { username, displayName, email, password, tier, permissionsOverride } = parsed.data
 
   // Check username uniqueness
   const existing = await db.user.findFirst({
@@ -70,6 +70,9 @@ export async function POST(request: Request) {
       role: "MID_ADMIN",
       adminTier: tier ?? null,
       officeId: null,
+      ...(permissionsOverride && Object.keys(permissionsOverride).length > 0
+        ? { permissionsOverride }
+        : {}),
     },
     select: { id: true, username: true },
   })

@@ -9,10 +9,10 @@ export default function AuthLayout({
         <div className="text-center mb-8">
           <img
             src="/logo-black.png"
-            alt="املاکبین"
+            alt="املاک‌بین"
             className="mx-auto mb-3 h-16 w-16 rounded-2xl dark:invert"
           />
-          <h1 className="text-3xl font-semibold text-primary">املاکبین</h1>
+          <h1 className="text-3xl font-semibold text-primary">املاک‌بین</h1>
           <p className="text-sm text-muted-foreground mt-1">
             سیستم مدیریت دفتر املاک
           </p>

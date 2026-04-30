@@ -38,7 +38,7 @@ export function buildRentFollowupMessage(vars: RentFollowupVars): string {
 }
 
 export function buildPasswordResetMessage(otp: string): string {
-  return `کد بازنشانی رمز عبور شما در سامانه املاکبین:\n\n${otp}\n\nاین کد ۵ دقیقه اعتبار دارد و یک‌بار مصرف است.`
+  return `کد بازنشانی رمز عبور شما در سامانه املاک‌بین:\n\n${otp}\n\nاین کد ۵ دقیقه اعتبار دارد و یک‌بار مصرف است.`
 }
 
 // ─── KaveNegar API Call ───────────────────────────────────────────────────────

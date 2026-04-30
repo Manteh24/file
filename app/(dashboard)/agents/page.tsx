@@ -116,9 +116,9 @@ export default async function AgentsPage({ searchParams }: AgentsPageProps) {
           actionHref="/agents/new"
         />
       ) : showGroupedLayout ? (
-        <GroupedRows rows={rows} />
+        <GroupedRows rows={rows} multiBranchEnabled={multiBranchEnabled} />
       ) : (
-        <FlatGrid rows={rows} />
+        <FlatGrid rows={rows} multiBranchEnabled={multiBranchEnabled} />
       )}
     </div>
   )
@@ -129,17 +129,17 @@ type AgentRowWithBranch = AgentSummary & {
   isManager?: boolean
 }
 
-function FlatGrid({ rows }: { rows: AgentRowWithBranch[] }) {
+function FlatGrid({ rows, multiBranchEnabled }: { rows: AgentRowWithBranch[]; multiBranchEnabled: boolean }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {rows.map((agent) => (
-        <AgentRow key={agent.id} agent={agent} />
+        <AgentRow key={agent.id} agent={agent} multiBranchEnabled={multiBranchEnabled} />
       ))}
     </div>
   )
 }
 
-function GroupedRows({ rows }: { rows: AgentRowWithBranch[] }) {
+function GroupedRows({ rows, multiBranchEnabled }: { rows: AgentRowWithBranch[]; multiBranchEnabled: boolean }) {
   // Bucket: HQ first → other branches alphabetical → "بدون شعبه" last.
   const groups = new Map<
     string,
@@ -181,7 +181,7 @@ function GroupedRows({ rows }: { rows: AgentRowWithBranch[] }) {
           </header>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {group.members.map((agent) => (
-              <AgentRow key={agent.id} agent={agent} />
+              <AgentRow key={agent.id} agent={agent} multiBranchEnabled={multiBranchEnabled} />
             ))}
           </div>
         </section>
@@ -190,13 +190,13 @@ function GroupedRows({ rows }: { rows: AgentRowWithBranch[] }) {
   )
 }
 
-function AgentRow({ agent }: { agent: AgentRowWithBranch }) {
+function AgentRow({ agent, multiBranchEnabled }: { agent: AgentRowWithBranch; multiBranchEnabled: boolean }) {
   return (
     <div className="relative">
       {agent.isManager && (
         <div className="absolute top-2 start-2 z-10">
           <Badge variant="secondary" className="text-xs">
-            مدیر دفتر
+            {multiBranchEnabled ? "مدیر کل" : "مدیر دفتر"}
           </Badge>
         </div>
       )}
