@@ -5,7 +5,7 @@ import {
   ADMIN_CAPABILITY_LABELS,
   type AdminCapability,
   type AdminPermissionsOverride,
-} from "@/lib/admin"
+} from "@/lib/admin-client"
 import type { AdminTier } from "@/types"
 
 // Tier presets duplicated client-side (the source of truth lives in lib/admin.ts;

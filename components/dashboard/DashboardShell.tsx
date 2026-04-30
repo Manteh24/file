@@ -58,23 +58,20 @@ export function DashboardShell({
   // Desktop sidebar collapse — start false on server, sync from localStorage after hydration
   const [collapsed, setCollapsed] = useState(false)
 
-  // Dark mode — initialize from the DOM class set by the inline pre-hydration
-  // script in app/layout.tsx so the first render matches what's already painted.
-  // Removing the previous extra effect that toggled the class to `isDark=false`
-  // on mount fixes a brief flash to light at the end of the loading screen.
-  const [isDark, setIsDark] = useState(() =>
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark")
-  )
+  // Dark mode — must initialize to a server-stable value (false) to avoid a
+  // hydration mismatch on the Topbar Sun/Moon icon. The inline pre-hydration
+  // script in app/layout.tsx already painted the page with the correct theme
+  // class on <html>; we just sync this state from the DOM after mount so the
+  // icon catches up. The brief icon flicker is hidden behind AppLoadingScreen.
+  const [isDark, setIsDark] = useState(false)
 
   // Loading screen — show until fonts/session are ready
   const [showLoader, setShowLoader] = useState(true)
 
   useEffect(() => {
-    // Sync sidebar collapse preference after hydration. Dark mode is already
-    // applied by the inline script + initial state above — touching the class
-    // here would round-trip through `false` and flash light momentarily.
+    // Sync UI preferences from the DOM/localStorage after hydration.
     setCollapsed(localStorage.getItem("sidebarCollapsed") === "1")
+    setIsDark(document.documentElement.classList.contains("dark"))
   }, [])
 
   useEffect(() => {

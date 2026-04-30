@@ -4,6 +4,12 @@ import { db } from "@/lib/db"
 import { PLAN_PRICES_TOMAN } from "@/lib/payment"
 import { findActiveReferredOffices } from "@/lib/referral"
 import type { AdminTier, Role } from "@/types"
+import {
+  ADMIN_CAPABILITIES,
+  ADMIN_CAPABILITY_LABELS,
+  type AdminCapability,
+  type AdminPermissionsOverride,
+} from "@/lib/admin-client"
 
 interface SessionUser {
   id: string
@@ -12,22 +18,12 @@ interface SessionUser {
 }
 
 // ─── Tier Permissions ──────────────────────────────────────────────────────────
-
-export type AdminCapability = "manageSubscriptions" | "manageUsers" | "securityActions" | "broadcast"
-
-export const ADMIN_CAPABILITIES: AdminCapability[] = [
-  "manageSubscriptions",
-  "manageUsers",
-  "securityActions",
-  "broadcast",
-]
-
-export const ADMIN_CAPABILITY_LABELS: Record<AdminCapability, string> = {
-  manageSubscriptions: "مدیریت اشتراک (تمدید آزمایشی، تغییر پلن، تعلیق)",
-  manageUsers:         "مدیریت کاربران (فعال/غیرفعال‌سازی)",
-  securityActions:     "اقدامات امنیتی (خروج اجباری، بازنشانی رمز)",
-  broadcast:           "ارسال پیام همگانی",
+// Constants re-exported from lib/admin-client (client-safe split).
+export {
+  ADMIN_CAPABILITIES,
+  ADMIN_CAPABILITY_LABELS,
 }
+export type { AdminCapability, AdminPermissionsOverride }
 
 const TIER_CAPABILITIES: Record<AdminTier, Record<AdminCapability, boolean>> = {
   SUPPORT:     { manageSubscriptions: false, manageUsers: true,  securityActions: true,  broadcast: true  },
@@ -42,17 +38,13 @@ export const TIER_LABELS: Record<string, string> = {
 }
 
 /**
- * Per-capability overrides on top of the tier preset. `true` grants the
- * capability; `false` revokes it; absent = inherit from tier. Stored on
- * User.permissionsOverride (shared with office-member overrides; admins have
- * officeId=null so the keysets do not collide with office capabilities in
- * practice — but the same column is used).
- */
-export type AdminPermissionsOverride = Partial<Record<AdminCapability, boolean>>
-
-/**
  * Returns the effective set of capabilities for an admin user, after merging
  * tier defaults with any per-capability overrides.
+ *
+ * Note: `AdminPermissionsOverride` lives in lib/admin-client (client-safe).
+ * Stored on User.permissionsOverride (shared with office-member overrides;
+ * admins have officeId=null so the keysets do not collide with office
+ * capabilities in practice — but the same column is used).
  */
 export function getAdminCapabilities(
   user: {

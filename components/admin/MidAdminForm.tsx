@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { IRANIAN_CITIES } from "@/lib/cities"
 import { toastSuccess, toastError } from "@/lib/toast"
 import { AdminPermissionMatrix } from "./AdminPermissionMatrix"
-import type { AdminPermissionsOverride } from "@/lib/admin"
+import type { AdminPermissionsOverride } from "@/lib/admin-client"
 import type {
   AdminAccessRuleInput,
   AdminAccessRuleSummary,
