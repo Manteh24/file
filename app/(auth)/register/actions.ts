@@ -1,12 +1,18 @@
 "use server"
 
 import bcrypt from "bcryptjs"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { registerSchema } from "@/lib/validations/auth"
 import { getDefaultReferralCommission } from "@/lib/platform-settings"
 import { generateReferralCode } from "@/lib/referral"
 import type { ApiResponse } from "@/types"
+
+// Short-lived cookie carrying a post-signup intent (e.g. auto-activate PRO trial)
+// across the redirect → /login → /dashboard chain. Read & cleared on dashboard render.
+const INTENT_COOKIE = "pending_intent"
+const INTENT_TTL_SECONDS = 60 * 60 // 1 hour
 
 /**
  * Registration Server Action.
@@ -23,7 +29,8 @@ import type { ApiResponse } from "@/types"
  * never returns — do not wrap redirect() in try/catch.
  */
 export async function registerAction(
-  formData: unknown
+  formData: unknown,
+  intent?: string
 ): Promise<ApiResponse<never>> {
   // 1. Validate all fields with Zod
   const parsed = registerSchema.safeParse(formData)
@@ -119,7 +126,19 @@ export async function registerAction(
     return { success: false, error: "خطا در ثبت‌نام. لطفاً دوباره تلاش کنید." }
   }
 
-  // 6. Redirect to login — redirect() throws internally (NEXT_REDIRECT error)
+  // 6. If a recognized intent was supplied (currently only "pro_trial"), persist it
+  // in a short-lived httpOnly cookie so the dashboard can act on it after login.
+  if (intent === "pro_trial") {
+    const cookieStore = await cookies()
+    cookieStore.set(INTENT_COOKIE, intent, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: INTENT_TTL_SECONDS,
+    })
+  }
+
+  // 7. Redirect to login — redirect() throws internally (NEXT_REDIRECT error)
   // so it must be called outside of try/catch
   redirect("/login")
 }

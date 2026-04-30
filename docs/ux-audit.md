@@ -20,12 +20,12 @@ The app is feature-complete and architecturally sound. The biggest UX leaks are 
 | # | Finding | Severity | Impact | Effort | Evidence |
 |---|---------|----------|--------|--------|----------|
 | 1 | ~~**No global toast / feedback system.**~~ ✅ **Resolved (Cluster C, 2026-04-28).** `sonner` + `lib/toast.ts` + RTL/dark-mode-aware `<Toaster />` mounted in root layout. Tier-1 surfaces (FileForm, ShareLinksPanel, SmsPanel, ArchiveFileButton, admin Archive/Suspend, SubscriptionManager) wired in Cluster C Phase 2. Tier-2 + Tier-3 surfaces (AgentForm, CustomerForm, ContractForm, OfficeProfileForm, UserProfileForm, TeamBranchesSection, ReferralDashboard, broadcast page, AdminSettingsForm, MidAdminForm, OfficeNotesPanel) wired in Cluster C Phase 3. | ✅ | ★★★★★ | — | — |
-| 2 | **Registration form is too long for a trial signup.** Office name, manager name, username, password, confirm-password, phone, city, plan selection on one screen. Stripe / Linear gate signup at email + password and collect the rest post-activation. | 🟠 | ★★★★★ | S | `app/(auth)/register/page.tsx` |
+| 2 | ~~**Registration form is too long for a trial signup.**~~ ✅ **Resolved (Cluster A, 2026-04-29).** `RegisterForm.tsx` split into 2 steps: Step 1 (`displayName`, `email`, `password`, `confirmPassword`) + Step 2 (office name, city, phone, optional referral). Single RHF instance, `form.trigger([...STEP_1_FIELDS])` gates step 2, "بازگشت" preserves state. `registerAction` always creates `plan: "FREE"` — no plan radio shown at signup. Dead `?plan=PRO` URL param removed from AuthWidget. | ✅ | ★★★★★ | — | — |
 | 3 | ~~**`window.confirm()` for destructive admin actions**~~ ✅ **Resolved (Cluster D Phase 1, 2026-04-28).** Replaced all four `window.confirm()` callsites with shadcn `AlertDialog`: `ArchiveFileButton`, `SuspendReactivateButtons`, `ArchiveRestoreButtons`, `ContractSmsActions` (cancel-schedule). RTL-correct, dark-mode-aware, theme-consistent. Type-to-confirm pattern for office-deletion / force-logout-all is still backlog (Cluster D Phase 2). | ✅ | ★★★★ | — | — |
 | 4 | ~~**File quick-create entry is invisible on mobile.**~~ ✅ **Resolved (Cluster B, 2026-04-28).** Pill wrapper goes sticky on mobile (`sticky bottom-[calc(4rem+env(safe-area-inset-bottom))]`) above the `MobileBottomNav` while collapsed; chip-row hint "عکس · قیمت · امکانات · توضیحات" added underneath. Desktop unchanged. | ✅ | ★★★★ | — | — |
-| 5 | **Hero value prop is generic.** Landing page leads with "سامانه مدیریت املاک" without naming the job-to-be-done (share listings, close deals, track agents). No differentiator vs. Divar/Sheypoor in the first 5 seconds. | 🟠 | ★★★★ | S | `app/page.tsx`, `components/landing/Hero.tsx` |
+| 5 | ~~**Hero value prop is generic.**~~ ✅ **Resolved (Cluster A, 2026-04-29).** `HeroSection.tsx` headline reframed to JTBD outcome ("وقتی مشتری زنگ زد، یک لینک حرفه‌ای برایش بفرست") with action-anchored subtitle. `LivePulseStrip` + dark-mode AA contrast (`--color-text-tertiary` → `#94908A`, ~4.9:1) + mobile-sticky bottom CTA shipped in the same cluster. | ✅ | ★★★★ | — | — |
 | 6 | ~~**Photo upload has no progress indicator.**~~ ✅ **Resolved (Cluster B, 2026-04-28).** `PhotoGallery.tsx` migrated `fetch` → `XMLHttpRequest`; per-image placeholder with 0–100% bar during the network upload phase, then `Loader2` spinner + "در حال پردازش..." during the server-side Sharp window we cannot observe. Errors now toast via `lib/toast.ts` instead of the silent inline pill. | ✅ | ★★★★ | — | — |
-| 7 | **Plan-tier walls feel punitive, not aspirational.** TEAM-only features show "این قابلیت در پلن شما نیست" with a generic upgrade button. No teaching moment, no preview, no value framing. Stripe and Linear show the feature *and* the price next to it. | 🟠 | ★★★★ | M | `TrialFeatureWarning.tsx`, gates across `MessagesPage`, `TeamBranchesSection.tsx` |
+| 7 | ~~**Plan-tier walls feel punitive, not aspirational.**~~ ✅ **Resolved (Cluster F, 2026-04-30).** New shared `components/shared/PlanLockCard.tsx` renders an enriched, teaching upsell card (price from `PLAN_PRICES_TOMAN`, 3-bullet feature list, primary "ارتقا به پلن X" CTA + "مقایسه پلن‌ها" link). Wired into `TeamBranchesSection` (multi-branch), `messages/page.tsx` (bulk SMS), and `AgentForm` (where TEAM-only role/permission UI was previously hidden silently). `TrialFeatureWarning` left as-is — its forward-looking trial banner role differs from a hard lock. | ✅ | ★★★★ | — | — |
 | 8 | ~~**First-run dashboard has no guided next step.**~~ ✅ **Resolved (Cluster B, 2026-04-28).** New `FirstRunChecklist` (MANAGER-only) renders above the KPI cards: 2-step (file → share link), auto-hides on completion, Linear-style × dismiss persisted in `localStorage`, footer link to `/guide` (covers F-2.5). | ✅ | ★★★★ | — | — |
 | 9 | ~~**Trial countdown banner reads as anxious.**~~ ✅ **Partially resolved (Cluster B, 2026-04-28).** `SubscriptionBanner.tsx` near_expiry copy reframed gift-style ("همچنان از همه قابلیت‌ها استفاده کنید"); `TrialActivationBanner.tsx` was already gift-framed teal. Grace + locked banners intentionally untouched (post-expiry warning framing is correct). | ✅ | ★★★ | — | — |
 | 10 | **Mid-admin tier capabilities are not communicated to the mid-admin user.** A SUPPORT-tier admin sees buttons that 403 when clicked. Capability badges should appear in the admin top bar. | 🟡 | ★★★ | S | `app/(admin)/admin/layout.tsx` |
@@ -138,13 +138,13 @@ A new manager registers, lands on `/dashboard`, and has 60 seconds before they d
 | F-1.3 | Trust badges are decorative SVGs without provenance ("over 100 offices") with no source | 🟡 | ★★★ | XS | `components/landing/Trust.tsx` |
 | F-1.4 | Pricing page lacks feature comparison matrix; FREE/PRO/TEAM cards repeat overlap awkwardly | 🟠 | ★★★★ | S | `app/(public)/pricing/page.tsx` |
 | F-1.5 | Pricing FAQ missing — every SaaS pricing page has one (Stripe, Linear) | 🟡 | ★★★ | S | same |
-| F-1.6 | Hero lacks single-sentence outcome promise | 🟠 | ★★★★ | S | Hero |
+| F-1.6 | ~~Hero lacks single-sentence outcome promise~~ ✅ **Resolved (Cluster A, 2026-04-29).** JTBD reframe in `HeroSection.tsx`. | ✅ | ★★★★ | — | — |
 | F-1.7 | Footer cluttered with unimplemented links | 🔵 | ★★ | XS | `components/landing/Footer.tsx` |
-| F-1.8 | **Dark mode CSS contrast on landing fails AA in places** (gray-on-gray hero subtitle) | 🟠 | ★★★ | S | `app/globals.css`, Hero |
+| F-1.8 | ~~**Dark mode CSS contrast on landing fails AA in places**~~ ✅ **Resolved (Cluster A, 2026-04-29).** `--color-text-tertiary` bumped to `#94908A` (~4.9:1 on surface-1). | ✅ | ★★★ | — | — |
 | F-1.9 | Login form: phone vs username affordance unclear | 🟡 | ★★ | XS | `app/(auth)/login/page.tsx` |
 | F-1.10 | Login: "رمز عبور را فراموش کرده‌اید؟" link inline-aligned awkwardly in RTL | 🔵 | ★ | XS | login |
-| F-1.11 | **Register form has 8 fields on one screen** — too long for trial start | 🟠 | ★★★★★ | S | `app/(auth)/register/page.tsx` |
-| F-1.12 | Plan selection at signup (FREE/PRO/TEAM radio) — should default to FREE trial and let users upgrade after exploring | 🟠 | ★★★★ | S | register |
+| F-1.11 | ~~**Register form has 8 fields on one screen**~~ ✅ **Resolved (Cluster A, 2026-04-29).** Split into 2 steps in `RegisterForm.tsx` (account fields → office fields). State preserved across back. | ✅ | ★★★★★ | — | — |
+| F-1.12 | ~~Plan selection at signup~~ ✅ **Resolved (Cluster A, 2026-04-29).** No plan radio in form; `registerAction` always creates `plan: "FREE"`. Dead `?plan=PRO` URL param stripped from `AuthWidget`. | ✅ | ★★★★ | — | — |
 | F-1.13 | City dropdown: long list with no search | 🟡 | ★★ | S | register |
 | F-1.14 | Password strength meter absent | 🟡 | ★★ | XS | register |
 | F-1.15 | Register success: lands on dashboard with no welcome path | 🟠 | ★★★★ | M | post-register flow |
@@ -155,12 +155,12 @@ A new manager registers, lands on `/dashboard`, and has 60 seconds before they d
 | F-1.20 | No keyboard nav on landing demo elements (focus trap missing on modal triggers) | 🟡 | ★★ | M | a11y across landing |
 | F-1.21 | Persian formal/informal tone inconsistent (mix of "شما" and verbal commands) | 🟡 | ★★ | M | landing copy |
 | F-1.22 | No language tag in head meta beyond root (some social previews fall back to English) | 🔵 | ★ | XS | metadata |
-| F-1.23 | Mobile landing: hero CTA is below the fold | 🟠 | ★★★★ | S | Hero responsive |
+| F-1.23 | ~~Mobile landing: hero CTA is below the fold~~ ✅ **Resolved (Cluster A, 2026-04-30).** New `MobileStickyHeroCTA` in `HeroSection.tsx` — fixed bottom button (`lg:hidden`, safe-area-inset aware) with `IntersectionObserver` on `#hero` so it shows while in the hero and slides out after scrolling past. | ✅ | ★★★★ | — | — |
 | F-1.24 | Pricing currency formatter inconsistent (numerals sometimes Latin) | 🟡 | ★★ | XS | pricing |
 | F-1.25 | Annual discount messaging ("۲ ماه رایگان") buried in fine print | 🟡 | ★★★ | XS | pricing |
 | F-1.26 | "About" page is mostly placeholder | 🔵 | ★ | M | `/about` |
 | F-1.27 | Blog/contact pages exist but blog has no posts | 🔵 | ★ | M | `/blog`, `/contact` |
-| F-1.28 | **No social proof on landing** — no testimonials, screenshots, or named offices | 🟠 | ★★★★ | M | landing |
+| F-1.28 | ~~**No social proof on landing**~~ ✅ **Resolved (Cluster A, 2026-04-29).** Replaced with real-data `LivePulseStrip` (active offices + files-shared-this-week + city chips) sourced from `GET /api/public/pulse` (60 s edge cache). Hides under 5 offices to avoid early-stage embarrassment. | ✅ | ★★★★ | — | — |
 | F-1.29 | No "trusted by" / customer-logo strip | 🟡 | ★★★ | S | landing |
 | F-1.30 | Privacy/terms pages: walls of unstyled text | 🔵 | ★ | S | `/privacy`, `/terms` |
 
@@ -359,7 +359,8 @@ These need product input before I can recommend a direction:
 ## Verification
 
 This audit is **not prescriptive**. Each finding is a starting point. Recommended next step: walk through §1 Executive Summary together, decide which top-10 items to greenlight, and start a separate plan-mode session per cluster:
-- **Cluster A** (Conversion): F-1.6, F-1.11, F-1.28 + landing dark-mode pass
+- ~~**Cluster A** (Conversion): F-1.6, F-1.11, F-1.28 + landing dark-mode pass~~ ✅ **Done 2026-04-29 / 2026-04-30.** Hero JTBD reframe + `LivePulseStrip` + register split + `--color-text-tertiary` AA fix shipped in commit `441fe96`. Residuals closed 2026-04-30: `MobileStickyHeroCTA` (F-1.23) + dead `?plan=PRO` URL param removed (F-1.12 cleanup).
+- ~~**Cluster F** (Plan-tier language §5.4): replace defensive lock copy with teaching upsell cards~~ ✅ **Done 2026-04-30.** New shared `components/shared/PlanLockCard.tsx` (price + 3-bullet feature list + primary "ارتقا" CTA + "مقایسه پلن‌ها" link). Wired into `TeamBranchesSection`, `messages/page.tsx` SMS tab, and `AgentForm` (where TEAM-only role/permission UI was previously hidden silently).
 - ~~**Cluster B** (Activation): F-2.2, F-2.5, F-3a.1, F-3a.6, top-10 #4/#6/#8/#9 (near_expiry portion)~~ ✅ **Done 2026-04-28.** `FirstRunChecklist` + photo-upload XHR progress + mobile-sticky collapse pill + SubscriptionBanner near_expiry copy reframe. F-2.1 and F-2.4 (OnboardingTutorial → checklist refactor) deferred to a later phase.
 - ~~**Cluster C** (Feedback): toast system rollout (§5.1)~~ ✅ **Done 2026-04-28.** sonner + `lib/toast.ts`; ~25 mutation surfaces wired across Tier-1/2/3.
 - ~~**Cluster D Phase 1** (Destructive trust): replace `window.confirm()` with shadcn `AlertDialog`~~ ✅ **Done 2026-04-28.** Four callsites converted (ArchiveFile, Suspend/Reactivate, Archive/Restore, ContractSmsActions cancel).

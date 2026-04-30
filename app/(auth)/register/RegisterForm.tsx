@@ -29,6 +29,7 @@ import { IRANIAN_CITIES } from "@/lib/cities"
 interface RegisterFormProps {
   initialRef?: string
   initialIdentifier?: string
+  initialIntent?: string
 }
 
 // Detect whether a string looks like a phone number (starts with 0 or 9, digits only)
@@ -38,7 +39,7 @@ function isPhoneLike(val: string): boolean {
 
 const STEP_1_FIELDS = ["displayName", "email", "password", "confirmPassword"] as const
 
-export function RegisterForm({ initialRef, initialIdentifier }: RegisterFormProps) {
+export function RegisterForm({ initialRef, initialIdentifier, initialIntent }: RegisterFormProps) {
   const [isPending, startTransition] = useTransition()
   const [serverError, setServerError] = useState<string | null>(null)
   const [step, setStep] = useState<1 | 2>(1)
@@ -68,7 +69,7 @@ export function RegisterForm({ initialRef, initialIdentifier }: RegisterFormProp
   function onSubmit(values: RegisterInput) {
     setServerError(null)
     startTransition(async () => {
-      const result = await registerAction(values)
+      const result = await registerAction(values, initialIntent)
       // If redirect("/login") was called in the action, execution stops there.
       // We only reach here on error.
       if (!result.success) {

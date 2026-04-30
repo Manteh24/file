@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth"
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
 import { DashboardShell } from "@/components/dashboard/DashboardShell"
 import { getEffectiveSubscription } from "@/lib/subscription"
+import { activateProTrial } from "@/lib/trial-activation"
 
 // Defense-in-depth: middleware already protects dashboard routes,
 // but we verify auth here so the layout can never render unauthenticated.
@@ -18,6 +20,16 @@ export default async function DashboardLayout({
   // Admin users belong in /admin, not the tenant dashboard
   if (!session.user.officeId) redirect("/admin/dashboard")
   const officeId = session.user.officeId // narrowed: string
+
+  // Consume `pending_intent=pro_trial` set by the register action when the user
+  // arrived via the landing PRO CTA. Activation guards on `activateProTrial`
+  // (already-trial / already-paid / phone-used) make repeat calls a safe no-op,
+  // so we don't need to delete the cookie — it expires in 1 hour. We run this
+  // BEFORE loading subscription so the post-activation state is reflected.
+  const pendingIntent = (await cookies()).get("pending_intent")?.value
+  if (pendingIntent === "pro_trial" && session.user.role === "MANAGER") {
+    await activateProTrial()
+  }
 
   const [office, subscription, userRecord] = await Promise.all([
     db.office.findUnique({

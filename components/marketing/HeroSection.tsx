@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   FolderOpen,
@@ -362,10 +363,10 @@ function AuthWidget() {
       if (data.exists) {
         router.push(`/login?identifier=${encodeURIComponent(trimmed)}`)
       } else {
-        router.push(`/register?plan=PRO&identifier=${encodeURIComponent(trimmed)}`)
+        router.push(`/register?identifier=${encodeURIComponent(trimmed)}`)
       }
     } catch {
-      router.push("/register?plan=PRO")
+      router.push("/register")
     } finally {
       setChecking(false)
     }
@@ -393,7 +394,7 @@ function AuthWidget() {
           ) : (
             <>
               شروع
-              <ArrowLeft className="h-3.5 w-3.5 rtl:scale-x-[-1]" />
+              <ArrowLeft className="h-3.5 w-3.5" />
             </>
           )}
         </button>
@@ -695,10 +696,49 @@ function InteractiveDemo() {
   )
 }
 
+/* ─── Mobile sticky CTA ───────────────────────────────────────────────────── */
+
+function MobileStickyHeroCTA() {
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    const hero = document.getElementById("hero")
+    if (!hero || typeof IntersectionObserver === "undefined") return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold: 0.05 }
+    )
+    observer.observe(hero)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div
+      className={`lg:hidden fixed inset-x-0 z-40 px-4 transition-[opacity,transform] duration-200 ease-out ${
+        visible
+          ? "opacity-100 translate-y-0 pointer-events-auto"
+          : "opacity-0 translate-y-4 pointer-events-none"
+      }`}
+      style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+      aria-hidden={!visible}
+    >
+      <Link
+        href="/register"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--color-teal-500)] px-5 py-3.5 text-base font-semibold text-white shadow-lg shadow-teal-500/30 hover:bg-[var(--color-teal-600)] active:scale-[0.98] transition-transform"
+      >
+        شروع رایگان — ۱ ماه آزمایشی
+        <ArrowLeft className="h-4 w-4" />
+      </Link>
+    </div>
+  )
+}
+
 /* ─── HeroSection ─────────────────────────────────────────────────────────── */
 
 export function HeroSection() {
   return (
+    <>
     <section id="hero" className="relative overflow-hidden" style={{ background: "#FFFFFF" }}>
       {/* Background glows */}
       <div
@@ -746,5 +786,7 @@ export function HeroSection() {
         </div>
       </div>
     </section>
+    <MobileStickyHeroCTA />
+    </>
   )
 }

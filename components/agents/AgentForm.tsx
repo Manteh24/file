@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { UpgradePrompt } from "@/components/shared/UpgradePrompt"
+import { PlanLockCard } from "@/components/shared/PlanLockCard"
 import { PermissionMatrix } from "@/components/settings/PermissionMatrix"
 import {
   OFFICE_ROLE_LABELS,
@@ -294,6 +295,21 @@ export function AgentForm({ initialData, agentId, plan, multiBranchEnabled }: Ag
             preset={officeMemberRole}
             override={permissionsOverride}
             onChange={setPermissionsOverride}
+          />
+        )}
+
+        {/* Teaching nudge — non-TEAM managers see what they unlock with TEAM
+            instead of the role/matrix UI being silently absent. */}
+        {!showStaffRoleSelector && plan && plan !== "TEAM" && (
+          <PlanLockCard
+            feature="hasCustomStaffRoles"
+            requiredPlan="TEAM"
+            title="نقش‌ها و دسترسی‌های دلخواه"
+            bullets={[
+              "تعیین نقش هر مشاور (مدیر شعبه، مشاور، مشاهده‌گر)",
+              "ماتریس کامل دسترسی برای هر کاربر",
+              "محدود کردن دسترسی به فایل‌ها و گزارش‌ها",
+            ]}
           />
         )}
 

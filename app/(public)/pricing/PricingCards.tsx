@@ -133,7 +133,7 @@ export function PricingCards() {
             "آنالیز پیشرفته",
             "چند شعبه (به زودی)",
           ]}
-          cta="آزمایش ۳۰ روزه رایگان"
+          cta="انتخاب پلن تیم"
           ctaHref={`/register?plan=team`}
         />
 
@@ -151,8 +151,8 @@ export function PricingCards() {
             "گزارش‌های مالی",
             "پشتیبانی اولویت‌دار",
           ]}
-          cta="آزمایش ۳۰ روزه رایگان"
-          ctaHref={`/register?plan=pro`}
+          cta="انتخاب پلن حرفه‌ای"
+          ctaHref={`/register?plan=pro&intent=pro_trial`}
           highlighted
           badge="محبوب‌ترین"
         />
@@ -175,7 +175,7 @@ export function PricingCards() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        تمام پلن‌های پولی با ۳۰ روز دوره آزمایشی کامل همراه هستند
+        پلن حرفه‌ای با ۳۰ روز آزمایش رایگان پس از ثبت‌نام — هر زمان قابل ارتقا
       </p>
     </div>
   )

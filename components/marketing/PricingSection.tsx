@@ -35,7 +35,7 @@ export function PricingSection() {
           پلن‌های اشتراک
         </h2>
         <p className="text-[var(--color-text-secondary)] text-center mb-8">
-          یک ماه آزمایشی رایگان برای پلن‌های حرفه‌ای و تیم
+          با پلن رایگان شروع کنید — پلن حرفه‌ای با ۳۰ روز آزمایش رایگان پس از ثبت‌نام
         </p>
 
         {/* Billing cycle toggle */}
@@ -100,12 +100,12 @@ export function PricingSection() {
               تومان / {cycle === "MONTHLY" ? "ماه" : "سال"}
             </p>
             <Link
-              href="/register?plan=PRO"
+              href="/register?plan=PRO&intent=pro_trial"
               className="inline-flex h-10 items-center justify-center rounded-lg bg-[var(--color-teal-500)] text-sm font-semibold text-white mb-2 transition-all hover:bg-[var(--color-teal-600)] hover:scale-[1.02]"
             >
-              شروع آزمایشی رایگان
+              انتخاب پلن حرفه‌ای
             </Link>
-            <p className="text-center text-xs text-[var(--color-teal-600)] mb-4">۳۰ روز آزمایشی کامل</p>
+            <p className="text-center text-xs text-[var(--color-teal-600)] mb-4">۳۰ روز آزمایش رایگان پس از ثبت‌نام</p>
             <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
               <li>تا ۱۰ کاربر</li>
               <li>فایل فعال نامحدود</li>
@@ -126,11 +126,10 @@ export function PricingSection() {
             </p>
             <Link
               href="/register?plan=TEAM"
-              className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] text-sm font-semibold text-[var(--color-text-secondary)] mb-2 transition-all hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text-primary)]"
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-2)] text-sm font-semibold text-[var(--color-text-secondary)] mb-6 transition-all hover:bg-[var(--color-surface-3)] hover:text-[var(--color-text-primary)]"
             >
-              شروع آزمایشی رایگان
+              انتخاب پلن تیم
             </Link>
-            <p className="text-center text-xs text-[var(--color-teal-600)] mb-4">۳۰ روز آزمایشی کامل</p>
             <ul className="space-y-2 text-sm text-[var(--color-text-secondary)]">
               <li>کاربر نامحدود</li>
               <li>فایل فعال نامحدود</li>

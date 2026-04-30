@@ -8,8 +8,7 @@ import { CustomerSmsForm } from "@/components/messages/CustomerSmsForm"
 import { MessageHistoryList } from "@/components/messages/MessageHistoryList"
 import { Separator } from "@/components/ui/separator"
 import { PageHeader } from "@/components/shared/PageHeader"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { PlanLockCard } from "@/components/shared/PlanLockCard"
 import { canOfficeDo, type OfficeMemberRole, type PermissionsOverride } from "@/lib/office-permissions"
 import type { Role } from "@/types"
 
@@ -113,20 +112,17 @@ export default function MessagesPage() {
           plan === "TEAM" ? (
             <CustomerSmsForm onSent={handleSent} />
           ) : (
-            <div className="flex flex-col items-center gap-4 py-8 text-center">
-              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                <Lock className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <div className="space-y-1">
-                <p className="font-medium">پیامک انبوه فقط در پلن تیم</p>
-                <p className="text-sm text-muted-foreground">
-                  برای ارسال پیامک به مشتریان، اشتراک تیم را فعال کنید.
-                </p>
-              </div>
-              <Button asChild size="sm">
-                <Link href="/settings#billing">ارتقا به تیم</Link>
-              </Button>
-            </div>
+            <PlanLockCard
+              feature="hasBulkSms"
+              requiredPlan="TEAM"
+              title="پیامک انبوه"
+              icon={Lock}
+              bullets={[
+                "ارسال به همه مشتریان با یک تپ",
+                "فیلتر بر اساس وضعیت و علاقه‌مندی",
+                "پیش‌نمایش تعداد و متن قبل از ارسال",
+              ]}
+            />
           )
         )}
       </div>

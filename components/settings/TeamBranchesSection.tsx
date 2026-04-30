@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Loader2, Pencil, Trash2, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { PlanLockCard } from "@/components/shared/PlanLockCard"
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -99,19 +100,20 @@ export function TeamBranchesSection({
     }
   }, [multiBranchEnabled, fetchBranches])
 
-  // Plan gate: only TEAM can use this feature. Show CTA for other plans.
+  // Plan gate: only TEAM can use this feature. Show enriched lock card for other plans.
   if (plan !== "TEAM") {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center">
-        <Building2 className="mx-auto mb-3 size-8 text-muted-foreground" />
-        <p className="text-sm font-medium">قابلیت چند شعبه</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          این قابلیت فقط در پلن تیم فعال است. برای ایجاد شعبه‌های مستقل و مدیریت هر شعبه توسط مدیر شعبه، به پلن تیم ارتقا دهید.
-        </p>
-        <Button asChild size="sm" className="mt-4">
-          <a href="#billing">ارتقا به پلن تیم</a>
-        </Button>
-      </div>
+      <PlanLockCard
+        feature="hasMultiBranch"
+        requiredPlan="TEAM"
+        title="چند شعبه"
+        icon={Building2}
+        bullets={[
+          "شعبه‌های مستقل با مدیر شعبه اختصاصی",
+          "تخصیص فایل و مشاور به هر شعبه",
+          "گزارش‌های جداگانه برای هر شعبه",
+        ]}
+      />
     )
   }
 
