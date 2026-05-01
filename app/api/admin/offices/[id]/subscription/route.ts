@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { canAdminDo, getAccessibleOfficeIds, logAdminAction } from "@/lib/admin"
 import { updateSubscriptionSchema } from "@/lib/validations/admin"
 import { createNotification } from "@/lib/notifications"
+import { applyPlanTransition } from "@/lib/plan-transition"
 
 export async function PATCH(
   request: Request,
@@ -67,6 +68,16 @@ export async function PATCH(
       currentPeriodEnd,
     },
   })
+
+  // If admin changed the plan, run plan-transition side-effects
+  // (e.g., tear down multi-branch when leaving TEAM).
+  if (plan && plan !== subscription.plan) {
+    try {
+      await applyPlanTransition(id, plan)
+    } catch (err) {
+      console.error("[PATCH /api/admin/offices/:id/subscription] applyPlanTransition failed:", { officeId: id, plan }, err)
+    }
+  }
 
   await logAdminAction(session.user.id, "UPDATE_SUBSCRIPTION", "SUBSCRIPTION", subscription.id, {
     officeId: id,

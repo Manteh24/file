@@ -4,8 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import { Check, X } from "lucide-react"
 import { PLAN_PRICES_TOMAN, PLAN_LABELS } from "@/lib/plan-constants"
+import type { PlanPriceMatrix } from "@/lib/plan-pricing"
 
 type BillingCycle = "MONTHLY" | "ANNUAL"
+
+interface PricingSectionProps {
+  prices?: PlanPriceMatrix
+}
 
 const featureRows = [
   { label: "پیامک اشتراک‌گذاری (۳۰/ماه)", free: true, pro: true, team: true },
@@ -22,7 +27,7 @@ const featureRows = [
   { label: "چند شعبه", free: false, pro: false, team: true },
 ]
 
-export function PricingSection() {
+export function PricingSection({ prices = PLAN_PRICES_TOMAN }: PricingSectionProps = {}) {
   const [cycle, setCycle] = useState<BillingCycle>("MONTHLY")
 
   return (
@@ -94,7 +99,7 @@ export function PricingSection() {
             <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">{PLAN_LABELS.PRO}</h3>
             <p className="text-[var(--color-text-secondary)] text-sm mb-4">برای دفاتر فعال</p>
             <div className="text-4xl font-semibold text-[var(--color-text-primary)] mb-1" dir="ltr">
-              {PLAN_PRICES_TOMAN.PRO[cycle].toLocaleString("fa-IR")}
+              {prices.PRO[cycle].toLocaleString("fa-IR")}
             </div>
             <p className="text-[var(--color-text-tertiary)] text-xs mb-6">
               تومان / {cycle === "MONTHLY" ? "ماه" : "سال"}
@@ -119,7 +124,7 @@ export function PricingSection() {
             <h3 className="text-lg font-semibold text-[var(--color-text-primary)] mb-1">{PLAN_LABELS.TEAM}</h3>
             <p className="text-[var(--color-text-secondary)] text-sm mb-4">برای سازمان‌های بزرگ</p>
             <div className="text-4xl font-semibold text-[var(--color-text-primary)] mb-1" dir="ltr">
-              {PLAN_PRICES_TOMAN.TEAM[cycle].toLocaleString("fa-IR")}
+              {prices.TEAM[cycle].toLocaleString("fa-IR")}
             </div>
             <p className="text-[var(--color-text-tertiary)] text-xs mb-6">
               تومان / {cycle === "MONTHLY" ? "ماه" : "سال"}

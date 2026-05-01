@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { requestPaymentSchema } from "@/lib/validations/settings"
-import { requestPayment, PLAN_PRICES_RIALS } from "@/lib/payment"
+import { requestPayment } from "@/lib/payment"
+import { getEffectivePlanPrices } from "@/lib/plan-pricing"
 import { canOfficeDo } from "@/lib/office-permissions"
 
 export async function POST(request: Request) {
@@ -55,12 +56,13 @@ export async function POST(request: Request) {
   }
 
   try {
+    const { rials } = await getEffectivePlanPrices()
     await db.paymentRecord.create({
       data: {
         officeId,
         plan,
         billingCycle,
-        amount: PLAN_PRICES_RIALS[plan][billingCycle],
+        amount: rials[plan][billingCycle],
         authority: result.authority,
         status: "PENDING",
       },

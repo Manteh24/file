@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { verifyPayment, calculateNewPeriodEnd } from "@/lib/payment"
 import { maybeCreateBonusPayout } from "@/lib/referral"
+import { applyPlanTransition } from "@/lib/plan-transition"
 
 // Base path for post-payment redirects
 function settingsUrl(status: string, plan?: string): string {
@@ -103,6 +104,14 @@ export async function GET(request: Request) {
   } catch (err) {
     console.error("[GET /api/payments/verify] transaction error:", { authority, officeId: record.officeId }, err)
     return NextResponse.redirect(settingsUrl("error"))
+  }
+
+  // Side-effects of the plan transition (e.g., multi-branch teardown when leaving TEAM).
+  // Best-effort: failure here must not block redirect or roll back the verified payment.
+  try {
+    await applyPlanTransition(record.officeId, record.plan)
+  } catch (err) {
+    console.error("[GET /api/payments/verify] applyPlanTransition failed (non-fatal):", { authority, officeId: record.officeId }, err)
   }
 
   // One-time referral bonus — best-effort, must not block or roll back the subscription update.

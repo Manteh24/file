@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { AdminSettingsForm } from "@/components/admin/AdminSettingsForm"
 import { getSetting } from "@/lib/platform-settings"
+import { PLAN_PRICE_SETTING_KEYS } from "@/lib/plan-pricing"
+import { PLAN_PRICES_TOMAN } from "@/lib/plan-constants"
 import { Settings } from "lucide-react"
 
 export default async function AdminSettingsPage() {
@@ -20,10 +22,13 @@ export default async function AdminSettingsPage() {
     freeMaxFiles,
     freeMaxAiMonth,
     freeMaxSmsMonth,
-    defaultReferralCommission,
     referralBonusPercent,
     referralBonusMaxToman,
     referralBonusLifetimeCap,
+    planPriceProMonthly,
+    planPriceProAnnual,
+    planPriceTeamMonthly,
+    planPriceTeamAnnual,
   ] = await Promise.all([
     getSetting("TRIAL_LENGTH_DAYS", "30"),
     getSetting("MAINTENANCE_MODE", "false"),
@@ -33,10 +38,13 @@ export default async function AdminSettingsPage() {
     getSetting("FREE_MAX_FILES", "10"),
     getSetting("FREE_MAX_AI_MONTH", "10"),
     getSetting("FREE_MAX_SMS_MONTH", "30"),
-    getSetting("DEFAULT_REFERRAL_COMMISSION", "50000"),
     getSetting("REFERRAL_BONUS_PERCENT", "25"),
     getSetting("REFERRAL_BONUS_MAX_TOMAN", "150000"),
     getSetting("REFERRAL_BONUS_LIFETIME_CAP", "10"),
+    getSetting(PLAN_PRICE_SETTING_KEYS.PRO_MONTHLY,  String(PLAN_PRICES_TOMAN.PRO.MONTHLY)),
+    getSetting(PLAN_PRICE_SETTING_KEYS.PRO_ANNUAL,   String(PLAN_PRICES_TOMAN.PRO.ANNUAL)),
+    getSetting(PLAN_PRICE_SETTING_KEYS.TEAM_MONTHLY, String(PLAN_PRICES_TOMAN.TEAM.MONTHLY)),
+    getSetting(PLAN_PRICE_SETTING_KEYS.TEAM_ANNUAL,  String(PLAN_PRICES_TOMAN.TEAM.ANNUAL)),
   ])
 
   return (
@@ -54,10 +62,13 @@ export default async function AdminSettingsPage() {
         freeMaxFiles={freeMaxFiles}
         freeMaxAiMonth={freeMaxAiMonth}
         freeMaxSmsMonth={freeMaxSmsMonth}
-        defaultReferralCommission={defaultReferralCommission}
         referralBonusPercent={referralBonusPercent}
         referralBonusMaxToman={referralBonusMaxToman}
         referralBonusLifetimeCap={referralBonusLifetimeCap}
+        planPriceProMonthly={planPriceProMonthly}
+        planPriceProAnnual={planPriceProAnnual}
+        planPriceTeamMonthly={planPriceTeamMonthly}
+        planPriceTeamAnnual={planPriceTeamAnnual}
       />
     </div>
   )

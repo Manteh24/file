@@ -1,6 +1,8 @@
 import { PricingCards } from "./PricingCards"
+import { getEffectivePlanPrices } from "@/lib/plan-pricing"
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const { toman } = await getEffectivePlanPrices()
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-16 space-y-10">
@@ -10,7 +12,7 @@ export default function PricingPage() {
             بدون قرارداد بلندمدت — هر زمان که خواستید ارتقا یا تغییر بدهید
           </p>
         </div>
-        <PricingCards />
+        <PricingCards prices={toman} />
       </div>
     </div>
   )

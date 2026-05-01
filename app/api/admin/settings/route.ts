@@ -32,11 +32,6 @@ const patchSchema = z.object({
     .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
     .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
     .optional(),
-  DEFAULT_REFERRAL_COMMISSION: z
-    .string()
-    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
-    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
-    .optional(),
   REFERRAL_BONUS_PERCENT: z
     .string()
     .regex(/^\d+$/, "باید عدد صحیح باشد")
@@ -57,6 +52,26 @@ const patchSchema = z.object({
       const n = parseInt(v, 10)
       return n >= 1 && n <= 1000
     }, "باید بین ۱ تا ۱۰۰۰ باشد")
+    .optional(),
+  PLAN_PRICE_PRO_MONTHLY: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
+    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
+    .optional(),
+  PLAN_PRICE_PRO_ANNUAL: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
+    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
+    .optional(),
+  PLAN_PRICE_TEAM_MONTHLY: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
+    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
+    .optional(),
+  PLAN_PRICE_TEAM_ANNUAL: z
+    .string()
+    .regex(/^\d+$/, "باید عدد صحیح غیرمنفی باشد")
+    .refine((v) => parseInt(v, 10) >= 0, "باید ۰ یا بیشتر باشد")
     .optional(),
 })
 
@@ -101,16 +116,6 @@ export async function PATCH(request: Request) {
       await setSetting(key, value, session.user.id)
       updates[key] = value
     }
-  }
-
-  // Propagate new default commission to all auto-generated office codes.
-  // Admin-created partner codes (createdByAdminId != null) are intentionally left unchanged.
-  if (updates.DEFAULT_REFERRAL_COMMISSION !== undefined) {
-    const newCommission = parseInt(updates.DEFAULT_REFERRAL_COMMISSION, 10)
-    await db.referralCode.updateMany({
-      where: { officeId: { not: null }, createdByAdminId: null },
-      data: { commissionPerOfficePerMonth: newCommission },
-    })
   }
 
   void logAdminAction(session.user.id, "UPDATE_PLATFORM_SETTINGS", "PLATFORM", "settings", updates)

@@ -1,7 +1,7 @@
 import { format } from "date-fns-jalali"
 import type { Prisma } from "@/app/generated/prisma/client"
 import { db } from "@/lib/db"
-import { PLAN_PRICES_TOMAN } from "@/lib/payment"
+import { getEffectivePlanPrices } from "@/lib/plan-pricing"
 import { findActiveReferredOffices } from "@/lib/referral"
 import type { AdminTier, Role } from "@/types"
 import {
@@ -196,10 +196,11 @@ export async function calculateMrr(
     select: { plan: true, billingCycle: true },
   })
 
+  const { toman } = await getEffectivePlanPrices()
   let mrr = 0
   for (const sub of subscriptions) {
     const plan = sub.plan as "PRO" | "TEAM"
-    const price = PLAN_PRICES_TOMAN[plan]
+    const price = toman[plan]
     if (sub.billingCycle === "MONTHLY") {
       mrr += price.MONTHLY
     } else {

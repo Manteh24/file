@@ -196,6 +196,8 @@ model Office {
   scheduledSms             ScheduledSms[]
   officeMessages           OfficeMessage[]
   calendarEvents           CalendarEvent[]
+  // Admin tasks scoped to this office (e.g., follow-up reminders for support work)
+  adminTasks               AdminTask[]
 
   @@map("offices")
 }
@@ -267,6 +269,11 @@ model User {
   sentMessages          OfficeMessage[]          @relation("SentMessages")
   createdCalendarEvents CalendarEvent[]          @relation("CalendarEventCreator")
   calendarAttendances   CalendarEventAttendee[]  @relation("CalendarEventAttendees")
+  // Admin task assignments (admin-panel internal tasks)
+  assignedAdminTasks    AdminTask[]              @relation("TaskAssignee")
+  createdAdminTasks     AdminTask[]              @relation("TaskAssigner")
+  // Saved signatures used when replying to support tickets
+  adminSignatures       AdminSignature[]
 
   @@map("users")
 }
@@ -938,9 +945,10 @@ model SupportTicket {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
-  office   Office          @relation(fields: [officeId], references: [id])
-  creator  User            @relation("TicketCreator", fields: [createdBy], references: [id])
-  messages TicketMessage[]
+  office     Office          @relation(fields: [officeId], references: [id])
+  creator    User            @relation("TicketCreator", fields: [createdBy], references: [id])
+  messages   TicketMessage[]
+  adminTasks AdminTask[]
 
   @@index([officeId])
   @@index([officeId, status])
@@ -962,6 +970,58 @@ model TicketMessage {
 
   @@index([ticketId])
   @@map("ticket_messages")
+}
+
+// Admin-panel internal tasks: one admin assigns work to another (or to themselves).
+// Optional officeId/ticketId for context — e.g. "follow up with this office" or "answer this ticket".
+model AdminTask {
+  id          String          @id @default(cuid())
+  assignerId  String
+  assigneeId  String
+  title       String
+  description String?         @db.Text
+  status      AdminTaskStatus @default(TODO)
+  dueAt       DateTime?
+  completedAt DateTime?
+  officeId    String?
+  ticketId    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  assigner User           @relation("TaskAssigner", fields: [assignerId], references: [id])
+  assignee User           @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  office   Office?        @relation(fields: [officeId], references: [id])
+  ticket   SupportTicket? @relation(fields: [ticketId], references: [id])
+
+  @@index([assigneeId, status])
+  @@index([assignerId])
+  @@index([ticketId])
+  @@index([officeId])
+  @@map("admin_tasks")
+}
+
+enum AdminTaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELED
+}
+
+// Reusable signature blocks per admin user — appended to ticket replies.
+// Multiple per admin; at most one isDefault=true (enforced at write time).
+model AdminSignature {
+  id        String   @id @default(cuid())
+  adminId   String
+  label     String
+  body      String   @db.Text
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  admin User @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@map("admin_signatures")
 }
 
 // A rent follow-up SMS scheduled to be sent automatically on a future date.

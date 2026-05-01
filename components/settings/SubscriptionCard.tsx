@@ -3,12 +3,25 @@
 import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { formatToman, formatJalali } from "@/lib/utils"
-import { PLAN_PRICES_TOMAN, PLAN_LABELS } from "@/lib/plan-constants"
+import { PLAN_LABELS, PLAN_PRICES_TOMAN } from "@/lib/plan-constants"
+import type { PlanPriceMatrix } from "@/lib/plan-pricing"
 import type { SubscriptionInfo, BillingCycle } from "@/types"
 
 interface SubscriptionCardProps {
   subscription: SubscriptionInfo | null
+  prices?: PlanPriceMatrix
 }
 
 const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -20,10 +33,13 @@ const STATUS_BADGE: Record<string, { label: string; variant: "default" | "second
 
 const PLAN_FEATURES = {
   PRO: ["تا ۱۰ مشاور", "فایل نامحدود", "پیامک و نقشه", "گزارش‌های مالی"],
-  TEAM: ["مشاور نامحدود", "همه امکانات حرفه‌ای", "آنالیز پیشرفته", "چند شعبه (به زودی)"],
+  TEAM: ["مشاور نامحدود", "همه امکانات حرفه‌ای", "آنالیز پیشرفته", "چند شعبه"],
 }
 
-export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
+export function SubscriptionCard({
+  subscription,
+  prices = PLAN_PRICES_TOMAN,
+}: SubscriptionCardProps) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("MONTHLY")
   const [loadingPlan, setLoadingPlan] = useState<"PRO" | "TEAM" | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -62,6 +78,11 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
   const isActivePro = plan === "PRO" && status === "ACTIVE" && !isTrial
   const isActiveTeam = plan === "TEAM" && status === "ACTIVE" && !isTrial
   const expiryDate = isTrial ? trialEndsAt : currentPeriodEnd
+
+  // Active TEAM never reaches the side-by-side card layout (we hide PRO there).
+  // For FREE/PRO, the labels follow the upgrade ordering.
+  const proButtonLabel = isActivePro ? "تمدید حرفه‌ای" : "ارتقا به حرفه‌ای"
+  const teamButtonLabel = isActiveTeam ? "تمدید تیم" : "ارتقا به تیم"
 
   return (
     <div className="space-y-5">
@@ -113,80 +134,134 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
         </button>
       </div>
 
-      {/* Plan cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {/* PRO plan */}
-        <div className={`bg-card border rounded-md p-5 space-y-4 ${
-          isActivePro ? "border-primary/50 bg-primary/5" : "border-border"
-        }`}>
-          <div>
-            <p className="font-semibold text-foreground">{PLAN_LABELS.PRO}</p>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {formatToman(PLAN_PRICES_TOMAN.PRO[billingCycle])}
-              {billingCycle === "MONTHLY" ? " / ماه" : " / سال"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              کمتر از کارمزد یک اجاره‌نامه در ماه
-            </p>
+      {/* On TEAM: show only the TEAM card + a downgrade link.
+          The "ارتقا به حرفه‌ای" copy is incorrect at TEAM tier (PRO < TEAM). */}
+      {isActiveTeam ? (
+        <div className="space-y-4">
+          <div className="bg-card border rounded-md p-5 space-y-4 border-primary/50 bg-primary/5">
+            <div>
+              <p className="font-semibold text-foreground">{PLAN_LABELS.TEAM}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {formatToman(prices.TEAM[billingCycle])}
+                {billingCycle === "MONTHLY" ? " / ماه" : " / سال"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                پلن فعلی شما — برای تمدید روی دکمه زیر بزنید
+              </p>
+            </div>
+            <ul className="text-sm text-muted-foreground space-y-1.5">
+              {PLAN_FEATURES.TEAM.map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <span className="text-primary font-medium">✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Button
+              variant="outline"
+              className="w-full h-11 rounded-md"
+              disabled={loadingPlan !== null}
+              onClick={() => handleUpgrade("TEAM")}
+            >
+              {loadingPlan === "TEAM" ? "در حال انتقال..." : teamButtonLabel}
+            </Button>
           </div>
-          <ul className="text-sm text-muted-foreground space-y-1.5">
-            {PLAN_FEATURES.PRO.map((f) => (
-              <li key={f} className="flex items-center gap-2">
-                <span className="text-primary font-medium">✓</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <Button
-            variant={isActivePro ? "outline" : "default"}
-            className="w-full h-11 rounded-md"
-            disabled={loadingPlan !== null}
-            onClick={() => handleUpgrade("PRO")}
-          >
-            {loadingPlan === "PRO"
-              ? "در حال انتقال..."
-              : isActivePro
-                ? "تمدید حرفه‌ای"
-                : "ارتقا به حرفه‌ای"}
-          </Button>
-        </div>
 
-        {/* TEAM plan */}
-        <div className={`bg-card border rounded-md p-5 space-y-4 ${
-          isActiveTeam ? "border-primary/50 bg-primary/5" : "border-primary/30 bg-primary/5"
-        }`}>
-          <div>
-            <p className="font-semibold text-foreground">{PLAN_LABELS.TEAM}</p>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {formatToman(PLAN_PRICES_TOMAN.TEAM[billingCycle])}
-              {billingCycle === "MONTHLY" ? " / ماه" : " / سال"}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              کمتر از حقوق یک منشی
-            </p>
+          <div className="text-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline disabled:opacity-50"
+                  disabled={loadingPlan !== null}
+                >
+                  تغییر به حرفه‌ای
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>تغییر به پلن حرفه‌ای</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    با تغییر به پلن حرفه‌ای، چند شعبه غیرفعال می‌شود و همه‌ی کاربران،
+                    فایل‌ها و مشتری‌ها به دفتر مرکزی منتقل می‌شوند. این عمل پس از پرداخت
+                    موفق روی پلن جدید اعمال می‌شود.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>انصراف</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleUpgrade("PRO")}>
+                    ادامه و پرداخت
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
-          <ul className="text-sm text-muted-foreground space-y-1.5">
-            {PLAN_FEATURES.TEAM.map((f) => (
-              <li key={f} className="flex items-center gap-2">
-                <span className="text-primary font-medium">✓</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <Button
-            variant={isActiveTeam ? "outline" : "default"}
-            className="w-full h-11 rounded-md"
-            disabled={loadingPlan !== null}
-            onClick={() => handleUpgrade("TEAM")}
-          >
-            {loadingPlan === "TEAM"
-              ? "در حال انتقال..."
-              : isActiveTeam
-                ? "تمدید تیم"
-                : "ارتقا به تیم"}
-          </Button>
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* PRO plan */}
+          <div className={`bg-card border rounded-md p-5 space-y-4 ${
+            isActivePro ? "border-primary/50 bg-primary/5" : "border-border"
+          }`}>
+            <div>
+              <p className="font-semibold text-foreground">{PLAN_LABELS.PRO}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {formatToman(prices.PRO[billingCycle])}
+                {billingCycle === "MONTHLY" ? " / ماه" : " / سال"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                کمتر از کارمزد یک اجاره‌نامه در ماه
+              </p>
+            </div>
+            <ul className="text-sm text-muted-foreground space-y-1.5">
+              {PLAN_FEATURES.PRO.map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <span className="text-primary font-medium">✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Button
+              variant={isActivePro ? "outline" : "default"}
+              className="w-full h-11 rounded-md"
+              disabled={loadingPlan !== null}
+              onClick={() => handleUpgrade("PRO")}
+            >
+              {loadingPlan === "PRO" ? "در حال انتقال..." : proButtonLabel}
+            </Button>
+          </div>
+
+          {/* TEAM plan */}
+          <div className="bg-card border rounded-md p-5 space-y-4 border-primary/30 bg-primary/5">
+            <div>
+              <p className="font-semibold text-foreground">{PLAN_LABELS.TEAM}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {formatToman(prices.TEAM[billingCycle])}
+                {billingCycle === "MONTHLY" ? " / ماه" : " / سال"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                کمتر از حقوق یک منشی
+              </p>
+            </div>
+            <ul className="text-sm text-muted-foreground space-y-1.5">
+              {PLAN_FEATURES.TEAM.map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <span className="text-primary font-medium">✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <Button
+              variant="default"
+              className="w-full h-11 rounded-md"
+              disabled={loadingPlan !== null}
+              onClick={() => handleUpgrade("TEAM")}
+            >
+              {loadingPlan === "TEAM" ? "در حال انتقال..." : teamButtonLabel}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <p className="text-sm text-destructive">{error}</p>

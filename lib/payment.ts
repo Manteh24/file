@@ -1,6 +1,9 @@
 import type { BillingCycle } from "@/types"
 import { getZarinpalMode } from "@/lib/platform-settings"
 import { PLAN_PRICES_RIALS, PLAN_LABELS, PLAN_PRICES_TOMAN } from "@/lib/plan-constants"
+import { getEffectivePlanPrices } from "@/lib/plan-pricing"
+// PLAN_PRICES_TOMAN / PLAN_PRICES_RIALS are kept as compile-time defaults.
+// At runtime, server code should call getEffectivePlanPrices() to honor admin overrides.
 export { PLAN_PRICES_TOMAN, PLAN_PRICES_RIALS, PLAN_LABELS }
 
 // ─── Zarinpal API Types ────────────────────────────────────────────────────────
@@ -41,9 +44,10 @@ export async function requestPayment(
   }
 
   const cycleLabel = billingCycle === "ANNUAL" ? "سالانه" : "ماهانه"
+  const { rials } = await getEffectivePlanPrices()
   const body: ZarinpalRequestBody = {
     merchant_id: merchantId,
-    amount: PLAN_PRICES_RIALS[plan][billingCycle],
+    amount: rials[plan][billingCycle],
     description: `اشتراک ${PLAN_LABELS[plan]} — ${cycleLabel}`,
     callback_url: callbackUrl,
   }
@@ -118,9 +122,10 @@ export async function verifyPayment(
     return { success: false, error: "درگاه پرداخت پیکربندی نشده است" }
   }
 
+  const { rials } = await getEffectivePlanPrices()
   const body: ZarinpalVerifyBody = {
     merchant_id: merchantId,
-    amount: PLAN_PRICES_RIALS[plan][billingCycle],
+    amount: rials[plan][billingCycle],
     authority,
   }
 

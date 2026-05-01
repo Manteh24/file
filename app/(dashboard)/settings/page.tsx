@@ -13,6 +13,7 @@ import { ManagerIsAgentToggle } from "@/components/settings/ManagerIsAgentToggle
 import { TeamBranchesSection } from "@/components/settings/TeamBranchesSection"
 import type { OfficeProfile, SubscriptionInfo } from "@/types"
 import { canOfficeDo } from "@/lib/office-permissions"
+import { getEffectivePlanPrices } from "@/lib/plan-pricing"
 
 interface SettingsPageProps {
   searchParams: Promise<{ payment?: string; plan?: string }>
@@ -72,7 +73,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   if (!officeId) redirect("/admin/dashboard")
   const params = await searchParams
 
-  const [office, subscription, currentUser] = await Promise.all([
+  const [office, subscription, currentUser, planPricing] = await Promise.all([
     db.office.findUnique({
       where: { id: officeId },
       select: { id: true, name: true, phone: true, email: true, address: true, city: true, officeBio: true, logoUrl: true, photoEnhancementMode: true, watermarkMode: true, managerIsAgent: true, multiBranchEnabled: true, shareFilesAcrossBranches: true, shareCustomersAcrossBranches: true },
@@ -85,6 +86,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       where: { id: session.user.id },
       select: { phone: true },
     }),
+    getEffectivePlanPrices(),
   ])
 
   if (!office) redirect("/dashboard")
@@ -176,7 +178,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </div>
         <PlanUsageSummary />
         <div className="mt-4">
-          <SubscriptionCard subscription={subscriptionInfo} />
+          <SubscriptionCard subscription={subscriptionInfo} prices={planPricing.toman} />
         </div>
       </section>
     </div>

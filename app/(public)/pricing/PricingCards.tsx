@@ -6,6 +6,7 @@ import { Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatToman } from "@/lib/utils"
 import { PLAN_PRICES_TOMAN } from "@/lib/plan-constants"
+import type { PlanPriceMatrix } from "@/lib/plan-pricing"
 import type { BillingCycle } from "@/types"
 
 interface PlanCardProps {
@@ -84,7 +85,11 @@ function PlanCard({
   )
 }
 
-export function PricingCards() {
+interface PricingCardsProps {
+  prices?: PlanPriceMatrix
+}
+
+export function PricingCards({ prices = PLAN_PRICES_TOMAN }: PricingCardsProps = {}) {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("MONTHLY")
 
   return (
@@ -137,7 +142,7 @@ export function PricingCards() {
         {/* PRO — highlighted */}
         <PlanCard
           name="حرفه‌ای"
-          price={PLAN_PRICES_TOMAN.PRO[billingCycle]}
+          price={prices.PRO[billingCycle]}
           billingCycle={billingCycle}
           tagline={null}
           features={[
@@ -157,7 +162,7 @@ export function PricingCards() {
         {/* TEAM */}
         <PlanCard
           name="تیم"
-          price={PLAN_PRICES_TOMAN.TEAM[billingCycle]}
+          price={prices.TEAM[billingCycle]}
           billingCycle={billingCycle}
           tagline={null}
           features={[

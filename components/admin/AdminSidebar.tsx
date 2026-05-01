@@ -16,6 +16,7 @@ import {
   Send,
   Settings,
   Headphones,
+  ClipboardList,
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { href: "/admin/ai-usage", label: "مصرف هوش مصنوعی", icon: Zap },
   { href: "/admin/broadcast", label: "پیام‌رسانی", icon: Send },
   { href: "/admin/support", label: "پشتیبانی", icon: Headphones },
+  { href: "/admin/tasks", label: "وظایف", icon: ClipboardList },
   { href: "/admin/settings", label: "تنظیمات", icon: Settings, superAdminOnly: true },
 ]
 

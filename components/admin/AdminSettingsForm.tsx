@@ -12,13 +12,16 @@ interface AdminSettingsFormProps {
   freeMaxFiles: string
   freeMaxAiMonth: string
   freeMaxSmsMonth: string
-  defaultReferralCommission: string
   referralBonusPercent: string
   referralBonusMaxToman: string
   referralBonusLifetimeCap: string
+  planPriceProMonthly: string
+  planPriceProAnnual: string
+  planPriceTeamMonthly: string
+  planPriceTeamAnnual: string
 }
 
-type SectionKey = "system" | "payment" | "ai" | "freeLimits" | "trial" | "referral" | "referralBonus"
+type SectionKey = "system" | "payment" | "ai" | "freeLimits" | "trial" | "referralBonus" | "planPrices"
 
 export function AdminSettingsForm(props: AdminSettingsFormProps) {
   const [maintenanceMode, setMaintenanceMode] = useState(props.maintenanceMode === "true")
@@ -31,12 +34,13 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
   const [freeMaxAiMonth, setFreeMaxAiMonth] = useState(props.freeMaxAiMonth)
   const [freeMaxSmsMonth, setFreeMaxSmsMonth] = useState(props.freeMaxSmsMonth)
   const [days, setDays] = useState(props.trialLengthDays)
-  const [defaultReferralCommission, setDefaultReferralCommission] = useState(
-    props.defaultReferralCommission
-  )
   const [bonusPercent, setBonusPercent] = useState(props.referralBonusPercent)
   const [bonusMaxToman, setBonusMaxToman] = useState(props.referralBonusMaxToman)
   const [bonusLifetimeCap, setBonusLifetimeCap] = useState(props.referralBonusLifetimeCap)
+  const [planPriceProMonthly, setPlanPriceProMonthly] = useState(props.planPriceProMonthly)
+  const [planPriceProAnnual, setPlanPriceProAnnual] = useState(props.planPriceProAnnual)
+  const [planPriceTeamMonthly, setPlanPriceTeamMonthly] = useState(props.planPriceTeamMonthly)
+  const [planPriceTeamAnnual, setPlanPriceTeamAnnual] = useState(props.planPriceTeamAnnual)
 
   const [loadingSection, setLoadingSection] = useState<SectionKey | null>(null)
 
@@ -285,45 +289,99 @@ export function AdminSettingsForm(props: AdminSettingsFormProps) {
         </div>
       </section>
 
-      {/* Section 6 — Default Referral Commission */}
+      {/* Section 6 — Plan Prices */}
       <section className="rounded-lg border border-border p-5 space-y-4">
-        <h2 className="text-sm font-semibold">کمیسیون پیش‌فرض معرفی</h2>
-        <div className="space-y-2">
-          <label className="text-sm font-medium">مبلغ کمیسیون (تومان / دفتر فعال / ماه)</label>
-          <p className="text-xs text-muted-foreground">
-            مقدار پیش‌فرضی که هنگام ثبت‌نام دفاتر جدید به کد معرفی آن‌ها اختصاص می‌یابد.
-            تغییر این مقدار بلافاصله روی <strong>تمام کدهای معرفی خودکار دفاتر</strong> اعمال می‌شود.
-            کدهای شریک که دستی توسط ادمین ساخته شده‌اند تغییر نمی‌کنند.
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              value={defaultReferralCommission}
-              onChange={(e) => { setDefaultReferralCommission(e.target.value) }}
-              min="0"
-              step="1000"
-              className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <span className="text-sm text-muted-foreground">تومان</span>
+        <h2 className="text-sm font-semibold">قیمت پلن‌ها (تومان)</h2>
+        <p className="text-xs text-muted-foreground">
+          قیمت‌هایی که در صفحه قیمت‌گذاری، صفحه فرود، کارت‌های ارتقا و درخواست پرداخت زرین‌پال استفاده می‌شوند.
+          تغییرات تا ۳۰ ثانیه روی همه‌ی صفحات اعمال می‌شود.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">حرفه‌ای — ماهانه</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={planPriceProMonthly}
+                onChange={(e) => { setPlanPriceProMonthly(e.target.value) }}
+                min="0"
+                step="1000"
+                className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">تومان / ماه</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">حرفه‌ای — سالانه</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={planPriceProAnnual}
+                onChange={(e) => { setPlanPriceProAnnual(e.target.value) }}
+                min="0"
+                step="10000"
+                className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">تومان / سال</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">تیم — ماهانه</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={planPriceTeamMonthly}
+                onChange={(e) => { setPlanPriceTeamMonthly(e.target.value) }}
+                min="0"
+                step="1000"
+                className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">تومان / ماه</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">تیم — سالانه</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={planPriceTeamAnnual}
+                onChange={(e) => { setPlanPriceTeamAnnual(e.target.value) }}
+                min="0"
+                step="10000"
+                className="w-40 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <span className="text-sm text-muted-foreground">تومان / سال</span>
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
-              const n = parseInt(defaultReferralCommission, 10)
-              if (isNaN(n) || n < 0) {
-                toastError("مبلغ کمیسیون باید ۰ یا بیشتر باشد")
+              const proM = parseInt(planPriceProMonthly, 10)
+              const proA = parseInt(planPriceProAnnual, 10)
+              const teamM = parseInt(planPriceTeamMonthly, 10)
+              const teamA = parseInt(planPriceTeamAnnual, 10)
+              if ([proM, proA, teamM, teamA].some((n) => isNaN(n) || n < 0)) {
+                toastError("قیمت‌ها باید عدد مثبت باشند")
                 return
               }
-              saveSection("referral", { DEFAULT_REFERRAL_COMMISSION: String(n) })
+              saveSection("planPrices", {
+                PLAN_PRICE_PRO_MONTHLY:  String(proM),
+                PLAN_PRICE_PRO_ANNUAL:   String(proA),
+                PLAN_PRICE_TEAM_MONTHLY: String(teamM),
+                PLAN_PRICE_TEAM_ANNUAL:  String(teamA),
+              })
             }}
-            disabled={loadingSection === "referral"}
+            disabled={loadingSection === "planPrices"}
             className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {loadingSection === "referral" ? "در حال ذخیره..." : "ذخیره"}
+            {loadingSection === "planPrices" ? "در حال ذخیره..." : "ذخیره"}
           </button>
-          
         </div>
       </section>
 

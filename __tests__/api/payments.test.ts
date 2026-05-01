@@ -29,6 +29,25 @@ vi.mock("@/lib/payment", () => ({
   },
 }))
 
+vi.mock("@/lib/plan-pricing", () => ({
+  PLAN_PRICE_SETTING_KEYS: {
+    PRO_MONTHLY:  "PLAN_PRICE_PRO_MONTHLY",
+    PRO_ANNUAL:   "PLAN_PRICE_PRO_ANNUAL",
+    TEAM_MONTHLY: "PLAN_PRICE_TEAM_MONTHLY",
+    TEAM_ANNUAL:  "PLAN_PRICE_TEAM_ANNUAL",
+  },
+  getEffectivePlanPrices: vi.fn().mockResolvedValue({
+    toman: {
+      PRO:  { MONTHLY: 290_000, ANNUAL: 2_900_000 },
+      TEAM: { MONTHLY: 590_000, ANNUAL: 5_900_000 },
+    },
+    rials: {
+      PRO:  { MONTHLY: 2_900_000, ANNUAL: 29_000_000 },
+      TEAM: { MONTHLY: 5_900_000, ANNUAL: 59_000_000 },
+    },
+  }),
+}))
+
 // Set NEXTAUTH_URL so the verify route builds absolute redirect URLs
 process.env.NEXTAUTH_URL = "http://localhost:3000"
 
