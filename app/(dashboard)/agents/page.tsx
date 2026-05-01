@@ -1,4 +1,4 @@
-import { Users } from "lucide-react"
+import { Download, Users } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
@@ -104,7 +104,18 @@ export default async function AgentsPage({ searchParams }: AgentsPageProps) {
       <PageHeader
         title={headerTitle}
         description={`${totalCount.toLocaleString("fa-IR")} ${headerCountLabel}`}
-        actions={<NewAgentButton multiBranchEnabled={multiBranchEnabled} />}
+        actions={
+          <>
+            <a
+              href="/api/export/agents"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <Download className="h-3.5 w-3.5" />
+              دریافت خروجی
+            </a>
+            <NewAgentButton multiBranchEnabled={multiBranchEnabled} />
+          </>
+        }
       />
 
       {rows.length === 0 ? (

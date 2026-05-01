@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { auth } from "@/lib/auth"
 import { AdminSettingsForm } from "@/components/admin/AdminSettingsForm"
+import { AdminSignaturesPanel } from "@/components/admin/AdminSignaturesPanel"
 import { getSetting } from "@/lib/platform-settings"
 import { PLAN_PRICE_SETTING_KEYS } from "@/lib/plan-pricing"
 import { PLAN_PRICES_TOMAN } from "@/lib/plan-constants"
@@ -9,8 +10,23 @@ import { Settings } from "lucide-react"
 export default async function AdminSettingsPage() {
   const session = await auth()
   if (!session) return null
-  if (session.user.role !== "SUPER_ADMIN") {
+  if (session.user.role !== "SUPER_ADMIN" && session.user.role !== "MID_ADMIN") {
     redirect("/admin/dashboard")
+  }
+
+  const isSuperAdmin = session.user.role === "SUPER_ADMIN"
+
+  // MID_ADMIN sees only their personal signatures section.
+  if (!isSuperAdmin) {
+    return (
+      <div className="space-y-6 max-w-lg">
+        <div className="flex items-center gap-2">
+          <Settings className="h-5 w-5 text-muted-foreground" />
+          <h1 className="text-xl font-bold">تنظیمات</h1>
+        </div>
+        <AdminSignaturesPanel />
+      </div>
+    )
   }
 
   const [
@@ -70,6 +86,7 @@ export default async function AdminSettingsPage() {
         planPriceTeamMonthly={planPriceTeamMonthly}
         planPriceTeamAnnual={planPriceTeamAnnual}
       />
+      <AdminSignaturesPanel />
     </div>
   )
 }

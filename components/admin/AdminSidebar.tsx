@@ -43,7 +43,7 @@ const navItems: NavItem[] = [
   { href: "/admin/broadcast", label: "پیام‌رسانی", icon: Send },
   { href: "/admin/support", label: "پشتیبانی", icon: Headphones },
   { href: "/admin/tasks", label: "وظایف", icon: ClipboardList },
-  { href: "/admin/settings", label: "تنظیمات", icon: Settings, superAdminOnly: true },
+  { href: "/admin/settings", label: "تنظیمات", icon: Settings },
 ]
 
 interface AdminSidebarProps {

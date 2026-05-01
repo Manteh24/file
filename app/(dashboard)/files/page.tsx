@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { FolderOpen } from "lucide-react"
+import { Download, FolderOpen } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
@@ -148,7 +148,20 @@ export default async function FilesPage({ searchParams }: FilesPageProps) {
       <PageHeader
         title="فایل‌های ملکی"
         description={`${files.length.toLocaleString("fa-IR")} فایل`}
-        actions={<NewFileButton role={role as "MANAGER" | "AGENT"} />}
+        actions={
+          <>
+            {role === "MANAGER" && (
+              <a
+                href="/api/export/files"
+                className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+              >
+                <Download className="h-3.5 w-3.5" />
+                دریافت خروجی
+              </a>
+            )}
+            <NewFileButton role={role as "MANAGER" | "AGENT"} />
+          </>
+        }
       />
 
       {/* Status filter tabs — hrefs preserve all active secondary filters */}

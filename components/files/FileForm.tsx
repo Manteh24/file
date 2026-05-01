@@ -213,8 +213,12 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
       return
     }
 
-    const url = isEdit ? `/api/files/${fileId}` : "/api/files"
-    const method = isEdit ? "PATCH" : "POST"
+    // Once savedFileId is set in create mode, subsequent submits update the
+    // just-created file (Step 2 saves) rather than creating a new file.
+    const targetForPatch = fileId ?? savedFileId
+    const url = targetForPatch ? `/api/files/${targetForPatch}` : "/api/files"
+    const method = targetForPatch ? "PATCH" : "POST"
+    const isFirstCreate = !targetForPatch
 
     const response = await fetch(url, {
       method,
@@ -240,9 +244,13 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
       return
     }
 
-    toastSuccess(isEdit ? "تغییرات ذخیره شد" : "فایل ایجاد شد")
+    if (isFirstCreate) {
+      toastSuccess("فایل ساخته شد — حالا می‌توانید عکس و توضیحات را اضافه کنید")
+    } else {
+      toastSuccess("تغییرات ذخیره شد")
+    }
 
-    const targetId = isEdit ? fileId! : result.data?.id
+    const targetId = isEdit ? fileId! : (result.data?.id ?? savedFileId)
     if (targetId) setSavedFileId(targetId)
 
     // Persist location analysis to DB so the detail page can display it
@@ -465,6 +473,36 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           />
         </section>
 
+        {/* Property Type — promoted to Step 1 so it's set before the user picks price/location. */}
+        <section className="space-y-4">
+          <h2 className="text-base font-semibold">نوع ملک</h2>
+          <FormField
+            control={form.control}
+            name="propertyType"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex flex-wrap gap-2">
+                  {PROPERTY_TYPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => field.onChange(opt.value)}
+                      className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                        field.value === opt.value
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </section>
+
         {/* Price — always visible so users can enter price immediately after picking transaction type */}
         {(showSalePrice || showRentFields) && (
           <section className="space-y-4">
@@ -533,135 +571,6 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           </section>
         )}
 
-        {/* Property Details — optional in create mode */}
-        {(isExpanded || isEdit) && <section ref={propertyDetailsSectionRef} className="space-y-4">
-          <h2 className="text-base font-semibold">مشخصات ملک</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <FormField
-              control={form.control}
-              name="propertyType"
-              render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-3">
-                  <FormLabel>نوع ملک</FormLabel>
-                  <div className="flex flex-wrap gap-2">
-                    {PROPERTY_TYPE_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => field.onChange(opt.value)}
-                        className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                          field.value === opt.value
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-background text-foreground hover:bg-accent"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="area"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>متراژ (متر)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="مثال: ۱۲۰"
-                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
-                        field.onChange(parseFarsiNumber(v))
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="floorNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>طبقه</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="مثال: ۳"
-                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
-                        field.onChange(parseFarsiNumber(v))
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="totalFloors"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>کل طبقات</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="مثال: ۵"
-                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
-                        field.onChange(parseFarsiNumber(v))
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="buildingAge"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>سن بنا (سال)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="مثال: ۵"
-                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
-                      onChange={(e) => {
-                        const v = e.target.value
-                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
-                        field.onChange(parseFarsiNumber(v))
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </section>}
-
         {/* Location */}
         <section className="space-y-4">
           <h2 className="text-base font-semibold">موقعیت</h2>
@@ -718,48 +627,6 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
             </div>
           )}
         </section>
-
-        {/* Amenities — optional in create mode */}
-        {(isExpanded || isEdit) && <section className="space-y-4">
-          <h2 className="text-base font-semibold">امکانات</h2>
-          <div className="flex flex-wrap gap-3">
-            {(
-              [
-                { name: "hasElevator", label: "آسانسور" },
-                { name: "hasParking", label: "پارکینگ" },
-                { name: "hasStorage", label: "انباری" },
-                { name: "hasBalcony", label: "بالکن" },
-                { name: "hasSecurity", label: "نگهبانی" },
-                { name: "hasGym", label: "باشگاه بدنسازی" },
-                { name: "hasPool", label: "استخر" },
-                { name: "hasWesternToilet", label: "توالت فرنگی" },
-                { name: "hasSmartHome", label: "خانه هوشمند" },
-                { name: "hasSauna", label: "سونا" },
-                { name: "hasJacuzzi", label: "جکوزی" },
-                { name: "hasRoofGarden", label: "روف گاردن" },
-              ] as const
-            ).map(({ name, label }) => (
-              <FormField
-                key={name}
-                control={form.control}
-                name={name}
-                render={({ field }) => (
-                  <button
-                    type="button"
-                    onClick={() => field.onChange(!field.value)}
-                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                      field.value
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-background text-foreground hover:bg-accent"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                )}
-              />
-            ))}
-          </div>
-        </section>}
 
         {/* Contacts */}
         <section className="space-y-4">
@@ -890,8 +757,153 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
           </div>
         )}
 
+        {/* Property Details — optional in create mode (Step 2). propertyType is hoisted above to Step 1. */}
+        {(isExpanded || isEdit || savedFileId) && <section ref={propertyDetailsSectionRef} className="space-y-4">
+          <h2 className="text-base font-semibold">مشخصات ملک</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="area"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>متراژ (متر)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="مثال: ۱۲۰"
+                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
+                        field.onChange(parseFarsiNumber(v))
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="floorNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>طبقه</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="مثال: ۳"
+                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
+                        field.onChange(parseFarsiNumber(v))
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="totalFloors"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>کل طبقات</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="مثال: ۵"
+                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
+                        field.onChange(parseFarsiNumber(v))
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="buildingAge"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>سن بنا (سال)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="مثال: ۵"
+                      value={field.value !== undefined ? toFarsiDigits(field.value) : ""}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        if (v && !/^[0-9\u06F0-\u06F9]+$/.test(v)) return
+                        field.onChange(parseFarsiNumber(v))
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </section>}
+
+        {/* Amenities — optional in create mode */}
+        {(isExpanded || isEdit || savedFileId) && <section className="space-y-4">
+          <h2 className="text-base font-semibold">امکانات</h2>
+          <div className="flex flex-wrap gap-3">
+            {(
+              [
+                { name: "hasElevator", label: "آسانسور" },
+                { name: "hasParking", label: "پارکینگ" },
+                { name: "hasStorage", label: "انباری" },
+                { name: "hasBalcony", label: "بالکن" },
+                { name: "hasSecurity", label: "نگهبانی" },
+                { name: "hasGym", label: "باشگاه بدنسازی" },
+                { name: "hasPool", label: "استخر" },
+                { name: "hasWesternToilet", label: "توالت فرنگی" },
+                { name: "hasSmartHome", label: "خانه هوشمند" },
+                { name: "hasSauna", label: "سونا" },
+                { name: "hasJacuzzi", label: "جکوزی" },
+                { name: "hasRoofGarden", label: "روف گاردن" },
+              ] as const
+            ).map(({ name, label }) => (
+              <FormField
+                key={name}
+                control={form.control}
+                name={name}
+                render={({ field }) => (
+                  <button
+                    type="button"
+                    onClick={() => field.onChange(!field.value)}
+                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                      field.value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                )}
+              />
+            ))}
+          </div>
+        </section>}
+
+
         {/* Description — optional in create mode */}
-        {(isExpanded || isEdit) && <section className="space-y-4">
+        {(isExpanded || isEdit || savedFileId) && <section className="space-y-4">
           <h2 className="text-base font-semibold">توضیحات</h2>
 
           {/* AI description generator */}
@@ -1024,47 +1036,38 @@ export function FileForm({ initialData, fileId, initialLocationAnalysis, userId,
 
         {/* Submit / navigation */}
         <div className="flex gap-3 justify-end">
-          {!isEdit && fileCreated && savedFileId ? (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-              >
-                بازگشت
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  router.push(`/files/${savedFileId}`)
-                  router.refresh()
-                }}
-              >
-                رفتن به فایل
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-              >
-                انصراف
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting
-                  ? "در حال ذخیره..."
-                  : isEdit
-                  ? "ذخیره تغییرات"
-                  : isOnline
-                  ? isExpanded
-                    ? "ایجاد فایل"
-                    : "ایجاد سریع فایل"
-                  : "ذخیره محلی"}
-              </Button>
-            </>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+          >
+            {!isEdit && savedFileId ? "بازگشت" : "انصراف"}
+          </Button>
+          {!isEdit && savedFileId && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                router.push(`/files/${savedFileId}`)
+                router.refresh()
+              }}
+            >
+              رفتن به فایل
+            </Button>
           )}
+          <Button type="submit" disabled={form.formState.isSubmitting}>
+            {form.formState.isSubmitting
+              ? "در حال ذخیره..."
+              : isEdit
+              ? "ذخیره تغییرات"
+              : savedFileId
+              ? "ذخیره تغییرات"
+              : isOnline
+              ? isExpanded
+                ? "ایجاد فایل"
+                : "ایجاد سریع فایل"
+              : "ذخیره محلی"}
+          </Button>
         </div>
       </form>
     </Form>

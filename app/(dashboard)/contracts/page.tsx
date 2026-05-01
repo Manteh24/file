@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Plus, FileText } from "lucide-react"
+import { Download, Plus, FileText } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { redirect } from "next/navigation"
@@ -49,12 +49,21 @@ export default async function ContractsPage() {
         title="قراردادها"
         description={`${contracts.length.toLocaleString("fa-IR")} قرارداد`}
         actions={
-          <Button asChild>
-            <Link href="/contracts/new">
-              <Plus className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
-              قرارداد جدید
-            </Link>
-          </Button>
+          <>
+            <a
+              href="/api/export/contracts"
+              className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <Download className="h-3.5 w-3.5" />
+              دریافت خروجی
+            </a>
+            <Button asChild>
+              <Link href="/contracts/new">
+                <Plus className="h-4 w-4 rtl:ml-1.5 ltr:mr-1.5" />
+                قرارداد جدید
+              </Link>
+            </Button>
+          </>
         }
       />
 

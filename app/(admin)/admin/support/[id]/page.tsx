@@ -28,6 +28,15 @@ interface TicketDetail {
   messages: TicketMessage[]
 }
 
+interface SignatureItem {
+  id: string
+  label: string
+  body: string
+  isDefault: boolean
+}
+
+const NO_SIGNATURE = "__none__"
+
 const STATUS_LABELS: Record<string, string> = {
   OPEN: "باز",
   IN_PROGRESS: "در حال بررسی",
@@ -70,6 +79,9 @@ export default function AdminTicketDetailPage() {
 
   const [statusUpdating, setStatusUpdating] = useState(false)
 
+  const [signatures, setSignatures] = useState<SignatureItem[]>([])
+  const [selectedSignatureId, setSelectedSignatureId] = useState<string>(NO_SIGNATURE)
+
   const fetchTicket = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/support/tickets/${id}`)
@@ -89,6 +101,27 @@ export default function AdminTicketDetailPage() {
   useEffect(() => {
     fetchTicket()
   }, [fetchTicket])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadSignatures() {
+      try {
+        const res = await fetch("/api/admin/signatures")
+        const json = (await res.json()) as { success: boolean; data?: SignatureItem[] }
+        if (cancelled || !json.success) return
+        const list = json.data ?? []
+        setSignatures(list)
+        const def = list.find((s) => s.isDefault) ?? list[0]
+        if (def) setSelectedSignatureId(def.id)
+      } catch {
+        // Non-fatal — picker just stays empty.
+      }
+    }
+    loadSignatures()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (ticket) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -119,8 +152,14 @@ export default function AdminTicketDetailPage() {
     setIsSending(true)
 
     try {
+      const chosen = signatures.find((s) => s.id === selectedSignatureId)
+      const finalBody =
+        selectedSignatureId !== NO_SIGNATURE && chosen
+          ? `${replyBody.trim()}\n\n---\n${chosen.body}`
+          : replyBody
+
       const formData = new FormData()
-      formData.set("body", replyBody)
+      formData.set("body", finalBody)
       if (replyFile) formData.set("file", replyFile)
 
       const res = await fetch(`/api/admin/support/tickets/${id}/messages`, {
@@ -266,6 +305,27 @@ export default function AdminTicketDetailPage() {
       ) : (
         <form onSubmit={handleSendReply} className="space-y-3 border-t border-border pt-4">
           {sendError && <p className="text-sm text-destructive">{sendError}</p>}
+          {signatures.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label htmlFor="signature-picker" className="text-xs text-muted-foreground shrink-0">
+                امضا:
+              </label>
+              <select
+                id="signature-picker"
+                value={selectedSignatureId}
+                onChange={(e) => setSelectedSignatureId(e.target.value)}
+                className="flex-1 rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {signatures.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                    {s.isDefault ? " (پیش‌فرض)" : ""}
+                  </option>
+                ))}
+                <option value={NO_SIGNATURE}>بدون امضا</option>
+              </select>
+            </div>
+          )}
           <textarea
             value={replyBody}
             onChange={(e) => setReplyBody(e.target.value)}
