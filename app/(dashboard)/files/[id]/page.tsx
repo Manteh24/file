@@ -7,7 +7,7 @@ import {
   Phone,
   MapPin,
   Calendar,
-  ChevronLeft,
+  ChevronRight,
   FileCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -139,7 +139,9 @@ export default async function FileDetailPage({ params }: FileDetailPageProps) {
         <Link href="/files" className="hover:text-foreground transition-colors">
           فایل‌ها
         </Link>
-        <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+        <span dir="ltr" aria-hidden="true">
+          <ChevronRight className="h-4 w-4" />
+        </span>
         <span className="text-foreground">
           {transactionTypeLabels[file.transactionType]}
           {file.propertyType && ` · ${propertyTypeLabels[file.propertyType]}`}

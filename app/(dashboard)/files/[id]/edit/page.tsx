@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { parseLocationAnalysis } from "@/lib/maps"
@@ -46,11 +46,15 @@ export default async function EditFilePage({ params }: EditFilePageProps) {
         <Link href="/files" className="hover:text-foreground transition-colors">
           فایل‌ها
         </Link>
-        <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+        <span dir="ltr" aria-hidden="true">
+          <ChevronRight className="h-4 w-4" />
+        </span>
         <Link href={`/files/${id}`} className="hover:text-foreground transition-colors">
           جزئیات فایل
         </Link>
-        <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
+        <span dir="ltr" aria-hidden="true">
+          <ChevronRight className="h-4 w-4" />
+        </span>
         <span className="text-foreground">ویرایش</span>
       </nav>
 

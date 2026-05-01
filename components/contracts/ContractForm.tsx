@@ -408,8 +408,8 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
 
         {/* Commission rate (UI-only) + commission amount */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">نرخ کمیسیون (٪)</label>
+          <div className="grid gap-2">
+            <label className="text-sm leading-none font-medium">نرخ کمیسیون (٪)</label>
             <Input
               type="text"
               dir="ltr"
@@ -445,8 +445,8 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
 
         {/* Agent split % (UI-only) + agent share */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">درصد سهم مشاور (٪)</label>
+          <div className="grid gap-2">
+            <label className="text-sm leading-none font-medium">درصد سهم مشاور (٪)</label>
             <Input
               type="text"
               dir="ltr"
@@ -485,7 +485,7 @@ export function ContractForm({ activeFiles, initialFileId }: ContractFormProps) 
 
         {/* Office share — read-only, always = commissionAmount − agentShare */}
         <div className="space-y-2">
-          <label className="text-sm font-medium text-muted-foreground">
+          <label className="text-sm leading-none font-medium text-muted-foreground">
             سهم دفتر (تومان) — محاسبه‌شده
           </label>
           <Input
